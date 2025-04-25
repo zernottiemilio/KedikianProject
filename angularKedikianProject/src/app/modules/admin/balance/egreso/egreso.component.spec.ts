@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { RegisterAridosComponent } from './register-aridos.component';
+import { EgresoComponent } from './egreso.component';
 
-describe('RegisterAridosComponent', () => {
-  let component: RegisterAridosComponent;
-  let fixture: ComponentFixture<RegisterAridosComponent>;
+describe('EgresoComponent', () => {
+  let component: EgresoComponent;
+  let fixture: ComponentFixture<EgresoComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RegisterAridosComponent]
+      imports: [EgresoComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(RegisterAridosComponent);
+    fixture = TestBed.createComponent(EgresoComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

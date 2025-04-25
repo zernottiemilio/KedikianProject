@@ -1,0 +1,106 @@
+<!---
+<div class="ingreso-container">
+  <div class="actions">
+    <div class="search-container">
+      <input type="text" class="search-input" placeholder="Buscar ingresos..." [(ngModel)]="filtroTexto">
+      <span class="material-icons">search</span>
+    </div>
+    <button class="add-btn" (click)="toggleFormulario()">
+      <span class="material-icons">{{ mostrarFormulario ? 'close' : 'add' }}</span>
+      {{ mostrarFormulario ? 'Cancelar' : 'Nuevo Ingreso' }}
+    </button>
+  </div>
+
+  <div class="form-container" *ngIf="mostrarFormulario">
+    <form [formGroup]="pagoForm" (ngSubmit)="guardarPago()">
+      <h3>{{ modoEdicion ? 'Editar Ingreso' : 'Nuevo Ingreso' }}</h3>
+
+      <div class="form-group">
+        <label for="proyecto">Proyecto:</label>
+        <select id="proyecto" formControlName="proyecto_id">
+          <option value="">Seleccione un proyecto</option>
+          <option *ngFor="let proyecto of proyectos" [value]="proyecto.id">{{ proyecto.nombre }}</option>
+        </select>
+        <div class="error-message" *ngIf="pagoForm.get('proyecto_id')?.touched && pagoForm.get('proyecto_id')?.invalid">
+          Proyecto es requerido
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="producto">Producto:</label>
+        <select id="producto" formControlName="producto_id">
+          <option value="">Seleccione un producto</option>
+          <option *ngFor="let producto of productos" [value]="producto.id">{{ producto.nombre }}</option>
+        </select>
+        <div class="error-message" *ngIf="pagoForm.get('producto_id')?.touched && pagoForm.get('producto_id')?.invalid">
+          Producto es requerido
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="monto">Monto:</label>
+        <input type="number" id="monto" formControlName="monto" placeholder="0.00">
+        <div class="error-message" *ngIf="pagoForm.get('monto')?.touched && pagoForm.get('monto')?.invalid">
+          Monto es requerido y debe ser mayor que 0
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="fecha">Fecha:</label>
+        <input type="date" id="fecha" formControlName="fecha">
+        <div class="error-message" *ngIf="pagoForm.get('fecha')?.touched && pagoForm.get('fecha')?.invalid">
+          Fecha es requerida
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" formControlName="descripcion" rows="3"
+          placeholder="Descripción (opcional)"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" (click)="toggleFormulario()">Cancelar</button>
+        <button type="submit" class="save-btn" [disabled]="pagoForm.invalid">{{ modoEdicion ? 'Actualizar' : 'Guardar'
+          }}</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table" *ngIf="pagosFiltrados.length > 0">
+      <thead>
+        <tr>
+          <th>Proyecto</th>
+          <th>Producto</th>
+          <th>Monto</th>
+          <th>Fecha</th>
+          <th>Descripción</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let pago of pagosFiltrados">
+          <td>{{ getNombreProyecto(pago.proyecto_id) }}</td>
+          <td>{{ getNombreProducto(pago.producto_id) }}</td>
+          <td class="monto">{{ pago.monto | currency }}</td>
+          <td>{{ pago.fecha | date:'dd/MM/yyyy' }}</td>
+          <td>{{ pago.descripcion }}</td>
+          <td class="actions-cell">
+            <button class="icon-btn edit" (click)="editarPago(pago)">
+              <span class="material-icons">edit</span>
+            </button>
+            <button class="icon-btn delete" (click)="eliminarPago(pago.id)">
+              <span class="material-icons">delete</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="no-data" *ngIf="pagosFiltrados.length === 0">
+      <span class="material-icons">info</span>
+      <p>No hay ingresos registrados en este período</p>
+    </div>
+  </div>
+</div>
+-->

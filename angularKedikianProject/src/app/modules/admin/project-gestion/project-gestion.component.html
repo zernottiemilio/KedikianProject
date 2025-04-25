@@ -1,0 +1,320 @@
+<!-- project-gestion.component.html -->
+<div class="project-gestion-container">
+  <div class="header">
+    <h1>Gestión de Proyectos</h1>
+    <div class="header-actions">
+      <div class="search-filter">
+        <input type="text" placeholder="Buscar proyectos..." (input)="onSearchChange($event)" class="search-input">
+        <select [(ngModel)]="filterStatus" (change)="onFilterChange()" class="filter-select">
+          <option value="all">Todos los estados</option>
+          <option value="true">Activos</option>
+          <option value="false">Inactivos</option>
+        </select>
+      </div>
+      <button class="add-button" (click)="toggleAddForm()">
+        <span *ngIf="!showAddForm">+ Nuevo Proyecto</span>
+        <span *ngIf="showAddForm">Cancelar</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Formulario para añadir/editar proyecto -->
+  <div class="add-project-form" *ngIf="showAddForm">
+    <h2>{{ isEditing ? 'Editar Proyecto' : 'Añadir Nuevo Proyecto' }}</h2>
+    <form [formGroup]="projectForm" (ngSubmit)="saveProject()">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="nombre">Nombre del Proyecto</label>
+          <input type="text" id="nombre" formControlName="nombre" class="form-control">
+          <div class="error-message" *ngIf="projectForm.get('nombre')?.invalid && projectForm.get('nombre')?.touched">
+            El nombre es obligatorio
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="manager">Responsable</label>
+          <input type="text" id="manager" formControlName="manager" class="form-control">
+          <div class="error-message" *ngIf="projectForm.get('manager')?.invalid && projectForm.get('manager')?.touched">
+            El responsable es obligatorio
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea id="description" formControlName="description" class="form-control" rows="3"></textarea>
+        <div class="error-message"
+          *ngIf="projectForm.get('description')?.invalid && projectForm.get('description')?.touched">
+          La descripción es obligatoria
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="ubicacion">Ubicación</label>
+          <input type="text" id="ubicacion" formControlName="ubicacion" class="form-control">
+          <div class="error-message"
+            *ngIf="projectForm.get('ubicacion')?.invalid && projectForm.get('ubicacion')?.touched">
+            La ubicación es obligatoria
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="contrato_id">ID de Contrato</label>
+          <select id="contrato_id" formControlName="contrato_id" class="form-control">
+            <option [value]="null" disabled>Seleccione un contrato</option>
+            <option *ngFor="let contrato of contratos" [value]="contrato.id">
+              {{ contrato.nombre || 'Contrato #' + contrato.id }}
+            </option>
+          </select>
+          <div class="error-message"
+            *ngIf="projectForm.get('contrato_id')?.invalid && projectForm.get('contrato_id')?.touched">
+            El contrato es obligatorio
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="startDate">Fecha de inicio</label>
+          <input type="date" id="startDate" formControlName="startDate" class="form-control">
+          <div class="error-message"
+            *ngIf="projectForm.get('startDate')?.invalid && projectForm.get('startDate')?.touched">
+            La fecha de inicio es obligatoria
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="endDate">Fecha de finalización</label>
+          <input type="date" id="endDate" formControlName="endDate" class="form-control">
+          <div class="error-message" *ngIf="projectForm.get('endDate')?.invalid && projectForm.get('endDate')?.touched">
+            La fecha de finalización es obligatoria
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="estado">Estado</label>
+          <div class="toggle-switch">
+            <input type="checkbox" id="estado" formControlName="estado" class="toggle-input">
+            <label for="estado" class="toggle-label">
+              <span class="toggle-text">{{ projectForm.get('estado')?.value ? 'Activo' : 'Inactivo' }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="progress">Progreso (%)</label>
+          <input type="number" id="progress" formControlName="progress" class="form-control" min="0" max="100">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="project-images">Imágenes del Proyecto</label>
+        <div class="image-upload-container">
+          <div class="image-preview-container" *ngIf="imagePreviewUrls && imagePreviewUrls.length > 0">
+            <div class="image-preview" *ngFor="let image of imagePreviewUrls; let i = index">
+              <img [src]="image" alt="Vista previa">
+              <button type="button" class="remove-image" (click)="removeImage(i)">×</button>
+            </div>
+          </div>
+          <div class="upload-button-container">
+            <label for="image-upload" class="upload-button">
+              <i class="fa fa-upload"></i> Subir imágenes
+            </label>
+            <input type="file" id="image-upload" accept="image/*" multiple (change)="onImagesSelected($event)"
+              class="file-input">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="cancel-button" (click)="toggleAddForm()">Cancelar</button>
+        <button type="submit" class="submit-button" [disabled]="projectForm.invalid">
+          {{ isEditing ? 'Actualizar Proyecto' : 'Guardar Proyecto' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Panel principal con dos secciones: lista de proyectos y detalles del proyecto seleccionado -->
+  <div class="main-panel" [class.with-details]="selectedProject">
+    <!-- Lista de proyectos -->
+    <div class="projects-list">
+      <h2>Proyectos</h2>
+      <div class="projects-table">
+        <div class="project-item header-row">
+          <div class="project-name">Nombre</div>
+          <div class="project-manager">Responsable</div>
+          <div class="project-progress">Progreso</div>
+          <div class="project-days">Días Restantes</div>
+          <div class="project-status">Estado</div>
+          <div class="project-actions">Acciones</div>
+        </div>
+
+        <div *ngFor="let project of filteredProjects" class="project-item"
+          [class.selected]="selectedProject && selectedProject.id === project.id" [class.inactive]="!project.estado">
+          <div class="project-name" (click)="selectProject(project)">{{ project.nombre }}</div>
+          <div class="project-manager">{{ project.manager }}</div>
+          <div class="project-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="project.progress"></div>
+            </div>
+            <span>{{ project.progress }}%</span>
+          </div>
+          <div class="project-days" [ngClass]="getDaysPriorityClass(project.daysRemaining)">
+            {{ project.daysRemaining }} días restantes
+          </div>
+          <div class="project-status">
+            <span class="status-badge" [ngClass]="project.estado ? 'status-active' : 'status-inactive'">
+              {{ project.estado ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+          <div class="project-actions">
+            <button class="action-button view" (click)="selectProject(project)" title="Ver detalles">
+              <i class="fa fa-eye"></i>
+            </button>
+            <button class="action-button edit" (click)="editProject(project)" title="Editar">
+              <i class="fa fa-edit"></i>
+            </button>
+            <button class="action-button delete" (click)="deleteProject(project.id)" title="Eliminar">
+              <i class="fa fa-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="filteredProjects.length === 0" class="no-projects">
+          No hay proyectos que coincidan con los criterios de búsqueda
+        </div>
+      </div>
+
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button class="page-button" [disabled]="currentPage === 1"
+          (click)="changePage(currentPage - 1)">Anterior</button>
+        <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
+        <button class="page-button" [disabled]="currentPage === totalPages"
+          (click)="changePage(currentPage + 1)">Siguiente</button>
+      </div>
+    </div>
+
+    <!-- Detalles del proyecto seleccionado -->
+    <div class="project-details" *ngIf="selectedProject">
+      <div class="details-header">
+        <h2>Detalles del Proyecto</h2>
+        <div class="details-actions">
+          <button class="edit-button" (click)="editProject(selectedProject)">Editar</button>
+          <button class="close-button" (click)="closeProjectDetails()">×</button>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>{{ selectedProject.nombre }}</h3>
+        <span class="status-badge large" [ngClass]="selectedProject.estado ? 'status-active' : 'status-inactive'">
+          {{ selectedProject.estado ? 'Activo' : 'Inactivo' }}
+        </span>
+      </div>
+
+      <div class="detail-row">
+        <label>Descripción:</label>
+        <p>{{ selectedProject.description }}</p>
+      </div>
+
+      <div class="detail-row">
+        <label>Responsable:</label>
+        <p>{{ selectedProject.manager }}</p>
+      </div>
+
+      <div class="detail-row">
+        <label>Ubicación:</label>
+        <p>{{ selectedProject.ubicacion }}</p>
+      </div>
+
+      <div class="detail-row">
+        <label>Contrato:</label>
+        <p>{{ getContratoNombre(selectedProject.contrato_id) }}</p>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>Fecha de creación:</label>
+          <p>{{ selectedProject.fecha_creacion | date:'dd/MM/yyyy' }}</p>
+        </div>
+
+        <div class="detail-item">
+          <label>Fecha de inicio:</label>
+          <p>{{ selectedProject.startDate | date:'dd/MM/yyyy' }}</p>
+        </div>
+
+        <div class="detail-item">
+          <label>Fecha de finalización:</label>
+          <p>{{ selectedProject.endDate | date : 'dd/MM/yyyy' }}</p>
+        </div>
+
+        <div class="detail-item">
+          <label>Días restantes:</label>
+          <p [ngClass]="getDaysPriorityClass(selectedProject.daysRemaining)">
+            {{ selectedProject.daysRemaining }} días
+          </p>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <label>Progreso:</label>
+        <div class="detail-progress">
+          <div class="progress-bar large">
+            <div class="progress-fill" [style.width.%]="selectedProject.progress"></div>
+          </div>
+          <span>{{ selectedProject.progress }}%</span>
+        </div>
+
+        <div class="progress-control">
+          <input type="range" min="0" max="100" [value]="selectedProject.progress || 0"
+            (input)="updateProjectProgress(selectedProject, $any($event.target).value)">
+        </div>
+      </div>
+
+      <!-- Imágenes del proyecto -->
+      <div class="detail-section images-section" *ngIf="selectedProject.images && selectedProject.images.length > 0">
+        <label>Imágenes del Proyecto:</label>
+        <div class="project-images-gallery">
+          <div class="gallery-image" *ngFor="let image of selectedProject.images; let i = index"
+            (click)="openImageViewer(i)">
+            <img [src]="image" alt="Imagen del proyecto">
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-actions">
+        <label>Actualizar estado:</label>
+        <div class="toggle-switch large">
+          <input type="checkbox" [id]="'toggle-estado-' + selectedProject.id" [checked]="selectedProject.estado"
+            (change)="toggleProjectStatus(selectedProject)">
+          <label [for]="'toggle-estado-' + selectedProject.id" class="toggle-label">
+            <span class="toggle-text">{{ selectedProject.estado ? 'Activo' : 'Inactivo' }}</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visor de imágenes modal -->
+  <div class="image-viewer-modal" *ngIf="showImageViewer" (click)="closeImageViewer()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <span class="close-modal" (click)="closeImageViewer()">&times;</span>
+      <div class="image-container">
+        <img [src]="currentImage" alt="Imagen ampliada">
+      </div>
+      <div class="image-navigation">
+        <button class="nav-button" (click)="previousImage()" [disabled]="currentImageIndex === 0">
+          <i class="fa fa-arrow-left"></i>
+        </button>
+        <span class="image-counter">{{ currentImageIndex + 1 }} / {{ selectedProject?.images?.length }}</span>
+        <button class="nav-button" (click)="nextImage()"
+          [disabled]="currentImageIndex === (selectedProject?.images?.length || 0) - 1">
+          <i class="fa fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,184 @@
+<div class="dashboard">
+  <!-- Primera fila -->
+  <div class="dashboard-row">
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-clipboard-list"></i> Tareas Pendientes</h3>
+      </div>
+      <div class="card-body">
+        <div class="task-list">
+          <div class="task-item">
+            <span class="task-title">Registrar horas del proyecto "Construcción Carretera Norte"</span>
+            <span class="task-date">Hoy</span>
+          </div>
+          <div class="task-item">
+            <span class="task-title">Actualizar entregas de áridos de la semana</span>
+            <span class="task-date">Mañana</span>
+          </div>
+          <div class="task-item">
+            <span class="task-title">Mantenimiento programado de retroexcavadora</span>
+            <span class="task-date">22/04/2025</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a href="" class="btn btn-sm">
+          <i class="fas fa-plus"></i> Nueva Tarea
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-truck-moving"></i> Máquinas Asignadas</h3>
+      </div>
+      <div class="card-body">
+        <div class="machine-list">
+          <div class="machine-item">
+            <span class="machine-name">Retroexcavadora CAT 320D</span>
+            <span class="machine-status">En uso</span>
+          </div>
+          <div class="machine-item">
+            <span class="machine-name">Camión Volquete IVECO</span>
+            <span class="machine-status">Disponible</span>
+          </div>
+          <div class="machine-item">
+            <span class="machine-name">Cargadora Frontal KOMATSU</span>
+            <span class="machine-status">Mantenimiento</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a href="" class="btn btn-sm">
+          <i class="fas fa-clock"></i> Registrar Horas
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Segunda fila -->
+  <div class="dashboard-row">
+    <div class="card full-width">
+      <div class="card-header">
+        <h3><i class="fas fa-calendar-alt"></i> Actividad Reciente</h3>
+      </div>
+      <div class="card-body">
+        <div class="activity-list">
+          <div class="activity-item">
+            <div class="activity-icon"><i class="fas fa-clock"></i></div>
+            <div class="activity-content">
+              <span class="activity-title">Registro de 8 horas de trabajo</span>
+              <span class="activity-details">Proyecto: Construcción Carretera Norte</span>
+              <span class="activity-time">Hoy, 17:30</span>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon"><i class="fas fa-truck-moving"></i></div>
+            <div class="activity-content">
+              <span class="activity-title">Registro de 6 horas de máquina</span>
+              <span class="activity-details">Máquina: Retroexcavadora CAT 320D</span>
+              <span class="activity-time">Ayer, 18:15</span>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon"><i class="fas fa-mountain"></i></div>
+            <div class="activity-content">
+              <span class="activity-title">Entrega de 15 toneladas de grava</span>
+              <span class="activity-details">Proyecto: Urbanización Los Pinos</span>
+              <span class="activity-time">20/04/2025, 14:00</span>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon"><i class="fas fa-receipt"></i></div>
+            <div class="activity-content">
+              <span class="activity-title">Registro de gastos de combustible</span>
+              <span class="activity-details">Importe: $150.000 - Camión Volquete IVECO</span>
+              <span class="activity-time">19/04/2025, 09:45</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a href="#" class="btn btn-sm">
+          <i class="fas fa-history"></i> Ver Historial Completo
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tercera fila -->
+  <div class="dashboard-row">
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-mountain"></i> Áridos Entregados (Semana)</h3>
+      </div>
+      <div class="card-body chart-container">
+        <div class="chart-placeholder">
+          <div class="bar" style="height: 65%;" title="Grava: 65 ton"><span>Grava</span></div>
+          <div class="bar" style="height: 85%;" title="Arena: 85 ton"><span>Arena</span></div>
+          <div class="bar" style="height: 40%;" title="Piedra: 40 ton"><span>Piedra</span></div>
+          <div class="bar" style="height: 25%;" title="Tierra: 25 ton"><span>Tierra</span></div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a href="#" class="btn btn-sm">
+          <i class="fas fa-plus"></i> Registrar Entrega
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-clock"></i> Horas Trabajadas (Semana)</h3>
+      </div>
+      <div class="card-body chart-container">
+        <div class="chart-placeholder week-chart">
+          <div class="bar" style="height: 80%;" title="Lunes: 8h"><span>L</span></div>
+          <div class="bar" style="height: 90%;" title="Martes: 9h"><span>M</span></div>
+          <div class="bar" style="height: 70%;" title="Miércoles: 7h"><span>X</span></div>
+          <div class="bar" style="height: 80%;" title="Jueves: 8h"><span>J</span></div>
+          <div class="bar" style="height: 60%;" title="Viernes: 6h"><span>V</span></div>
+          <div class="bar" style="height: 40%;" title="Sábado: 4h"><span>S</span></div>
+          <div class="bar" style="height: 0%;" title="Domingo: 0h"><span>D</span></div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a href="" class="btn btn-sm">
+          <i class="fas fa-plus"></i> Registrar Horas
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cuarta fila -->
+  <div class="dashboard-row">
+    <div class="card full-width">
+      <div class="card-header">
+        <h3><i class="fas fa-project-diagram"></i> Proyectos Activos</h3>
+      </div>
+      <div class="card-body">
+        <div class="task-list">
+          <div class="task-item">
+            <span class="task-title">Construcción Carretera Norte</span>
+            <span class="task-date">12 días restantes</span>
+          </div>
+          <div class="task-item">
+            <span class="task-title">Urbanización Los Pinos</span>
+            <span class="task-date">25 días restantes</span>
+          </div>
+          <div class="task-item">
+            <span class="task-title">Canalización Río Sur</span>
+            <span class="task-date">5 días restantes</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <a [routerLink]="['/gestion-proyectos']" routerLinkActive="active" class="btn btn-sm">
+          <i class="fas fa-list"></i> Ver Todos los Proyectos
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+

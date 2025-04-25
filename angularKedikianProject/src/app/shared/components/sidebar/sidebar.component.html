@@ -1,1 +1,74 @@
-<p>sidebar works!</p>
+<div class="sidebar" [class.open]="isOpen">
+  <div class="logo">
+    <div
+      style="width: 40px; height: 40px; background-color: #3498db; border-radius: 8px; display: flex; justify-content: center; align-items: center; margin-right: 10px;">
+      <!-- Imagen dentro del cuadrado azul -->
+      <img src="assets/image.png" alt="Logo" style="width: 50px; height: 50px; border-radius: 5px;">
+    </div>
+    <div class="logo-text">KEDIKIAN</div>
+  </div>
+
+  <!-- Elementos de navegación principal -->
+  <ng-container *ngIf="useAngularRouting; else staticNavigation">
+    <a *ngFor="let item of navItems; let i = index" [routerLink]="item.route" [class.active]="item.active"
+      class="nav-item" (click)="navigateTo(item.route)">
+      <i [class]="item.icon"></i> {{item.title}}
+    </a>
+
+    <!-- Sección de configuración -->
+    <div class="nav-section">Configuración</div>
+
+    <a *ngFor="let item of configItems; let i = index" [routerLink]="item.route" [class.active]="item.active"
+      class="nav-item" (click)="item.title === 'Cerrar Sesión' ? logout() : navigateTo(item.route)">
+      <i [class]="item.icon"></i> {{item.title}}
+    </a>
+  </ng-container>
+
+  <!-- Versión estática para usar si no se ha configurado el RouterModule -->
+  <ng-template #staticNavigation>
+    <a [routerLink]="['/dashboard']" routerLinkActive="active" class="nav-item">
+      <i class="fas fa-dashboard"></i> Dashboard
+    </a>
+    <a [routerLink]="['/gestion-proyectos']" routerLinkActive="active" class="nav-item">
+      <i class="fas fa-truck-monster"></i> Gestión de Proyectos
+    </a>
+    <a [routerLink]="['/gestion-aridos']" routerLinkActive="active" class="nav-item">
+      <i class="fas fa-cubes"></i> Gestión de Áridos
+    </a>
+    <a [routerLink]="['/gestion-maquinas']" routerLinkActive="active" class="nav-item">
+      <i class="fas fa-file-invoice-dollar"></i> Gestión de Maquinas</a>
+    <a [routerLink]="['/gestion-operarios']" routerLinkActive="active" class="nav-item">
+      <i class="fas fa-project-diagram"></i> Gestión de Operarios
+    </a>
+    <a [routerLink]="['/gestion-pagos']" routerLinkActive="active" class="nav-item">
+      <i class="fas fa-users"></i> Gestion de Pagos y Deudas
+    </a>
+    <a [routerLink]="['/informes']" routerLinkActive="active" class="nav-item">
+      <i class="fas fa-chart-line"></i> Informes y Reportes
+    </a>
+
+    <div class="nav-section">Configuración</div>
+    <a [routerLink]="['/ajustes']" routerLinkActive="active" class="nav-item">
+      <i class="fas fa-cog"></i> Ajustes
+    </a>
+    <a [routerLink]="['/mi-cuenta']" routerLinkActive="active" class="nav-item">
+      <i class="fas fa-user-cog"></i> Mi Cuenta
+    </a>
+    <a [routerLink]="['/ayuda']" routerLinkActive="active" class="nav-item">
+      <i class="fas fa-question-circle"></i> Ayuda
+    </a>
+    <a class="nav-item">
+      <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+    </a>
+  </ng-template>
+  </div>
+
+<!-- Botón de hamburguesa para dispositivos móviles -->
+<button *ngIf="isMobile" class="mobile-toggle" (click)="toggleSidebar()">
+  <i class="fas" [class.fa-bars]="!isOpen" [class.fa-times]="isOpen"></i>
+</button>
+
+<!-- Contenedor principal (opcional, puedes quitar esta parte si ya tienes un contenedor en otro componente) -->
+<div class="main-content" [style.margin-left]="!isMobile ? 'var(--sidebar-width)' : 0">
+  <ng-content></ng-content>
+</div>
