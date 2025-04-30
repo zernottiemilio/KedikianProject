@@ -1,4 +1,8 @@
+
 @import url('./shared/components/sidebar/sidebar.component.css');
 @import url('./shared/components/header/header.component.css');
 @import url('./modules/admin/main-content/main-content.component.css');
-
+@import url('./modules/admin/machines/machines.component.css');
+@import url('./modules/admin/users-gestion/users-gestion.component.css');
+@import url('./modules/admin/inventario/inventario.component.css');
+@import url('./modules/admin/balance/balance.component.css');

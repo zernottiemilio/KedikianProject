@@ -1,0 +1,285 @@
+<div class="inventario-container">
+  <!-- Header con título y acciones principales -->
+  <header class="header">
+    <div class="header-title">
+      <h1>Gestión de Inventario</h1>
+      <p>Administra el stock y movimientos de productos</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="exportarInventarioCSV()">
+        <i class="fas fa-file-export"></i> Exportar Inventario
+      </button>
+      <button class="btn btn-outline-primary" (click)="exportarMovimientosCSV()">
+        <i class="fas fa-history"></i> Exportar Movimientos
+      </button>
+    </div>
+  </header>
+
+  <!-- Panel de búsqueda y filtros -->
+  <div class="search-panel">
+    <form [formGroup]="busquedaForm" class="search-form">
+      <div class="input-group">
+        <input type="text" class="form-control" placeholder="Buscar productos..." formControlName="termino">
+        <div class="input-group-append">
+          <button class="btn btn-outline-secondary" type="button">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+      </div>
+      <div class="filter-options">
+        <label class="mr-2">Filtrar por:</label>
+        <div class="btn-group filter-group">
+          <label class="btn btn-outline-secondary" [class.active]="busquedaForm.value.tipoFiltro === 'todos'">
+            <input type="radio" formControlName="tipoFiltro" value="todos"> Todos
+          </label>
+          <label class="btn btn-outline-secondary" [class.active]="busquedaForm.value.tipoFiltro === 'nombre'">
+            <input type="radio" formControlName="tipoFiltro" value="nombre"> Nombre
+          </label>
+          <label class="btn btn-outline-secondary" [class.active]="busquedaForm.value.tipoFiltro === 'codigo'">
+            <input type="radio" formControlName="tipoFiltro" value="codigo"> Código
+          </label>
+          <label class="btn btn-outline-secondary" [class.active]="busquedaForm.value.tipoFiltro === 'stock_bajo'">
+            <input type="radio" formControlName="tipoFiltro" value="stock_bajo"> Stock Bajo
+          </label>
+        </div>
+      </div>
+      <div class="view-toggle">
+        <button class="btn btn-sm" [class.btn-primary]="modoVisualizacion === 'tabla'"
+          [class.btn-outline-primary]="modoVisualizacion !== 'tabla'" (click)="cambiarModoVisualizacion('tabla')">
+          <i class="fas fa-list"></i> Tabla
+        </button>
+        <button class="btn btn-sm ml-2" [class.btn-primary]="modoVisualizacion === 'tarjetas'"
+          [class.btn-outline-primary]="modoVisualizacion !== 'tarjetas'" (click)="cambiarModoVisualizacion('tarjetas')">
+          <i class="fas fa-th-large"></i> Tarjetas
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Contenido principal: tabla o tarjetas -->
+  <div class="main-content">
+    <div class="productos-panel">
+      <!-- Vista de Tabla -->
+      <div *ngIf="modoVisualizacion === 'tabla'" class="productos-tabla">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nombre del Producto</th>
+              <th class="text-center">Stock</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let producto of obtenerProductosPaginados()"
+              [class.selected]="productoSeleccionado?.id === producto.id" (click)="seleccionarProducto(producto)">
+              <td>{{ producto.codigo_producto }}</td>
+              <td>{{ producto.nombre }}</td>
+              <td class="text-center">
+                <span class="badge" [class.badge-danger]="producto.inventario < 5"
+                  [class.badge-warning]="producto.inventario >= 5 && producto.inventario < 10"
+                  [class.badge-success]="producto.inventario >= 10">
+                  {{ producto?.inventario }}
+                </span>
+              </td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-outline-primary"
+                  (click)="seleccionarProducto(producto); $event.stopPropagation()">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="productosFiltrados.length === 0">
+              <td colspan="4" class="text-center">
+                No se encontraron productos que coincidan con la búsqueda
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Paginación -->
+        <div *ngIf="productosFiltrados.length > 0" class="pagination-container">
+          <ul class="pagination">
+            <li class="page-item" [class.disabled]="paginaActual === 1">
+              <a class="page-link" (click)="cambiarPagina(paginaActual - 1)">Anterior</a>
+            </li>
+            <li *ngFor="let pagina of [].constructor(obtenerTotalPaginas()); let i = index" class="page-item"
+              [class.active]="paginaActual === i + 1">
+              <a class="page-link" (click)="cambiarPagina(i + 1)">{{ i + 1 }}</a>
+            </li>
+            <li class="page-item" [class.disabled]="paginaActual === obtenerTotalPaginas()">
+              <a class="page-link" (click)="cambiarPagina(paginaActual + 1)">Siguiente</a>
+            </li>
+          </ul>
+          <div class="pagination-info">
+            Mostrando {{ (paginaActual - 1) * itemsPorPagina + 1 }} -
+            {{ Math?.min(paginaActual * itemsPorPagina, totalItems) }}
+            de {{ totalItems }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista de Tarjetas -->
+      <div *ngIf="modoVisualizacion === 'tarjetas'" class="productos-tarjetas">
+        <div class="row">
+          <div *ngFor="let producto of obtenerProductosPaginados()" class="col-md-4 mb-4">
+            <div class="card producto-card" [class.selected]="productoSeleccionado?.id === producto.id"
+              (click)="seleccionarProducto(producto)">
+              <div class="card-header">
+                <h5 class="card-title">{{ producto.nombre }}</h5>
+                <span class="codigo-badge">{{ producto.codigo_producto }}</span>
+              </div>
+              <div class="card-body">
+                <div class="stock-indicator">
+                  <div class="stock-label">Stock actual:</div>
+                  <div class="stock-value" [class.text-danger]="producto.inventario < 5"
+                    [class.text-warning]="producto.inventario >= 5 && producto.inventario < 10"
+                    [class.text-success]="producto.inventario >= 10">
+                    {{ producto.inventario }} unidades
+                  </div>
+                </div>
+                <div class="stock-bar">
+                  <div class="stock-bar-fill" [style.width.%]="Math?.min(producto.inventario * 5, 100)"
+                    [class.bg-danger]="producto.inventario < 5"
+                    [class.bg-warning]="producto.inventario >= 5 && producto.inventario < 10"
+                    [class.bg-success]="producto.inventario >= 10">
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer text-center">
+                <button class="btn btn-sm btn-primary"
+                  (click)="seleccionarProducto(producto); $event.stopPropagation()">
+                  <i class="fas fa-eye"></i> Ver detalles
+                </button>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="productosFiltrados.length === 0" class="col-12">
+            <div class="alert alert-info text-center">
+              No se encontraron productos que coincidan con la búsqueda
+            </div>
+          </div>
+        </div>
+
+        <!-- Paginación -->
+        <div *ngIf="productosFiltrados.length > 0" class="pagination-container">
+          <ul class="pagination">
+            <li class="page-item" [class.disabled]="paginaActual === 1">
+              <a class="page-link" (click)="cambiarPagina(paginaActual - 1)">Anterior</a>
+            </li>
+            <li *ngFor="let pagina of [].constructor(obtenerTotalPaginas()); let i = index" class="page-item"
+              [class.active]="paginaActual === i + 1">
+              <a class="page-link" (click)="cambiarPagina(i + 1)">{{ i + 1 }}</a>
+            </li>
+            <li class="page-item" [class.disabled]="paginaActual === obtenerTotalPaginas()">
+              <a class="page-link" (click)="cambiarPagina(paginaActual + 1)">Siguiente</a>
+            </li>
+          </ul>
+          <div class="pagination-info">
+            Mostrando {{ (paginaActual - 1) * itemsPorPagina + 1 }} -
+            {{ Math?.min(paginaActual * itemsPorPagina, totalItems) }}
+            de {{ totalItems }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel de detalles del producto seleccionado -->
+    <div class="detalle-panel" *ngIf="productoSeleccionado">
+      <div class="detalle-header">
+        <h3>{{ productoSeleccionado.nombre }}</h3>
+        <span class="detalle-codigo">{{ productoSeleccionado.codigo_producto }}</span>
+      </div>
+
+      <div class="detalle-content">
+        <div class="stock-summary">
+          <div class="stock-label">Stock actual:</div>
+          <div class="stock-value" [class.text-danger]="productoSeleccionado.inventario < 5"
+            [class.text-warning]="productoSeleccionado.inventario >= 5 && productoSeleccionado.inventario < 10"
+            [class.text-success]="productoSeleccionado.inventario >= 10">
+            {{ productoSeleccionado.inventario }} unidades
+          </div>
+        </div>
+
+        <!-- Formulario para registrar movimiento -->
+        <div class="movimiento-form">
+          <h4>Registrar movimiento</h4>
+          <form [formGroup]="movimientoForm" (ngSubmit)="registrarMovimiento()">
+            <div class="form-group">
+              <label>Tipo de movimiento:</label>
+              <div class="btn-group btn-group-toggle w-100">
+                <label class="btn btn-outline-success"
+                  [class.active]="movimientoForm.value.tipo_transaccion === 'entrada'">
+                  <input type="radio" formControlName="tipo_transaccion" value="entrada">
+                  <i class="fas fa-arrow-down"></i> Entrada
+                </label>
+                <label class="btn btn-outline-danger"
+                  [class.active]="movimientoForm.value.tipo_transaccion === 'salida'">
+                  <input type="radio" formControlName="tipo_transaccion" value="salida">
+                  <i class="fas fa-arrow-up"></i> Salida
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Cantidad:</label>
+              <input type="number" class="form-control" formControlName="cantidad" min="1">
+              <div *ngIf="movimientoForm.get('cantidad')?.invalid && movimientoForm.get('cantidad')?.touched"
+                class="invalid-feedback d-block">
+                La cantidad debe ser mayor a 0
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" [disabled]="movimientoForm.invalid">
+              Registrar {{ movimientoForm.value.tipo_transaccion === 'entrada' ? 'Entrada' : 'Salida' }}
+            </button>
+          </form>
+        </div>
+
+        <!-- Historial de movimientos -->
+        <div class="historial-movimientos">
+          <div class="historial-header">
+            <h4>Historial de movimientos</h4>
+            <button class="btn btn-sm btn-link" (click)="mostrarHistorial = !mostrarHistorial">
+              {{ mostrarHistorial ? 'Ocultar' : 'Mostrar' }}
+            </button>
+          </div>
+
+          <div *ngIf="mostrarHistorial" class="historial-content">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Cantidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let mov of obtenerMovimientosProducto(productoSeleccionado.id)">
+                  <td>{{ formatearFecha(mov.fecha) }}</td>
+                  <td>
+                    <span class="badge" [class.badge-success]="mov.tipo_transaccion === 'entrada'"
+                      [class.badge-danger]="mov.tipo_transaccion === 'salida'">
+                      {{ mov.tipo_transaccion === 'entrada' ? 'Entrada' : 'Salida' }}
+                    </span>
+                  </td>
+                  <td>{{ mov.cantidad }}</td>
+                </tr>
+                <tr *ngIf="obtenerMovimientosProducto(productoSeleccionado.id).length === 0">
+                  <td colspan="3" class="text-center">No hay movimientos registrados</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje cuando no hay producto seleccionado -->
+    <div class="no-selection" *ngIf="!productoSeleccionado">
+      <div class="no-selection-content">
+        <i class="fas fa-box-open no-selection-icon"></i>
+        <h3>Seleccione un producto</h3>
+        <p>Haga clic en un producto para ver detalles y registrar movimientos</p>
+      </div>
+    </div>
+  </div>
+</div>

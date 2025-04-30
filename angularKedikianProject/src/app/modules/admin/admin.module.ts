@@ -1,12 +1,10 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-import { AdminRoutingModule } from './admin-routing.module';
+import { MaquinariaComponent } from './machines/machines.component';
 
 @NgModule({
-  declarations: [],
-  imports: [CommonModule, AdminRoutingModule],
+  declarations: [MaquinariaComponent],
+  imports: [CommonModule, NgModule],
+  exports: [MaquinariaComponent], // Exportar si se usa en otros módulos
 })
-export class AdminModule {
-  title = 'Administrador';
-}
+export class AdminModule {}

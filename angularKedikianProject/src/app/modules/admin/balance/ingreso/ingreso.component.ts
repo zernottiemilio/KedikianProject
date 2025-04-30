@@ -1,8 +1,16 @@
 // ingreso.component.ts
-/*
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
-import { BalanceService } from '../../services/balance.service';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { BalanceService } from '../../../../core/services/balance.service';
+import { Router } from '@angular/router';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { CommonModule, NgClass } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { EgresoComponent } from '../egreso/egreso.component';
 
 interface Pago {
   id: number;
@@ -25,8 +33,10 @@ interface Producto {
 
 @Component({
   selector: 'app-ingreso',
+  imports: [CommonModule, FormsModule, ReactiveFormsModule], // Importar los módulos necesarios aquí
   templateUrl: './ingreso.component.html',
   styleUrls: ['./ingreso.component.css'],
+  providers: [BalanceService],
 })
 export class IngresoComponent implements OnInit {
   @Input() pagos: Pago[] = [];
@@ -194,4 +204,3 @@ export class IngresoComponent implements OnInit {
     });
   }
 }
-*/

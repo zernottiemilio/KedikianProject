@@ -1,7 +1,25 @@
-// ingreso.component.ts
-/*import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
-import { BalanceService } from '../../services/balance.service';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { BalanceService } from '../../../core/services/balance.service';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { IngresoComponent } from './ingreso/ingreso.component';
+import { EgresoComponent } from './egreso/egreso.component';
+import { RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { catchError, finalize } from 'rxjs/operators';
+import { provideHttpClient } from '@angular/common/http';
+import { of } from 'rxjs';
+
+interface Gasto {
+  id: number;
+  usuario_id: number;
+  maquina_id: number;
+  tipo: string;
+  importe_total: number;
+  fecha: Date;
+  descripcion: string;
+  imagen: string;
+}
 
 interface Pago {
   id: number;
@@ -12,185 +30,246 @@ interface Pago {
   descripcion: string;
 }
 
-interface Proyecto {
-  id: number;
-  nombre: string;
-}
-
-interface Producto {
-  id: number;
-  nombre: string;
-}
-
 @Component({
-  selector: 'app-ingreso',
-  templateUrl: './ingreso.component.html',
-  styleUrls: ['./ingreso.component.css'],
+  selector: 'app-balance',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    EgresoComponent,
+    IngresoComponent,
+    RouterModule,
+    CurrencyPipe,
+  ],
+  templateUrl: './balance.component.html',
+  styleUrls: ['./balance.component.css'],
 })
-export class IngresoComponent implements OnInit {
-  @Input() pagos: Pago[] = [];
-  @Output() actualizarBalance = new EventEmitter<void>();
+export class BalanceComponent implements OnInit, OnDestroy {
+  // Variables para datos
+  gastos: Gasto[] = [];
+  pagos: Pago[] = [];
+  totalIngresos: number = 0;
+  totalEgresos: number = 0;
+  balance: number = 0;
 
-  proyectos: Proyecto[] = [];
-  productos: Producto[] = [];
-  pagoForm: FormGroup;
-  mostrarFormulario = false;
-  modoEdicion = false;
-  pagoSeleccionadoId: number | null = null;
-  filtroTexto = '';
+  // Variables para UI
+  periodoSeleccionado: string = 'mes';
+  tabActiva: string = 'ingresos';
+  isLoading: boolean = false;
+  errorMessage: string = '';
 
-  constructor(private balanceService: BalanceService, private fb: FormBuilder) {
-    this.pagoForm = this.fb.group({
-      proyecto_id: ['', Validators.required],
-      producto_id: ['', Validators.required],
-      monto: ['', [Validators.required, Validators.min(0)]],
-      fecha: [new Date().toISOString().substring(0, 10), Validators.required],
-      descripcion: [''],
-    });
-  }
+  // Variables para fechas
+  fechaInicio: Date = new Date();
+  fechaFin: Date = new Date();
+  fechaInicioStr: string = '';
+  fechaFinStr: string = '';
+
+  // Subscripciones
+  private subscriptions: Subscription[] = [];
+
+  constructor(private balanceService: BalanceService) {}
 
   ngOnInit(): void {
-    this.cargarProyectos();
-    this.cargarProductos();
+    console.log('BalanceComponent inicializado');
+
+    // Inicializar fechas para el mes actual
+    this.setFechasPeriodo('mes');
+
+    // Intentar cargar datos iniciales
+    this.cargarDatos();
   }
 
-  cargarProyectos(): void {
-    this.balanceService.getProyectos().subscribe(
-      (data: Proyecto[]) => {
-        this.proyectos = data;
-      },
-      (error) => {
-        console.error('Error al cargar proyectos:', error);
-      }
-    );
+  ngOnDestroy(): void {
+    // Limpiar subscripciones al destruir el componente
+    this.subscriptions.forEach((sub) => sub.unsubscribe());
   }
 
-  cargarProductos(): void {
-    this.balanceService.getProductos().subscribe(
-      (data: Producto[]) => {
-        this.productos = data;
-      },
-      (error) => {
-        console.error('Error al cargar productos:', error);
-      }
-    );
+  // Método para formato de fechas
+  formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
-  toggleFormulario(): void {
-    this.mostrarFormulario = !this.mostrarFormulario;
-    if (!this.mostrarFormulario) {
-      this.resetForm();
-    }
+  // Método para cambiar entre tabs
+  cambiarTab(tab: string): void {
+    console.log('Cambiando tab a:', tab);
+    this.tabActiva = tab;
   }
 
-  resetForm(): void {
-    this.pagoForm.reset({
-      fecha: new Date().toISOString().substring(0, 10),
-    });
-    this.modoEdicion = false;
-    this.pagoSeleccionadoId = null;
+  // Método para reintentar la carga de datos
+  reintentar(): void {
+    this.errorMessage = '';
+    this.cargarDatos();
   }
 
-  guardarPago(): void {
-    if (this.pagoForm.invalid) {
-      Object.keys(this.pagoForm.controls).forEach((key) => {
-        const control = this.pagoForm.get(key);
-        if (control) {
-          control.markAsTouched();
-        }
-      });
-      return;
-    }
+  // Métodos para manejo de fechas en el input
+  onFechaInicioChange(event: string): void {
+    this.fechaInicioStr = event;
+    this.fechaInicio = new Date(event);
+  }
 
-    const pago = this.pagoForm.value;
+  onFechaFinChange(event: string): void {
+    this.fechaFinStr = event;
+    this.fechaFin = new Date(event);
+  }
 
-    if (this.modoEdicion && this.pagoSeleccionadoId) {
-      this.balanceService
-        .actualizarPago(this.pagoSeleccionadoId, pago)
-        .subscribe(
-          () => {
-            this.actualizarBalance.emit();
-            this.resetForm();
-            this.mostrarFormulario = false;
-          },
-          (error) => {
-            console.error('Error al actualizar pago:', error);
-          }
+  setFechasPeriodo(periodo: string): void {
+    console.log('Configurando fechas para periodo:', periodo);
+    const hoy = new Date();
+    this.periodoSeleccionado = periodo;
+
+    switch (periodo) {
+      case 'hoy':
+        this.fechaInicio = new Date(
+          hoy.getFullYear(),
+          hoy.getMonth(),
+          hoy.getDate(),
+          0,
+          0,
+          0
         );
-    } else {
-      this.balanceService.crearPago(pago).subscribe(
-        () => {
-          this.actualizarBalance.emit();
-          this.resetForm();
-          this.mostrarFormulario = false;
-        },
-        (error) => {
-          console.error('Error al crear pago:', error);
-        }
-      );
-    }
-  }
+        this.fechaFin = new Date(
+          hoy.getFullYear(),
+          hoy.getMonth(),
+          hoy.getDate(),
+          23,
+          59,
+          59
+        );
+        break;
+      case 'semana':
+        // Primer día de la semana (domingo)
+        const primerDiaSemana = new Date(hoy);
+        primerDiaSemana.setDate(hoy.getDate() - hoy.getDay());
+        primerDiaSemana.setHours(0, 0, 0, 0);
 
-  editarPago(pago: Pago): void {
-    this.modoEdicion = true;
-    this.pagoSeleccionadoId = pago.id;
-    this.pagoForm.patchValue({
-      proyecto_id: pago.proyecto_id,
-      producto_id: pago.producto_id,
-      monto: pago.monto,
-      fecha: new Date(pago.fecha).toISOString().substring(0, 10),
-      descripcion: pago.descripcion,
-    });
-    this.mostrarFormulario = true;
-  }
+        // Último día de la semana (sábado)
+        const ultimoDiaSemana = new Date(hoy);
+        ultimoDiaSemana.setDate(primerDiaSemana.getDate() + 6);
+        ultimoDiaSemana.setHours(23, 59, 59, 999);
 
-  eliminarPago(id: number): void {
-    if (confirm('¿Está seguro de que desea eliminar este ingreso?')) {
-      this.balanceService.eliminarPago(id).subscribe(
-        () => {
-          this.actualizarBalance.emit();
-        },
-        (error) => {
-          console.error('Error al eliminar pago:', error);
-        }
-      );
-    }
-  }
+        this.fechaInicio = primerDiaSemana;
+        this.fechaFin = ultimoDiaSemana;
+        break;
+      case 'mes':
+        // Primer día del mes
+        this.fechaInicio = new Date(
+          hoy.getFullYear(),
+          hoy.getMonth(),
+          1,
+          0,
+          0,
+          0
+        );
 
-  getNombreProyecto(proyecto_id: number): string {
-    const proyecto = this.proyectos.find((p) => p.id === proyecto_id);
-    return proyecto ? proyecto.nombre : 'Desconocido';
-  }
-
-  getNombreProducto(producto_id: number): string {
-    const producto = this.productos.find((p) => p.id === producto_id);
-    return producto ? producto.nombre : 'Desconocido';
-  }
-
-  get pagosFiltrados(): Pago[] {
-    if (!this.filtroTexto.trim()) {
-      return this.pagos;
+        // Último día del mes
+        this.fechaFin = new Date(
+          hoy.getFullYear(),
+          hoy.getMonth() + 1,
+          0,
+          23,
+          59,
+          59
+        );
+        break;
+      case 'año':
+        this.fechaInicio = new Date(hoy.getFullYear(), 0, 1, 0, 0, 0);
+        this.fechaFin = new Date(hoy.getFullYear(), 11, 31, 23, 59, 59);
+        break;
     }
 
-    const filtro = this.filtroTexto.toLowerCase();
-    return this.pagos.filter((pago) => {
-      const proyectoNombre = this.getNombreProyecto(
-        pago.proyecto_id
-      ).toLowerCase();
-      const productoNombre = this.getNombreProducto(
-        pago.producto_id
-      ).toLowerCase();
-      const descripcion = pago.descripcion?.toLowerCase() || '';
-      const fecha = new Date(pago.fecha).toLocaleDateString();
+    // Actualizar las cadenas de fecha para los inputs HTML
+    this.fechaInicioStr = this.formatDate(this.fechaInicio);
+    this.fechaFinStr = this.formatDate(this.fechaFin);
 
-      return (
-        proyectoNombre.includes(filtro) ||
-        productoNombre.includes(filtro) ||
-        descripcion.includes(filtro) ||
-        fecha.includes(filtro) ||
-        pago.monto.toString().includes(filtro)
-      );
-    });
+    // Cargar datos con las nuevas fechas
+    this.cargarDatos();
+  }
+
+  cargarDatos(): void {
+    console.log(
+      'Cargando datos desde:',
+      this.fechaInicio,
+      'hasta:',
+      this.fechaFin
+    );
+
+    // Mostrar indicador de carga
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    // Cargar gastos
+    const gastosSubscription = this.balanceService
+      .getGastos(this.fechaInicio, this.fechaFin)
+      .pipe(
+        catchError((error) => {
+          console.error('Error al cargar gastos:', error);
+          this.errorMessage =
+            'Error al cargar los gastos. Por favor, intente de nuevo.';
+          return of([]);
+        }),
+        finalize(() => {
+          // No finalizamos la carga aquí ya que aún podrían estar cargando los pagos
+        })
+      )
+      .subscribe((data) => {
+        console.log('Gastos cargados:', data);
+        this.gastos = data;
+        this.calcularTotalEgresos();
+        this.calcularBalance();
+      });
+
+    this.subscriptions.push(gastosSubscription);
+
+    // Cargar pagos
+    const pagosSubscription = this.balanceService
+      .getPagos(this.fechaInicio, this.fechaFin)
+      .pipe(
+        catchError((error) => {
+          console.error('Error al cargar pagos:', error);
+          if (!this.errorMessage) {
+            this.errorMessage =
+              'Error al cargar los pagos. Por favor, intente de nuevo.';
+          }
+          return of([]);
+        }),
+        finalize(() => {
+          // Finalizamos la carga cuando se completan ambas operaciones
+          this.isLoading = false;
+        })
+      )
+      .subscribe((data) => {
+        console.log('Pagos cargados:', data);
+        this.pagos = data;
+        this.calcularTotalIngresos();
+        this.calcularBalance();
+      });
+
+    this.subscriptions.push(pagosSubscription);
+  }
+
+  calcularTotalIngresos(): void {
+    this.totalIngresos = this.pagos.reduce((sum, pago) => sum + pago.monto, 0);
+    console.log('Total ingresos calculado:', this.totalIngresos);
+  }
+
+  calcularTotalEgresos(): void {
+    this.totalEgresos = this.gastos.reduce(
+      (sum, gasto) => sum + gasto.importe_total,
+      0
+    );
+    console.log('Total egresos calculado:', this.totalEgresos);
+  }
+
+  calcularBalance(): void {
+    this.balance = this.totalIngresos - this.totalEgresos;
+    console.log('Balance calculado:', this.balance);
+  }
+
+  buscarPorFechas(): void {
+    console.log('Buscando por fechas personalizadas');
+    this.cargarDatos();
   }
 }
-*/

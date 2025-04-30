@@ -1,0 +1,189 @@
+<div class="container">
+  <h2>Gestión de Usuarios</h2>
+
+  <div class="actions-bar">
+    <button class="btn btn-primary" (click)="openAddUserModal()">
+      <i class="fas fa-plus"></i> Nuevo Usuario
+    </button>
+    <div class="filter-controls">
+      <div class="search-box">
+        <input type="text" placeholder="Búsqueda rápida..." [(ngModel)]="searchTerm" (input)="applyFilters()">
+        <i class="fas fa-search"></i>
+      </div>
+      <div class="advanced-filters">
+        <div class="filter-row">
+          <div class="filter-item">
+            <label for="filter-id">ID</label>
+            <input type="text" class="form-control form-control-sm" id="filter-id" [(ngModel)]="filters.id"
+              (input)="applyFilters()">
+          </div>
+          <div class="filter-item">
+            <label for="filter-nombre">Nombre</label>
+            <input type="text" class="form-control form-control-sm" id="filter-nombre" [(ngModel)]="filters.nombre"
+              (input)="applyFilters()">
+          </div>
+          <div class="filter-item">
+            <label for="filter-email">Email</label>
+            <input type="text" class="form-control form-control-sm" id="filter-email" [(ngModel)]="filters.email"
+              (input)="applyFilters()">
+          </div>
+          <div class="filter-item">
+            <label for="filter-roles">Rol</label>
+            <select class="form-select form-select-sm" id="filter-roles" [(ngModel)]="filters.roles"
+              (change)="applyFilters()">
+              <option value="">Todos</option>
+              <option *ngFor="let role of roleOptions" [value]="role">
+                {{role === 'admin' ? 'Administrador' : role === 'user' ? 'Usuario' : 'Editor'}}
+              </option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label for="filter-estado">Estado</label>
+            <select class="form-select form-select-sm" id="filter-estado" [(ngModel)]="filters.estado"
+              (change)="applyFilters()">
+              <option value="">Todos</option>
+              <option [ngValue]="true">Activo</option>
+              <option [ngValue]="false">Inactivo</option>
+            </select>
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
+              <i class="fas fa-times"></i> Limpiar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th (click)="sortBy('id')">#ID <i class="fas" [ngClass]="getSortIcon('id')"></i></th>
+          <th (click)="sortBy('nombre')">Nombre <i class="fas" [ngClass]="getSortIcon('nombre')"></i></th>
+          <th (click)="sortBy('email')">Email <i class="fas" [ngClass]="getSortIcon('email')"></i></th>
+          <th (click)="sortBy('roles')">Roles <i class="fas" [ngClass]="getSortIcon('roles')"></i></th>
+          <th (click)="sortBy('estado')">Estado <i class="fas" [ngClass]="getSortIcon('estado')"></i></th>
+          <th (click)="sortBy('fecha_creacion')">Fecha Creación <i class="fas"
+              [ngClass]="getSortIcon('fecha_creacion')"></i></th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of filteredUsers">
+          <td>{{ user.id }}</td>
+          <td>{{ user.nombre }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ user.roles }}</td>
+          <td>
+            <span class="badge" [ngClass]="user.estado ? 'badge-success' : 'badge-danger'">
+              {{ user.estado ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+          <td>{{ user.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td class="actions">
+            <button class="btn btn-sm btn-info" (click)="editUser(user)" title="Editar">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="deleteUser(user)" title="Eliminar">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="filteredUsers.length === 0" class="no-results">
+    <p>No se encontraron usuarios.</p>
+  </div>
+
+  <div class="pagination-controls" *ngIf="totalPages > 1">
+    <button class="btn btn-sm" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <span>Página {{ currentPage }} de {{ totalPages }}</span>
+    <button class="btn btn-sm" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Modal para añadir/editar usuario (centrado) -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="userModalLabel">{{ isEditMode ? 'Editar Usuario' : 'Nuevo Usuario' }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="userForm">
+          <div class="mb-3">
+            <label for="nombre" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="nombre" formControlName="nombre">
+            <div *ngIf="userForm.get('nombre')?.invalid && userForm.get('nombre')?.touched" class="text-danger">
+              El nombre es obligatorio
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" formControlName="email">
+            <div *ngIf="userForm.get('email')?.invalid && userForm.get('email')?.touched" class="text-danger">
+              Email inválido o ya existe
+            </div>
+          </div>
+          <div class="mb-3" *ngIf="!isEditMode">
+            <label for="contrasena" class="form-label">Contraseña</label>
+            <input type="password" class="form-control" id="contrasena" formControlName="contrasena">
+            <div *ngIf="userForm.get('contrasena')?.invalid && userForm.get('contrasena')?.touched" class="text-danger">
+              La contraseña debe tener al menos 8 caracteres
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="roles" class="form-label">Roles</label>
+            <select class="form-select" id="roles" formControlName="roles">
+              <option *ngFor="let role of roleOptions" [value]="role">
+                {{role === 'admin' ? 'Administrador' : role === 'user' ? 'Usuario' : 'Editor'}}
+              </option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="estado" class="form-label">Estado</label>
+            <select class="form-select" id="estado" formControlName="estado">
+              <option [ngValue]="true">Activo</option>
+              <option [ngValue]="false">Inactivo</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" [disabled]="userForm.invalid" (click)="saveUser()">
+          {{ isEditMode ? 'Actualizar' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación para eliminar (centrado) -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirmar eliminación</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Está seguro que desea eliminar al usuario <strong>{{ userToDelete?.nombre }}</strong>?</p>
+        <p class="text-danger">Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()">Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>

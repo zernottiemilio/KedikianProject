@@ -1,8 +1,9 @@
 // egreso.component.ts
-/*
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
-import { BalanceService } from '../../services/balance.service';
+import { BalanceService } from '../../../../core/services/balance.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonModule, NgClass } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 interface Gasto {
   id: number;
@@ -27,6 +28,8 @@ interface Maquina {
 
 @Component({
   selector: 'app-egreso',
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+
   templateUrl: './egreso.component.html',
   styleUrls: ['./egreso.component.css'],
 })
@@ -84,7 +87,7 @@ export class EgresoComponent implements OnInit {
       (data: Maquina[]) => {
         this.maquinas = data;
       },
-      (error) => {
+      (error: unknown) => {
         console.error('Error al cargar máquinas:', error);
       }
     );
@@ -162,7 +165,7 @@ export class EgresoComponent implements OnInit {
             this.resetForm();
             this.mostrarFormulario = false;
           },
-          (error) => {
+          (error: unknown) => {
             console.error('Error al actualizar gasto:', error);
           }
         );
@@ -173,7 +176,7 @@ export class EgresoComponent implements OnInit {
           this.resetForm();
           this.mostrarFormulario = false;
         },
-        (error) => {
+        (error: unknown) => {
           console.error('Error al crear gasto:', error);
         }
       );
@@ -205,7 +208,7 @@ export class EgresoComponent implements OnInit {
         () => {
           this.actualizarBalance.emit();
         },
-        (error) => {
+        (error: unknown) => {
           console.error('Error al eliminar gasto:', error);
         }
       );
@@ -255,4 +258,3 @@ export class EgresoComponent implements OnInit {
     });
   }
 }
-*/

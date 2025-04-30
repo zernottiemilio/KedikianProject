@@ -1,4 +1,3 @@
-/* project-gestion.component.scss */
 .project-gestion-container {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   max-width: 1200px;
@@ -6,6 +5,26 @@
   margin-left: 300px;
   padding: 20px;
   color: #333;
+
+  h2 {
+    margin-bottom: 25px;
+    color: #2c3e50;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 15px;
+    font-weight: 600;
+    font-size: 1.8rem;
+    position: relative;
+
+    &:after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -2px;
+      width: 60px;
+      height: 2px;
+      background-color: #3498db;
+    }
+  }
 }
 
 /* Encabezado y acciones */
