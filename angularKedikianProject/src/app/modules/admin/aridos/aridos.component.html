@@ -1,0 +1,134 @@
+<div class="aridos-container">
+  <header class="aridos-header">
+    <h1>Gestión de Áridos</h1>
+  </header>
+  <!-- Sección principal con dos columnas -->
+  <div class="aridos-main-content">
+    <!-- Formulario de registro -->
+    <div class="registro-form-container">
+      <h2>{{ modoEdicion ? 'Editar Registro' : 'Nuevo Registro de Áridos' }}</h2>
+      <form [formGroup]="registroForm" (ngSubmit)="agregarRegistro()">
+        <div class="form-group">
+          <label for="proyectoId">Proyecto:</label>
+          <select id="proyectoId" formControlName="proyectoId" class="form-control" required>
+            <option value="">Seleccione un proyecto</option>
+            @for (proyecto of proyectos; track proyecto.id) {
+            <option [value]="proyecto.id">{{ proyecto.nombre }}</option>
+            }
+          </select>
+          @if (registroForm.get('proyectoId')?.invalid && registroForm.get('proyectoId')?.touched) {
+          <div class="error-message">El proyecto es obligatorio</div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="aridoId">Tipo de Árido:</label>
+          <select id="aridoId" formControlName="aridoId" class="form-control" required>
+            <option value="">Seleccione un árido</option>
+            @for (arido of aridos; track arido.id) {
+            <option [value]="arido.id">{{ arido.nombre }} ({{ arido.unidadMedida }})</option>
+            }
+          </select>
+          @if (registroForm.get('aridoId')?.invalid && registroForm.get('aridoId')?.touched) {
+          <div class="error-message">El tipo de árido es obligatorio</div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="cantidad">Cantidad:</label>
+          <div class="input-group">
+            <input type="number" id="cantidad" formControlName="cantidad" class="form-control" step="0.01" min="0.1"
+              required>
+            <span class="unidad-medida">
+              {{ registroForm.get('aridoId')?.value ? getUnidadMedida(registroForm.get('aridoId')?.value) : '' }}
+            </span>
+          </div>
+          @if (registroForm.get('cantidad')?.invalid && registroForm.get('cantidad')?.touched) {
+          <div class="error-message">
+            La cantidad es obligatoria y debe ser mayor a 0
+          </div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="fechaEntrega">Fecha de Entrega:</label>
+          <input type="date" id="fechaEntrega" formControlName="fechaEntrega" class="form-control" required>
+          @if (registroForm.get('fechaEntrega')?.invalid && registroForm.get('fechaEntrega')?.touched) {
+          <div class="error-message">La fecha de entrega es obligatoria</div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="operario">Operario:</label>
+          <input type="text" id="operario" formControlName="operario" class="form-control" required>
+          @if (registroForm.get('operario')?.invalid && registroForm.get('operario')?.touched) {
+          <div class="error-message">El nombre del operario es obligatorio</div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="observaciones">Observaciones:</label>
+          <textarea id="observaciones" formControlName="observaciones" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="form-buttons">
+          <button type="submit" class="btn btn-success" [disabled]="registroForm.invalid">
+            {{ modoEdicion ? 'Actualizar Registro' : 'Registrar Entrega' }}
+          </button>
+          @if (modoEdicion) {
+          <button type="button" class="btn btn-secondary" (click)="cancelarEdicion()">Cancelar</button>
+          }
+        </div>
+      </form>
+    </div>
+
+    <!-- Tabla de registros -->
+    <div class="registros-tabla-container">
+      <h2>Registros de Áridos</h2>
+      @if (registrosFiltrados.length === 0) {
+      <div class="no-registros">
+        No hay registros que coincidan con los criterios de búsqueda.
+      </div>
+      } @else {
+      <table class="tabla-registros">
+        <thead>
+          <tr>
+            <th>Proyecto</th>
+            <th>Árido</th>
+            <th>Cantidad</th>
+            <th>Fecha</th>
+            <th>Operario</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (registro of registrosFiltrados; track registro.id) {
+          <tr>
+            <td>{{ registro.proyectoNombre }}</td>
+            <td>{{ registro.aridoNombre }}</td>
+            <td>{{ registro.cantidad | number:'1.2-2' }} {{ getUnidadMedida(registro.aridoId) }}</td>
+            <td>{{ registro.fechaEntrega | date:'dd/MM/yyyy' }}</td>
+            <td>{{ registro.operario }}</td>
+            <td class="acciones">
+              <button class="btn-icon btn-edit" title="Editar" (click)="editarRegistro(registro)">
+                <i class="fa fa-edit"></i>
+              </button>
+              <button class="btn-icon btn-delete" title="Eliminar" (click)="eliminarRegistro(registro.id)">
+                <i class="fa fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+          @if (registro.observaciones) {
+          <tr class="fila-observaciones">
+            <td colspan="6">
+              <strong>Observaciones:</strong> {{ registro.observaciones }}
+            </td>
+          </tr>
+          }
+          }
+        </tbody>
+      </table>
+      }
+    </div>
+  </div>
+</div>

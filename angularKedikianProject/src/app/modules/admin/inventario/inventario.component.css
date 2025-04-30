@@ -19,7 +19,6 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   max-width: 1200px;
   margin-left: 300px;
-
   padding: 20px;
   color: var(--text-color);
   background-color: #f9f9f9;
@@ -70,6 +69,7 @@ h2:after {
 .header-actions {
   display: flex;
   gap: 12px;
+  color: black;
 }
 
 /* Panel de búsqueda */
@@ -532,18 +532,19 @@ h2:after {
 
 .btn-group-toggle label.btn:last-child {
   border-radius: 0 var(--border-radius) var(--border-radius) 0;
+  color: black;
 }
 
 .btn-group-toggle label.btn.active.btn-outline-success {
   background-color: var(--success-color);
   border-color: var(--success-color);
-  color: white;
+  color: black;
 }
 
 .btn-group-toggle label.btn.active.btn-outline-danger {
   background-color: var(--danger-color);
   border-color: var(--danger-color);
-  color: white;
+  color: black;
 }
 
 .btn-group-toggle label.btn-outline-success:hover:not(.active) {
@@ -586,9 +587,8 @@ input[type="number"] {
 }
 
 .btn-primary {
-  background-color: var(--primary-color);
   border-color: var(--primary-color);
-  color: white;
+  color: black;
 }
 
 .btn-primary:hover {
@@ -605,6 +605,7 @@ input[type="number"] {
 .btn-secondary:hover {
   background-color: #5a6268;
   border-color: #545b62;
+  color: black;
 }
 
 .btn-success {
@@ -616,7 +617,7 @@ input[type="number"] {
 .btn-danger {
   background-color: var(--danger-color);
   border-color: var(--danger-color);
-  color: white;
+  color: red;
 }
 
 .btn-block {
@@ -783,11 +784,12 @@ input[type="number"] {
 
 .btn-edit:hover {
   background-color: #0c7cd5;
+  color: black;
 }
 
 .btn-delete {
   background-color: var(--danger-color);
-  color: white;
+  color: black;
   border: none;
   padding: 6px 12px;
   border-radius: var(--border-radius);
