@@ -896,3 +896,47 @@ input[type="number"] {
 .fade-in {
   animation: fadeIn 0.3s ease-out;
 }
+/* Contenedor del header con el título y el botón de cierre */
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+/* Estilos para el botón de cierre */
+.btn-cerrar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-cerrar:hover {
+  background-color: #d32f2f;
+}
+
+/* Estilos para el formulario */
+.movimiento-form {
+  padding: 20px;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  background-color: #f8f9fa;
+  margin-bottom: 20px;
+}
+
+.movimiento-form h4 {
+  margin: 0;
+  /* Elimina el margen del título para alinearlo con el botón */
+}

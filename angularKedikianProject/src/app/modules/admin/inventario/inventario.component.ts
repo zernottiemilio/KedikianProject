@@ -396,4 +396,13 @@ export class InventarioComponent implements OnInit {
     a.click();
     document.body.removeChild(a);
   }
+
+  // Método para cerrar el formulario de movimiento
+  cerrarFormularioMovimiento(): void {
+    this.productoSeleccionado = null;
+    this.movimientoForm.reset({
+      tipo_transaccion: 'entrada',
+      cantidad: 1
+    });
+  }
 }

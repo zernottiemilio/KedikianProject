@@ -186,6 +186,11 @@
 
     <!-- Panel de detalles del producto seleccionado -->
     <div class="detalle-panel" *ngIf="productoSeleccionado">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <button type="button" class="close" aria-label="Close" (click)="cerrarFormularioMovimiento()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
       <div class="detalle-header">
         <h3>{{ productoSeleccionado.nombre }}</h3>
         <span class="detalle-codigo">{{ productoSeleccionado.codigo_producto }}</span>
