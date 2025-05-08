@@ -1,7 +1,8 @@
 /* Main Content */
 .main-content {
-  flex: 1;
-  margin-left: 250px;
+  width: 100%;
+  margin-left: -15px;
+  margin-top: 48px;
   padding: 20px;
   transition: var(--transition);
 }

@@ -38,9 +38,9 @@ a {
   flex-direction: column;
   gap: 12px;
   /* Reducido de 20px */
-  margin-left: 300px;
+
   /* Reducido de 250px */
-  padding: 15px;
+  padding: 10px;
   /* Añadido padding general */
 
 }
