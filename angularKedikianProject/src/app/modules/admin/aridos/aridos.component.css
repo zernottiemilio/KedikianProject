@@ -72,8 +72,7 @@ h2 {
   left: 302px;
   right: 0;
   bottom: 0;
-  top: 82px;
-  /* Ajustado para el header fijo */
+  top: 105px;
   overflow-y: auto;
   padding: 20px;
   background-color: var(--container-bg);

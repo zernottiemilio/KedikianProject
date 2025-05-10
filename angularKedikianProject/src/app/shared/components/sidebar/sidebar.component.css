@@ -185,8 +185,7 @@ body {
     top: 15px;
     left: 15px;
     z-index: 1001;
-    background-color: var(--primary);
-    color: white;
+    background-color: #343a40;
     border: none;
     width: 40px;
     height: 40px;

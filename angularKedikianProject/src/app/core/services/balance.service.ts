@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000/api', // Adjust this URL according to your backend
+  apiUrl: 'http://localhost:8000', // URL actualizada a tu backend
 };
 
 @Injectable({

@@ -239,7 +239,7 @@ export class LoginComponent {
             this.router.navigate(['/admin/dashboard']);
           }
         },
-        error: (error) => {
+        error: (error: unknown) => {
           this.error = 'Usuario o contraseña incorrectos';
           this.loading = false;
         },

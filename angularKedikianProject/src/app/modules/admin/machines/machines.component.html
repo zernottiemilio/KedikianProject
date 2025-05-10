@@ -20,7 +20,7 @@
     <table>
       <thead>
         <tr>
-          <th>ID</th>
+          <th>Codigo</th>
           <th>Nombre</th>
           <th>Estado</th>
           <th>Horas de Uso</th>
@@ -29,7 +29,7 @@
       </thead>
       <tbody>
         <tr *ngFor="let maquina of maquinasFiltradas">
-          <td>{{maquina.id}}</td>
+          <td>{{maquina.codigo}}</td>
           <td>{{maquina.nombre}}</td>
           <td>
             <span class="estado" [ngClass]="{'activo': maquina.estado, 'inactivo': !maquina.estado}">
@@ -41,7 +41,7 @@
             <button class="btn-editar" (click)="abrirModalEditar(maquina)">
               <i class="fas fa-edit"></i>
             </button>
-            <button class="btn-eliminar" (click)="eliminarMaquina(maquina.id)">
+            <button class="btn-eliminar" (click)="eliminarMaquina(maquina.codigo)">
               <i class="fas fa-trash"></i>
             </button>
           </td>

@@ -1,10 +1,9 @@
 /* Main Content */
 .main-content {
   width: 100%;
-  margin-left: -15px;
-  margin-top: 48px;
-  padding: 20px;
+  color: white;
   transition: var(--transition);
+  margin: -10px 15px 15px -10px;
 }
 
 .logo-text {
@@ -18,16 +17,13 @@
 .main-header {
   display: flex;
   align-items: center;
-  padding: 25px 50px;
-  margin-left: 5px;
-  margin-top: -93px;
+  padding: 5px 50px;
+  margin: auto 5px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.2);
+  background-color: #2c3e50;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
   border-bottom: 1px solid #e0e0e0
 }
 
@@ -45,6 +41,45 @@
   font-size: 1.8rem;
   font-weight: 600;
   color: var(--dark);
+}
+/* Mejoras para botón de salir */
+.btn-logout {
+  padding: 8px 10px;
+  background-color: transparent;
+  color: white;
+  border: 1.5px solid black;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.btn-logout:hover {
+  background-color: #f44336;
+  color: white;
+  border-color: #f44336;
+  box-shadow: 0 2px 5px rgba(244, 67, 54, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-logout i {
+  font-size: 14px;
+}
+
+/* Mejora para el área de usuario en el header */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  color: white;
+}
+
+.user-info span {
+  font-weight: 500;
+  color: white;
 }
 
 .user-info {

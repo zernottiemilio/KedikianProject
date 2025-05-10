@@ -10,7 +10,7 @@ import {
 import { FormsModule } from '@angular/forms';
 
 interface Maquina {
-  id: number;
+  codigo: number;
   nombre: string;
   estado: boolean;
   horas_uso: number;
@@ -60,12 +60,12 @@ export class MaquinariaComponent implements OnInit {
   // Cargar datos de prueba (simula una llamada a API)
   cargarDatosDePrueba(): void {
     this.maquinas = [
-      { id: 1, nombre: 'Excavadora HD500', estado: true, horas_uso: 1250 },
-      { id: 2, nombre: 'Tractor T-200', estado: false, horas_uso: 3400 },
-      { id: 3, nombre: 'Grúa Móvil G1000', estado: true, horas_uso: 780 },
-      { id: 4, nombre: 'Bulldozer B50', estado: true, horas_uso: 2100 },
+      { codigo: 1, nombre: 'Excavadora HD500', estado: true, horas_uso: 1250 },
+      { codigo: 2, nombre: 'Tractor T-200', estado: false, horas_uso: 3400 },
+      { codigo: 3, nombre: 'Grúa Móvil G1000', estado: true, horas_uso: 780 },
+      { codigo: 4, nombre: 'Bulldozer B50', estado: true, horas_uso: 2100 },
       {
-        id: 5,
+        codigo: 5,
         nombre: 'Cargadora Frontal CF300',
         estado: false,
         horas_uso: 4500,
@@ -83,7 +83,7 @@ export class MaquinariaComponent implements OnInit {
       resultado = resultado.filter(
         (maquina) =>
           maquina.nombre.toLowerCase().includes(busqueda) ||
-          maquina.id.toString().includes(busqueda)
+          maquina.codigo.toString().includes(busqueda)
       );
     }
 
@@ -136,7 +136,7 @@ export class MaquinariaComponent implements OnInit {
     if (this.modoEdicion && this.maquinaEditando) {
       // Actualizar máquina existente
       const index = this.maquinas.findIndex(
-        (m) => m.id === this.maquinaEditando!.id
+        (m) => m.codigo === this.maquinaEditando!.codigo
       );
       if (index !== -1) {
         this.maquinas[index] = {
@@ -149,9 +149,9 @@ export class MaquinariaComponent implements OnInit {
       }
     } else {
       // Crear nueva máquina
-      const nuevoId = this.generarNuevoId();
+      const nuevoCodigo = this.generarNuevoCodigo();
       const nuevaMaquina: Maquina = {
-        id: nuevoId,
+        codigo: nuevoCodigo,
         nombre: formData.nombre,
         estado: formData.estado,
         horas_uso: formData.horas_uso,
@@ -166,16 +166,16 @@ export class MaquinariaComponent implements OnInit {
     this.cerrarModal();
   }
 
-  // Generar un nuevo ID para la máquina
-  generarNuevoId(): number {
+  // Generar un nuevo código para la máquina
+  generarNuevoCodigo(): number {
     return this.maquinas.length > 0
-      ? Math.max(...this.maquinas.map((m) => m.id)) + 1
+      ? Math.max(...this.maquinas.map((m) => m.codigo)) + 1
       : 1;
   }
 
   // Mostrar confirmación antes de eliminar máquina
-  eliminarMaquina(id: number): void {
-    this.maquinaAEliminar = id;
+  eliminarMaquina(codigo: number): void {
+    this.maquinaAEliminar = codigo;
     this.modalConfirmacionVisible = true;
   }
 
@@ -183,7 +183,7 @@ export class MaquinariaComponent implements OnInit {
   confirmarEliminarMaquina(): void {
     if (this.maquinaAEliminar !== null) {
       const index = this.maquinas.findIndex(
-        (m) => m.id === this.maquinaAEliminar
+        (m) => m.codigo === this.maquinaAEliminar
       );
       if (index !== -1) {
         // Obtener el nombre para el mensaje
