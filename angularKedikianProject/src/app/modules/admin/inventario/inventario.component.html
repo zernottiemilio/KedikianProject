@@ -6,10 +6,13 @@
       <p>Administra el stock y movimientos de productos</p>
     </div>
     <div class="header-actions">
+      <button class="btn btn-primary" (click)="abrirModalNuevoProducto()">
+        <i class="fas fa-plus"></i> Agregar Producto
+      </button>
       <button class="btn btn-primary" (click)="exportarInventarioCSV()">
         <i class="fas fa-file-export"></i> Exportar Inventario
       </button>
-      <button class="btn btn-outline-primary" (click)="exportarMovimientosCSV()">
+      <button class="btn btn-primary" (click)="exportarMovimientosCSV()">
         <i class="fas fa-history"></i> Exportar Movimientos
       </button>
     </div>

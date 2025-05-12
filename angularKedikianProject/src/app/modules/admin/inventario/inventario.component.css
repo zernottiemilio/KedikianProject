@@ -592,6 +592,7 @@ input[type="number"] {
   color: black;
 }
 
+
 .btn-primary:hover {
   background-color: var(--primary-hover);
   border-color: var(--primary-hover);

@@ -43,12 +43,14 @@ export class InventarioComponent implements OnInit {
   // Formularios
   movimientoForm: FormGroup;
   busquedaForm: FormGroup;
+  productoForm: FormGroup; // Nuevo formulario para agregar productos
 
   // Estado del componente
   productoSeleccionado: Producto | null = null;
   modoVisualizacion: 'tabla' | 'tarjetas' = 'tabla';
   cargando = false;
   mostrarHistorial = false;
+  mostrarModalNuevoProducto = false; // Controla la visibilidad del modal
 
   // Paginación
   paginaActual = 1;
@@ -69,6 +71,16 @@ export class InventarioComponent implements OnInit {
       termino: [''],
       tipoFiltro: ['todos'],
     });
+
+    // Inicializar formulario para nuevo producto
+    this.productoForm = this.fb.group({
+      nombre: ['', [Validators.required, Validators.minLength(3)]],
+      codigo_producto: [
+        '',
+        [Validators.required, Validators.pattern('[A-Z]+-[0-9]{3}')],
+      ],
+      inventario: [0, [Validators.required, Validators.min(0)]],
+    });
   }
 
   ngOnInit(): void {
@@ -79,8 +91,110 @@ export class InventarioComponent implements OnInit {
     this.busquedaForm.valueChanges.subscribe(() => {
       this.filtrarProductos();
     });
+
+    // Asignar Math para poder usarlo en la plantilla
+    this.Math = Math;
   }
 
+  // Métodos para el nuevo producto
+  abrirModalNuevoProducto(): void {
+    this.mostrarModalNuevoProducto = true;
+    this.productoForm.reset({ inventario: 0 });
+  }
+
+  cerrarModalNuevoProducto(): void {
+    this.mostrarModalNuevoProducto = false;
+  }
+
+  generarCodigoProducto(): void {
+    // Genera un código de producto basado en el nombre
+    if (this.productoForm.get('nombre')?.value) {
+      const nombre = this.productoForm.get('nombre')?.value.trim();
+      if (nombre) {
+        // Tomar las primeras letras y convertirlas a mayúsculas
+        const prefijo = nombre.split(' ')[0].substring(0, 3).toUpperCase();
+
+        // Encontrar el último número usado para este prefijo
+        let maxNum = 0;
+        this.productos.forEach((producto) => {
+          if (producto.codigo_producto.startsWith(prefijo)) {
+            const num = parseInt(producto.codigo_producto.split('-')[1]);
+            if (num > maxNum) maxNum = num;
+          }
+        });
+
+        // Formatear el nuevo código
+        const nuevoNumero = (maxNum + 1).toString().padStart(3, '0');
+        const codigo = `${prefijo}-${nuevoNumero}`;
+
+        this.productoForm.patchValue({ codigo_producto: codigo });
+      }
+    }
+  }
+
+  agregarNuevoProducto(): void {
+    if (this.productoForm.invalid) {
+      // Marcar todos los campos como tocados para mostrar validaciones
+      Object.keys(this.productoForm.controls).forEach((key) => {
+        const control = this.productoForm.get(key);
+        control?.markAsTouched();
+      });
+      return;
+    }
+
+    const formValue = this.productoForm.value;
+
+    // Crear nuevo producto
+    const nuevoProducto: Producto = {
+      id: this.obtenerSiguienteIdProducto(),
+      nombre: formValue.nombre,
+      codigo_producto: formValue.codigo_producto,
+      inventario: formValue.inventario,
+    };
+
+    // Agregar a la lista de productos
+    this.productos.unshift(nuevoProducto);
+
+    // Actualizar lista filtrada
+    this.filtrarProductos();
+
+    // Si hay inventario inicial, registrar como entrada
+    if (formValue.inventario > 0) {
+      const movimientoInicial: MovimientoProducto = {
+        id: this.movimientos.length + 1,
+        producto_id: nuevoProducto.id,
+        usuario_id: 1,
+        cantidad: formValue.inventario,
+        fecha: new Date(),
+        tipo_transaccion: 'entrada',
+        nombre_producto: nuevoProducto.nombre,
+        codigo_producto: nuevoProducto.codigo_producto,
+      };
+
+      this.movimientos.unshift(movimientoInicial);
+    }
+
+    // Cerrar el modal y mostrar mensaje de éxito
+    this.cerrarModalNuevoProducto();
+
+    // Seleccionar el nuevo producto
+    this.seleccionarProducto(nuevoProducto);
+
+    alert(`Producto "${nuevoProducto.nombre}" agregado con éxito.`);
+  }
+
+  obtenerSiguienteIdProducto(): number {
+    // Encontrar el ID más alto y sumar 1
+    let maxId = 0;
+    this.productos.forEach((producto) => {
+      if (producto.id > maxId) {
+        maxId = producto.id;
+      }
+    });
+    return maxId + 1;
+  }
+
+  // Aquí irían todos los métodos existentes...
   cargarDatosSimulados(): void {
     // Productos de ejemplo
     this.productos = [
@@ -402,7 +516,7 @@ export class InventarioComponent implements OnInit {
     this.productoSeleccionado = null;
     this.movimientoForm.reset({
       tipo_transaccion: 'entrada',
-      cantidad: 1
+      cantidad: 1,
     });
   }
 }
