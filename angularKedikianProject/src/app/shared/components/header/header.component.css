@@ -3,7 +3,7 @@
   width: 100%;
   color: white;
   transition: var(--transition);
-  margin: -10px 15px 15px -10px;
+  margin: -10px -30 ;
 }
 
 .logo-text {
@@ -18,7 +18,7 @@
   display: flex;
   align-items: center;
   padding: 5px 50px;
-  margin: auto 5px;
+  margin: -50px 5px ;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background-color: #2c3e50;
   display: flex;

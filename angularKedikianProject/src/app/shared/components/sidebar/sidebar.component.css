@@ -15,6 +15,13 @@
   --sidebar-hover: rgba(255, 255, 255, 0.15);
   --sidebar-active: rgba(255, 255, 255, 0.2);
   --sidebar-text: rgba(255, 255, 255, 0.9);
+  --sidebar-width: 260px;
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --sidebar-width: 300vw;
+  }
 }
 
 * {

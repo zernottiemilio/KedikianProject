@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { Arido, RegistroArido, Proyecto } from './aridos.component';
+import { AridosComponent, Arido, Proyecto, RegistroArido } from '../../modules/admin/aridos/aridos.component';
 
 @Injectable({
   providedIn: 'root',
@@ -55,31 +55,31 @@ export class AridosService {
         id: 1,
         nombre: 'Edificio Residencial Aurora',
         ubicacion: 'Av. Principal 123',
-        estado: 'activo',
+        estado: 'activo' as 'activo' | 'pausado' | 'completado',
       },
       {
         id: 2,
         nombre: 'Centro Comercial Plaza Norte',
         ubicacion: 'Ruta 25 km 14',
-        estado: 'activo',
+        estado: 'activo' as 'activo' | 'pausado' | 'completado',
       },
       {
         id: 3,
         nombre: 'Puente Costanera',
         ubicacion: 'Sector Costanera Sur',
-        estado: 'pausado',
+        estado: 'pausado' as 'activo' | 'pausado' | 'completado',
       },
       {
         id: 4,
         nombre: 'Urbanización Los Pinos',
         ubicacion: 'Sector Este',
-        estado: 'completado',
+        estado: 'completado' as 'activo' | 'pausado' | 'completado',
       },
       {
         id: 5,
         nombre: 'Ampliación Hospital Central',
         ubicacion: 'Calle Salud 450',
-        estado: 'activo',
+        estado: 'activo' as 'activo' | 'pausado' | 'completado',
       },
     ],
     registros: [
@@ -251,7 +251,11 @@ export class AridosService {
     // Mientras tanto, simular una creación
     const nuevoId =
       Math.max(...this.datosEjemplo.registros.map((r) => r.id)) + 1;
-    const nuevoRegistro = { ...registro, id: nuevoId } as RegistroArido;
+    const nuevoRegistro = {
+      ...registro,
+      id: nuevoId,
+      observaciones: registro.observaciones || ''
+    };
     this.datosEjemplo.registros.push(nuevoRegistro);
     return of(nuevoRegistro);
   }
@@ -267,7 +271,7 @@ export class AridosService {
       (r) => r.id === registro.id
     );
     if (index !== -1) {
-      this.datosEjemplo.registros[index] = registro;
+      this.datosEjemplo.registros[index] = { ...registro, observaciones: registro.observaciones || '' };
       return of(registro);
     }
     return throwError(

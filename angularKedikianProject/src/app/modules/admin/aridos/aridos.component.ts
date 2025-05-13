@@ -58,7 +58,7 @@ export class AridosComponent implements OnInit {
   totalAridosEntregados = 0;
   aridosPorProyecto: { [proyectoId: number]: number } = {};
 
-  constructor(private fb: FormBuilder) {
+  constructor(public fb: FormBuilder) {
     this.registroForm = this.fb.group({
       proyectoId: ['', Validators.required],
       aridoId: ['', Validators.required],
