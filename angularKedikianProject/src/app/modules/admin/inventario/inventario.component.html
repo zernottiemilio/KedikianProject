@@ -7,8 +7,8 @@
     </div>
     <div class="header-actions">
       <button class="btn btn-primary" (click)="abrirModalNuevoProducto()">
-        <i class="fas fa-plus"></i> Agregar Producto
-      </button>
+        <i class="fas fa-plus"></i> Nuevo Producto
+        </button>
       <button class="btn btn-primary" (click)="exportarInventarioCSV()">
         <i class="fas fa-file-export"></i> Exportar Inventario
       </button>
@@ -287,6 +287,71 @@
         <i class="fas fa-box-open no-selection-icon"></i>
         <h3>Seleccione un producto</h3>
         <p>Haga clic en un producto para ver detalles y registrar movimientos</p>
+      </div>
+    </div>
+    <!-- Modal para añadir nuevo producto -->
+    <div class="modal-backdrop" *ngIf="mostrarModalNuevoProducto" (click)="cerrarModalNuevoProducto()"></div>
+    <div class="modal" [class.show]="mostrarModalNuevoProducto" tabindex="-1" role="dialog"
+      aria-labelledby="modalNuevoProducto" aria-hidden="true">
+      <div class="modal-dialog" role="document" (click)="$event.stopPropagation()">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Agregar Nuevo Producto</h5>
+            <button type="button" class="close" aria-label="Close" (click)="cerrarModalNuevoProducto()">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form [formGroup]="productoForm" (ngSubmit)="agregarNuevoProducto()">
+              <div class="form-group">
+                <label for="nombreProducto">Nombre del producto</label>
+                <input type="text" class="form-control" id="nombreProducto" formControlName="nombre"
+                  placeholder="Ej: Monitor Samsung 32'" (blur)="generarCodigoProducto()">
+                <div *ngIf="productoForm.get('nombre')?.invalid && productoForm.get('nombre')?.touched" class="text-danger">
+                  <small *ngIf="productoForm.get('nombre')?.errors?.['required']">Nombre es obligatorio</small>
+                  <small *ngIf="productoForm.get('nombre')?.errors?.['minlength']">El nombre debe tener al menos 3
+                    caracteres</small>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="codigoProducto">Código del producto</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="codigoProducto" formControlName="codigo_producto"
+                    placeholder="Ej: MON-123">
+                  <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-secondary" (click)="generarCodigoProducto()">
+                      <i class="fas fa-sync-alt"></i>
+                    </button>
+                  </div>
+                </div>
+                <small class="form-text text-muted">Formato: XXX-123</small>
+                <div *ngIf="productoForm.get('codigo_producto')?.invalid && productoForm.get('codigo_producto')?.touched"
+                  class="text-danger">
+                  <small *ngIf="productoForm.get('codigo_producto')?.errors?.['required']">Código es obligatorio</small>
+                  <small *ngIf="productoForm.get('codigo_producto')?.errors?.['pattern']">Formato inválido (debe ser
+                    XXX-123)</small>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="inventarioInicial">Inventario inicial</label>
+                <input type="number" class="form-control" id="inventarioInicial" formControlName="inventario" min="0">
+                <small class="form-text text-muted">Deja en 0 si no hay stock inicial</small>
+                <div *ngIf="productoForm.get('inventario')?.invalid && productoForm.get('inventario')?.touched"
+                  class="text-danger">
+                  <small *ngIf="productoForm.get('inventario')?.errors?.['required']">Inventario es obligatorio</small>
+                  <small *ngIf="productoForm.get('inventario')?.errors?.['min']">El inventario no puede ser negativo</small>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="cerrarModalNuevoProducto()">Cancelar</button>
+                <button type="submit" class="btn btn-primary" [disabled]="productoForm.invalid">Guardar Producto</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   </div>

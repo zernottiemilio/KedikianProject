@@ -77,6 +77,21 @@ import { HeaderComponent } from '../../shared/components/header/header.component
           margin-right: auto;
         }
       }
+
+      @media (min-width: 1920px) {
+        .content-area {
+          margin-left: 250px; /* Ancho del sidebar */
+          width: calc(100% - 250px);
+        }
+
+        .main-content {
+          padding: 2.5rem;
+          max-width: 1400px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+      }
+
       /* Estilos para pantallas grandes (desktop) */
       @media (min-width: 992px) {
         .header {
