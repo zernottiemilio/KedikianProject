@@ -334,6 +334,7 @@ h2:after {
 
 .card-title {
   margin: 0;
+  color: black;
   font-size: 16px;
   font-weight: 500;
   white-space: nowrap;

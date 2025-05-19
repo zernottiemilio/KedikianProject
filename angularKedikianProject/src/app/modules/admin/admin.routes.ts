@@ -8,6 +8,7 @@ import { UsersGestionComponent } from './users-gestion/users-gestion.component';
 import { InventarioComponent } from './inventario/inventario.component';
 import { BalanceComponent } from './balance/balance.component';
 import { AridosComponent } from './aridos/aridos.component';
+import { InformesComponent } from './informes/informes.component';
 
 export const adminRoutes = [
   {
@@ -21,6 +22,7 @@ export const adminRoutes = [
       { path: 'gestion-inventario', component: InventarioComponent },
       { path: 'balance', component: BalanceComponent },
       { path: 'aridos', component: AridosComponent },
+      { path: 'informes', component: InformesComponent },
     ],
   },
 ];

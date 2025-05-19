@@ -489,7 +489,7 @@ textarea.form-control {
 }
 
 .action-button {
-  background-color: #c0392b;
+  background-color: transparent;
   border: none;
   cursor: pointer;
   font-size: 14px;
@@ -499,7 +499,7 @@ textarea.form-control {
 }
 
 .action-button:hover {
-  background-color: #eee;
+  background-color: #888;
 }
 
 .action-button.view {

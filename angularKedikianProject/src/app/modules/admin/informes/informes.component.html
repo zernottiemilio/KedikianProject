@@ -1,0 +1,106 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<div class="container-informes">
+  <div class="header-section">
+    <h1 class="titulo-principal">Informes y Reportes</h1>
+  </div>
+
+  <!-- Panel de resumen -->
+  <div class="panel-resumen">
+    <div class="tarjeta-resumen">
+      <a [routerLink]="['/gestion-proyectos']" routerLinkActive="active" class="btn btn-sm">
+      <h3 class="tarjeta-titulo">Proyectos Activos</h3>
+      <p class="tarjeta-valor">{{resumen.proyectosActivos}}</p>
+      </a>
+    </div>
+    <div class="tarjeta-resumen">
+      <a [routerLink]="['/gestion-operarios']" routerLinkActive="active" class="btn btn-sm">
+      <h3 class="tarjeta-titulo">Horas Registradas</h3>
+      <p class="tarjeta-valor">{{resumen.horasTotales}}</p>
+      </a>
+    </div>
+    <div class="tarjeta-resumen">
+      <a [routerLink]="['/aridos']" routerLinkActive="active" class="btn btn-sm">
+      <h3 class="tarjeta-titulo">Material Entregado</h3>
+      <p class="tarjeta-valor">{{resumen.materialesEntregados}}</p>
+      </a>
+    </div>
+    <div class="tarjeta-resumen">
+      <h3 class="tarjeta-titulo">Gasto en Combustible</h3>
+      <p class="tarjeta-valor">{{resumen.gastoCombustible}}</p>
+    </div>
+  </div>
+
+  <!-- Filtros de informes -->
+  <div class="panel-filtros">
+    <div class="filtros-cabecera">
+      <h2 class="filtros-titulo">Listado de Informes</h2>
+      <div class="filtros-controles">
+        <span class="filtros-etiqueta">Filtrar por:</span>
+        <div class="filtros-selector">
+          <select class="selector" [(ngModel)]="filtroTipo">
+            <option value="todos">Todos los tipos</option>
+            <option value="estadisticas">Estadísticas</option>
+            <option value="reporte">Reportes</option>
+          </select>
+          <span class="material-icons icono-desplegable"><i class="fas fa-chevron-down"></i></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de informes -->
+  <div class="panel-informes">
+    <div *ngIf="cargando" class="cargando">
+      <div class="spinner"></div>
+      <span class="mensaje-cargando">Cargando informes...</span>
+    </div>
+
+    <div *ngIf="!cargando && informesFiltrados.length === 0" class="sin-resultados">
+      <span class="material-icons" style="font-size: 48px; color: #dee2e6; margin-bottom: 1rem;">search_off</span>
+      <p>No se encontraron informes con los filtros seleccionados.</p>
+    </div>
+
+    <ul *ngIf="!cargando && informesFiltrados.length > 0" class="lista-informes">
+      <li *ngFor="let informe of informesFiltrados" class="item-informe">
+        <div class="informe-contenido">
+          <div class="informe-encabezado">
+            <div class="informe-titulo-container">
+              <div class="icono-tipo" [ngClass]="getClaseIcono(informe.tipo)">
+                <span class="material-icons">
+                  {{informe.tipo === 'estadisticas' ? 'pie_chart' : 'description'}}
+                </span>
+              </div>
+              <div>
+                <h3 class="informe-titulo">{{informe.titulo}}</h3>
+                <div class="informe-descripcion">
+                  <p>{{informe.descripcion}}</p>
+                </div>
+              </div>
+            </div>
+            <div class="informe-acciones">
+              <span class="etiqueta-estatus" [ngClass]="getColorEstatus(informe.estatus)">
+                {{getNombreEstatus(informe.estatus)}}
+              </span>
+              <button class="boton-descarga" (click)="descargarInforme(informe.id)" title="Descargar informe">
+                <span class="fa-solid fa-download"></span>
+              </button>
+            </div>
+          </div>
+          <div class="informe-meta">
+            <div class="informe-fecha">
+              <span class="material-icons icono-fecha">fecha</span>
+              {{informe.fecha}}
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Botón para generar nuevo informe -->
+  <div class="contenedor-boton-nuevo">
+    <button class="boton-nuevo-informe" (click)="generarNuevoInforme()">
+      <span class="material-icons"></span>
+      Generar Nuevo Informe
+    </button>
+  </div>

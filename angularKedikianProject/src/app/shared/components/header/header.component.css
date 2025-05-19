@@ -103,7 +103,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (<=768px) {
   .sidebar {
     width: 70px;
     overflow: hidden;
@@ -126,6 +126,8 @@
   }
 
   .main-content {
-    margin-left: 70px;
+    margin-left: 10px;
   }
 }
+
+

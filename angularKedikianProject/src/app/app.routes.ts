@@ -12,6 +12,7 @@ import { BalanceComponent } from './modules/admin/balance/balance.component';
 import { IngresoComponent } from './modules/admin/balance/ingreso/ingreso.component';
 import { EgresoComponent } from './modules/admin/balance/egreso/egreso.component';
 import { AridosComponent } from './modules/admin/aridos/aridos.component';
+import { InformesComponent } from './modules/admin/informes/informes.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -29,6 +30,7 @@ export const routes: Routes = [
       { path: 'gestion-inventario', component: InventarioComponent },
       { path: 'balance', component: BalanceComponent },
       { path: 'aridos', component: AridosComponent },
+      { path: 'informes', component: InformesComponent },
       // Otras rutas protegidas que deberían usar el layout admin
     ],
   },
