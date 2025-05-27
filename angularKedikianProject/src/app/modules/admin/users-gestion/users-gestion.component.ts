@@ -18,7 +18,7 @@ interface User {
   email: string;
   hash_contrasena?: string;
   estado: boolean;
-  roles: string;
+  roles: 'administrador' | 'operario';
   fecha_creacion: Date;
 }
 
@@ -39,7 +39,7 @@ class MockUserService {
       nombre: 'Admin Usuario',
       email: 'admin@example.com',
       estado: true,
-      roles: 'admin',
+      roles: 'administrador',
       fecha_creacion: new Date('2024-04-15'),
     },
     {
@@ -47,15 +47,15 @@ class MockUserService {
       nombre: 'Usuario Estándar',
       email: 'usuario@example.com',
       estado: true,
-      roles: 'user',
+      roles: 'operario',
       fecha_creacion: new Date('2024-04-16'),
     },
     {
       id: 3,
-      nombre: 'Editor Contenido',
+      nombre: 'Operario Test',
       email: 'editor@example.com',
       estado: false,
-      roles: 'editor',
+      roles: 'operario',
       fecha_creacion: new Date('2024-04-17'),
     },
     {
@@ -63,15 +63,15 @@ class MockUserService {
       nombre: 'Usuario Test 1',
       email: 'test1@example.com',
       estado: true,
-      roles: 'user',
+      roles: 'operario',
       fecha_creacion: new Date('2024-04-18'),
     },
     {
       id: 5,
-      nombre: 'Usuario Test 2',
+      nombre: 'Admin Test',
       email: 'test2@example.com',
       estado: false,
-      roles: 'editor',
+      roles: 'administrador',
       fecha_creacion: new Date('2024-04-19'),
     },
   ];
@@ -93,7 +93,7 @@ class MockUserService {
           nombre: userData.nombre || '',
           email: userData.email || '',
           estado: userData.estado !== undefined ? userData.estado : true,
-          roles: userData.roles || 'user',
+          roles: userData.roles || 'operario',
           fecha_creacion: new Date(),
         };
         this.mockUsers.push(newUser);
@@ -185,9 +185,8 @@ export class UsersGestionComponent implements OnInit {
   itemsPerPage = 10;
   currentPage = 1;
   totalPages = 1;
-
-  // Opciones
-  roleOptions = ['admin', 'user', 'editor'];
+  // Opciones de roles disponibles
+  roleOptions = ['administrador', 'operario'] as const;
 
   // Ordenamiento
   sortColumn = 'id';
@@ -196,6 +195,9 @@ export class UsersGestionComponent implements OnInit {
   // Modales
   private userModal: any;
   private deleteConfirmModal: any;
+  isEditModalOpen = false;
+  isDeleteModalOpen = false;
+  modalOverlayActive = false;
 
   // Servicios
   private userService = new MockUserService();
@@ -207,7 +209,7 @@ export class UsersGestionComponent implements OnInit {
       nombre: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       contrasena: ['', [Validators.minLength(8)]],
-      roles: ['user', [Validators.required]],
+      roles: ['operario', [Validators.required]],
       estado: [true, [Validators.required]],
     });
   }
@@ -385,25 +387,11 @@ export class UsersGestionComponent implements OnInit {
     }
   }
 
-  // Métodos para gestión de usuarios
-  openAddUserModal(): void {
-    this.isEditMode = false;
-    this.userForm.reset({
-      roles: 'user',
-      estado: true,
-    });
-    this.userForm
-      .get('contrasena')
-      ?.setValidators([Validators.required, Validators.minLength(8)]);
-    this.userForm.get('contrasena')?.updateValueAndValidity();
-
-    if (this.userModal) {
-      this.userModal.show();
-    }
-  }
-
-  editUser(user: User): void {
+  // Modificar las funciones existentes para usar los nuevos estados
+  openEditUserModal(user: User): void {
     this.isEditMode = true;
+    this.isEditModalOpen = true;
+    this.modalOverlayActive = true;
     this.userForm.patchValue({
       id: user.id,
       nombre: user.nombre,
@@ -411,59 +399,53 @@ export class UsersGestionComponent implements OnInit {
       roles: user.roles,
       estado: user.estado,
     });
-
-    // Eliminar la validación de contraseña para edición
     this.userForm.get('contrasena')?.clearValidators();
     this.userForm.get('contrasena')?.updateValueAndValidity();
+  }
 
-    if (this.userModal) {
-      this.userModal.show();
-    }
+  openDeleteModal(user: User): void {
+    this.userToDelete = user;
+    this.isDeleteModalOpen = true;
+    this.modalOverlayActive = true;
+  }
+
+  closeModals(): void {
+    this.isEditModalOpen = false;
+    this.isDeleteModalOpen = false;
+    this.modalOverlayActive = false;
+    this.userForm.reset();
+    this.userToDelete = null;
   }
 
   saveUser(): void {
-    if (this.userForm.invalid) {
-      return;
-    }
+    if (this.userForm.invalid) return;
 
     const userData = this.userForm.value;
 
-    if (this.isEditMode) {
-      this.userService.updateUser(userData).subscribe({
-        next: (updatedUser) => {
-          this.toastr.success('Usuario actualizado correctamente', 'Éxito');
-          this.loadUsers();
-          if (this.userModal) {
-            this.userModal.hide();
-          }
-        },
-        error: (err) => {
-          this.toastr.error('Error al actualizar el usuario', 'Error');
-          console.error(err);
-        },
-      });
-    } else {
-      this.userService.createUser(userData).subscribe({
-        next: (newUser) => {
-          this.toastr.success('Usuario creado correctamente', 'Éxito');
-          this.loadUsers();
-          if (this.userModal) {
-            this.userModal.hide();
-          }
-        },
-        error: (err) => {
-          this.toastr.error('Error al crear el usuario', 'Error');
-          console.error(err);
-        },
-      });
-    }
+    const operation = this.isEditMode
+      ? this.userService.updateUser(userData)
+      : this.userService.createUser(userData);
+
+    operation.subscribe({
+      next: () => {
+        const message = this.isEditMode
+          ? 'Usuario actualizado correctamente'
+          : 'Usuario creado correctamente';
+        this.toastr.success(message, 'Éxito');
+        this.loadUsers();
+        this.closeModals();
+      },
+      error: (err) => {
+        const action = this.isEditMode ? 'actualizar' : 'crear';
+        this.toastr.error(`Error al ${action} el usuario`, 'Error');
+        console.error(err);
+      },
+    });
   }
 
   deleteUser(user: User): void {
     this.userToDelete = user;
-    if (this.deleteConfirmModal) {
-      this.deleteConfirmModal.show();
-    }
+    this.openDeleteModal(user);
   }
 
   confirmDelete(): void {
@@ -488,4 +470,36 @@ export class UsersGestionComponent implements OnInit {
       },
     });
   }
+
+  openAddUserModal(): void {
+    this.isEditMode = false;
+    this.isEditModalOpen = true;
+    this.modalOverlayActive = true;
+    this.userForm.reset({
+      roles: 'operario',
+      estado: true,
+    });
+    this.userForm
+      .get('contrasena')
+      ?.setValidators([Validators.required, Validators.minLength(8)]);
+    this.userForm.get('contrasena')?.updateValueAndValidity();
+  }
+
+  editUser(user: User): void {
+    this.isEditMode = true;
+    this.isEditModalOpen = true;
+    this.modalOverlayActive = true;
+    this.userForm.patchValue({
+      id: user.id,
+      nombre: user.nombre,
+      email: user.email,
+      roles: user.roles,
+      estado: user.estado,
+    });
+    this.userForm.get('contrasena')?.clearValidators();
+    this.userForm.get('contrasena')?.updateValueAndValidity();
+  }
+}
+function deleteUser(user: any, User: any) {
+  throw new Error('Function not implemented.');
 }

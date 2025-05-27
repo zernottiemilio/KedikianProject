@@ -1,7 +1,8 @@
 // src/app/services/project.service.ts
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-
+import { HttpClient } from '@angular/common/http';
+import { List } from 'immutable';
 export interface Project {
   id: number;
   nombre: string;
@@ -101,8 +102,8 @@ export class ProjectService {
   ];
 
   private projectsSubject = new BehaviorSubject<Project[]>(this.projects);
-
-  constructor() {
+  private apiUrl = 'http://localhost:8000/api'; // Cambia esto a tu URL de API real
+  constructor(private http: HttpClient) {
     this.calculateDaysRemaining();
   }
 
@@ -117,6 +118,14 @@ export class ProjectService {
 
   getProjects(): Observable<Project[]> {
     return this.projectsSubject.asObservable();
+  }
+
+  getLastProjects(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/proyectos/ultimos`);
+  }
+
+  findByIdMaquina(id: number): Observable<List<any>> {
+    return this.http.get<List<any>>(`${this.apiUrl}/proyectos/maquinas/${id}`);
   }
 
   getActiveProjects(): Observable<Project[]> {

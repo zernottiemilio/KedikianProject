@@ -2,11 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-export const environment = {
-  production: false,
-  apiUrl: 'http://localhost:8000', // URL actualizada a tu backend
-};
+import { environment } from '../../../environments/environment'; // Asegúrate de que la ruta sea correcta
 
 @Injectable({
   providedIn: 'root',

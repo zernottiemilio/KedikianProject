@@ -3,22 +3,17 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, delay, map } from 'rxjs/operators';
 
-// Importamos configuración de environment
-// Nota: Debes crear estos archivos si no existen
-export const environment = {
-  production: false,
-  apiUrl: 'https://api.tuempresa.com/api',
-  useSimulatedData: true, // Cambiar a false cuando exista la base de datos real
-};
+import { environment } from '../../../environments/environment';
 
 // Interfaces para los datos del servicio (exportadas para su uso en componentes)
 export interface Informe {
   id: number;
   titulo: string;
+  tipo: 'gastos' | 'proyectos' | 'horas' | 'combustible';
   descripcion: string;
   fecha: string;
-  tipo: 'estadisticas' | 'reporte';
-  estatus: 'completado' | 'pendiente' | 'en_proceso';
+  estatus: 'pendiente' | 'en-proceso' | 'completado';
+  valor?: number;
 }
 
 export interface ResumenDatos {
@@ -38,32 +33,34 @@ export interface InformesResponse {
 })
 export class InformesService {
   // URL base de la API
-  private apiUrl = environment.apiUrl + '/informes';
+  private apiUrl = `${environment.apiUrl}/informes`;
 
   // Datos simulados para desarrollo
   private informesSimulados: Informe[] = [
     {
       id: 1,
-      titulo: 'Informe de horas trabajadas',
-      descripcion: 'Resumen de horas trabajadas por proyecto',
-      fecha: '14/05/2025',
-      tipo: 'estadisticas',
+      titulo: 'Informe de Gastos Q1',
+      tipo: 'gastos',
+      descripcion: 'Resumen de gastos del primer trimestre',
+      fecha: '2025-03-31',
       estatus: 'completado',
+      valor: 15000,
     },
     {
       id: 2,
-      titulo: 'Consumo de combustible mensual',
-      descripcion: 'Análisis de gastos en combustible por vehículo',
-      fecha: '10/05/2025',
-      tipo: 'estadisticas',
-      estatus: 'completado',
+      titulo: 'Registro de Horas Abril',
+      tipo: 'horas',
+      descripcion: 'Horas registradas por operarios',
+      fecha: '2025-04-30',
+      estatus: 'pendiente',
+      valor: 160,
     },
     {
       id: 3,
       titulo: 'Productividad de maquinaria',
       descripcion: 'Rendimiento de retroexcavadoras y camiones',
       fecha: '05/05/2025',
-      tipo: 'estadisticas',
+      tipo: 'proyectos',
       estatus: 'completado',
     },
     {
@@ -71,7 +68,7 @@ export class InformesService {
       titulo: 'Entrega de materiales',
       descripcion: 'Registro de entregas de áridos por proyecto',
       fecha: '01/05/2025',
-      tipo: 'reporte',
+      tipo: 'proyectos',
       estatus: 'pendiente',
     },
     {
@@ -79,7 +76,7 @@ export class InformesService {
       titulo: 'Avance de proyecto Carretera Norte',
       descripcion: 'Porcentaje de avance y tareas completadas',
       fecha: '28/04/2025',
-      tipo: 'reporte',
+      tipo: 'proyectos',
       estatus: 'completado',
     },
     {
@@ -87,15 +84,15 @@ export class InformesService {
       titulo: 'Mantenimientos programados',
       descripcion: 'Calendario de mantenimientos de maquinaria',
       fecha: '25/04/2025',
-      tipo: 'reporte',
-      estatus: 'en_proceso',
+      tipo: 'proyectos',
+      estatus: 'en-proceso',
     },
     {
       id: 7,
       titulo: 'Consumo de agua en obra',
       descripcion: 'Medición del consumo de agua por proyecto',
       fecha: '20/04/2025',
-      tipo: 'estadisticas',
+      tipo: 'proyectos',
       estatus: 'completado',
     },
     {
@@ -103,7 +100,7 @@ export class InformesService {
       titulo: 'Incidentes de seguridad',
       descripcion: 'Reporte de incidentes y medidas adoptadas',
       fecha: '15/04/2025',
-      tipo: 'reporte',
+      tipo: 'proyectos',
       estatus: 'completado',
     },
   ];
@@ -174,6 +171,33 @@ export class InformesService {
     return of(informe).pipe(delay(300));
   }
 
+  private actualizarResumen(tipo: string, valor?: number): void {
+    if (valor === undefined) return;
+
+    switch (tipo) {
+      case 'proyectos':
+        this.resumenDatosSimulado.proyectosActivos += 1;
+        break;
+      case 'horas':
+        this.resumenDatosSimulado.horasTotales += valor;
+        break;
+      case 'materiales':
+        const materialesActuales =
+          parseFloat(this.resumenDatosSimulado.materialesEntregados) || 0;
+        this.resumenDatosSimulado.materialesEntregados = `${
+          materialesActuales + valor
+        } m³`;
+        break;
+      case 'combustible':
+        const gastoActual =
+          parseFloat(
+            this.resumenDatosSimulado.gastoCombustible.replace('$', '')
+          ) || 0;
+        this.resumenDatosSimulado.gastoCombustible = `$${gastoActual + valor}`;
+        break;
+    }
+  }
+
   /**
    * Crea un nuevo informe
    * @param informe Datos del nuevo informe
@@ -198,7 +222,11 @@ export class InformesService {
     const nuevoId =
       Math.max(...this.informesSimulados.map((inf) => inf.id)) + 1;
     const nuevoInforme = { ...informe, id: nuevoId } as Informe;
-    this.informesSimulados.push(nuevoInforme);
+
+    // Actualizar datos simulados
+    this.informesSimulados.unshift(nuevoInforme);
+    this.actualizarResumen(nuevoInforme.tipo, nuevoInforme.valor);
+
     return of(nuevoInforme).pipe(delay(400));
   }
 
@@ -360,7 +388,7 @@ export class InformesService {
    * @returns Observable con el informe generado
    */
   generarInformePersonalizado(parametros: {
-    tipo: 'estadisticas' | 'reporte';
+    tipo: 'gastos' | 'proyectos' | 'horas' | 'combustible';
     fechaInicio: string;
     fechaFin: string;
     proyectoId?: number;
@@ -385,8 +413,7 @@ export class InformesService {
     const nuevoId =
       Math.max(...this.informesSimulados.map((inf) => inf.id)) + 1;
 
-    let titulo =
-      parametros.tipo === 'estadisticas' ? 'Estadísticas ' : 'Reporte ';
+    let titulo = parametros.tipo === 'gastos' ? 'Estadísticas ' : 'Reporte ';
 
     titulo += `del ${parametros.fechaInicio} al ${parametros.fechaFin}`;
 

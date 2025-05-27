@@ -27,14 +27,13 @@
             <input type="text" class="form-control form-control-sm" id="filter-email" [(ngModel)]="filters.email"
               (input)="applyFilters()">
           </div>
-          <div class="filter-item">
+          <div class="filter-item ml-auto">
             <label for="filter-roles">Rol</label>
             <select class="form-select form-select-sm" id="filter-roles" [(ngModel)]="filters.roles"
               (change)="applyFilters()">
               <option value="">Todos</option>
-              <option *ngFor="let role of roleOptions" [value]="role">
-                {{role === 'admin' ? 'Administrador' : role === 'user' ? 'Usuario' : 'Editor'}}
-              </option>
+              <option value="administrador">Administrador</option>
+              <option value="operario">Operario</option>
             </select>
           </div>
           <div class="filter-item">
@@ -46,7 +45,7 @@
               <option [ngValue]="false">Inactivo</option>
             </select>
           </div>
-          <div class="filter-actions">
+          <div class="filter-item">
             <button class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
               <i class="fas fa-times"></i> Limpiar
             </button>
@@ -110,80 +109,67 @@
   </div>
 </div>
 
-<!-- Modal para añadir/editar usuario (centrado) -->
-<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="userModalLabel">{{ isEditMode ? 'Editar Usuario' : 'Nuevo Usuario' }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- Modal de Edición -->
+<div class="modal-overlay" [class.active]="isEditModalOpen">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>{{ isEditMode ? 'Editar Usuario' : 'Nuevo Usuario' }}</h2>
+      <button class="modal-close" (click)="closeModals()">&times;</button>
+    </div>
+    <form [formGroup]="userForm" (ngSubmit)="saveUser()">
+      <div class="form-group">
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" formControlName="nombre" class="form-control" placeholder="Ingrese el nombre">
       </div>
-      <div class="modal-body">
-        <form [formGroup]="userForm">
-          <div class="mb-3">
-            <label for="nombre" class="form-label">Nombre</label>
-            <input type="text" class="form-control" id="nombre" formControlName="nombre">
-            <div *ngIf="userForm.get('nombre')?.invalid && userForm.get('nombre')?.touched" class="text-danger">
-              El nombre es obligatorio
-            </div>
-          </div>
-          <div class="mb-3">
-            <label for="email" class="form-label">Email</label>
-            <input type="email" class="form-control" id="email" formControlName="email">
-            <div *ngIf="userForm.get('email')?.invalid && userForm.get('email')?.touched" class="text-danger">
-              Email inválido o ya existe
-            </div>
-          </div>
-          <div class="mb-3" *ngIf="!isEditMode">
-            <label for="contrasena" class="form-label">Contraseña</label>
-            <input type="password" class="form-control" id="contrasena" formControlName="contrasena">
-            <div *ngIf="userForm.get('contrasena')?.invalid && userForm.get('contrasena')?.touched" class="text-danger">
-              La contraseña debe tener al menos 8 caracteres
-            </div>
-          </div>
-          <div class="mb-3">
-            <label for="roles" class="form-label">Roles</label>
-            <select class="form-select" id="roles" formControlName="roles">
-              <option *ngFor="let role of roleOptions" [value]="role">
-                {{role === 'admin' ? 'Administrador' : role === 'user' ? 'Usuario' : 'Editor'}}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="estado" class="form-label">Estado</label>
-            <select class="form-select" id="estado" formControlName="estado">
-              <option [ngValue]="true">Activo</option>
-              <option [ngValue]="false">Inactivo</option>
-            </select>
-          </div>
-        </form>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" formControlName="email" class="form-control" placeholder="Ingrese el email">
       </div>
+
+      <div class="form-group" *ngIf="!isEditMode">
+        <label for="contrasena">Contraseña</label>
+        <input type="password" id="contrasena" formControlName="contrasena" class="form-control" placeholder="Ingrese la contraseña">
+      </div>
+
+      <div class="form-group">
+        <label for="roles">Rol</label>
+        <select id="roles" formControlName="roles" class="form-control">
+          <option *ngFor="let role of roleOptions" [value]="role">
+            {{role === 'administrador' ? 'Administrador' : 'Operario'}}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="estado">Estado</label>
+        <select id="estado" formControlName="estado" class="form-control">
+          <option [ngValue]="true">Activo</option>
+          <option [ngValue]="false">Inactivo</option>
+        </select>
+      </div>
+
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary" [disabled]="userForm.invalid" (click)="saveUser()">
-          {{ isEditMode ? 'Actualizar' : 'Guardar' }}
+        <button type="button" class="btn btn-secondary" (click)="closeModals()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="userForm.invalid">
+          {{ isEditMode ? 'Guardar Cambios' : 'Crear Usuario' }}
         </button>
       </div>
-    </div>
+    </form>
   </div>
 </div>
 
-<!-- Modal de confirmación para eliminar (centrado) -->
-<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Confirmar eliminación</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <p>¿Está seguro que desea eliminar al usuario <strong>{{ userToDelete?.nombre }}</strong>?</p>
-        <p class="text-danger">Esta acción no se puede deshacer.</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-danger" (click)="confirmDelete()">Eliminar</button>
-      </div>
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal-overlay" [class.active]="isDeleteModalOpen">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>Confirmar Eliminación</h2>
+      <button class="modal-close" (click)="closeModals()">&times;</button>
+    </div>
+    <p>¿Estás seguro de que deseas eliminar al usuario "{{ userToDelete?.nombre }}"?</p>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModals()">Cancelar</button>
+      <button type="button" class="btn btn-danger" (click)="confirmDelete()">Eliminar</button>
     </div>
   </div>
 </div>

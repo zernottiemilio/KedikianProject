@@ -1072,3 +1072,226 @@ label {
     transform: translateY(0);
   }
 }
+
+/* Responsive Design Mejorado */
+@media (max-width: 1200px) {
+  .productos-tarjetas {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 15px;
+  }
+}
+
+@media (max-width: 991px) {
+  .main-content {
+    flex-direction: column;
+    padding: 10px;
+  }
+
+  .detalle-panel {
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .search-form {
+    flex-direction: column;
+  }
+
+  .input-group {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .inventario-container {
+    padding: 10px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 10px 0;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .productos-tabla {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .productos-tabla table {
+    min-width: 650px;
+  }
+
+  .filter-options {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .filter-group {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 5px;
+  }
+
+  .filter-group::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .filter-group::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+
+  .view-toggle {
+    width: 100%;
+    margin: 10px 0;
+  }
+
+  .btn-group-toggle {
+    flex-wrap: nowrap;
+  }
+
+  .card-header {
+    padding: 12px;
+  }
+
+  .card-body {
+    padding: 12px;
+  }
+
+  .stock-indicator {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 576px) {
+  .productos-tarjetas {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 10px;
+  }
+
+  .producto-card {
+    margin: 0;
+  }
+
+  .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+
+  .modal-header {
+    padding: 0.75rem;
+  }
+
+  .modal-body {
+    padding: 0.75rem;
+  }
+
+  .modal-footer {
+    padding: 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+
+  .pagination-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .pagination {
+    order: 2;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .pagination-info {
+    order: 1;
+    text-align: center;
+  }
+
+  .page-link {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+  }
+
+  .search-panel {
+    padding: 1rem;
+  }
+
+  .movimiento-form {
+    padding: 15px;
+  }
+
+  .btn-agregar {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .actions-btns {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .actions-btns .btn {
+    width: 100%;
+  }
+}
+
+/* Mejoras en la usabilidad táctil */
+@media (hover: none) {
+  .btn,
+  .page-link,
+  .filter-group label.btn {
+    min-height: 44px; /* Mejorar área táctil */
+  }
+
+  .producto-card:hover {
+    transform: none; /* Eliminar hover en dispositivos táctiles */
+  }
+
+  .form-control,
+  select.form-control {
+    font-size: 16px; /* Evitar zoom en iOS */
+    min-height: 44px;
+  }
+
+  .input-group .input-group-append button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Orientación específica para dispositivos móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .modal-dialog {
+    max-height: 100vh;
+  }
+
+  .modal-body {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+  }
+}

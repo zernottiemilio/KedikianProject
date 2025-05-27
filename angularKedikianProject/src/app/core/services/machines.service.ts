@@ -3,11 +3,19 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-interface Maquina {
+export interface ProyectoAsignado {
   id: number;
+  nombre: string;
+  fechaAsignacion: Date;
+}
+
+export interface Maquina {
+  id: number;
+  codigo: string;
   nombre: string;
   estado: boolean;
   horas_uso: number;
+  proyectos: ProyectoAsignado[];
 }
 
 @Injectable({

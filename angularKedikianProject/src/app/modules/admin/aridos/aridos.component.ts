@@ -6,8 +6,7 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
-import { CommonModule, NgClass } from '@angular/common';
-import { Observable, of } from 'rxjs';
+import { CommonModule } from '@angular/common';
 
 // Interfaces
 export interface Arido {
@@ -36,6 +35,7 @@ export interface Proyecto {
   ubicacion: string;
   estado: 'activo' | 'pausado' | 'completado';
 }
+
 @Component({
   selector: 'app-aridos',
   standalone: true,
@@ -44,21 +44,20 @@ export interface Proyecto {
   styleUrls: ['./aridos.component.css'],
 })
 export class AridosComponent implements OnInit {
-  // Propiedades
   registroForm: FormGroup;
   registros: RegistroArido[] = [];
+  registrosFiltrados: RegistroArido[] = [];
   proyectos: Proyecto[] = [];
   aridos: Arido[] = [];
-  filtroProyecto: number | null = null;
-  filtroArido: number | null = null;
+
+  // Estado de los modales
+  mostrarModal = false;
+  mostrarModalConfirmacion = false;
   modoEdicion = false;
   registroEditandoId: number | null = null;
+  registroAEliminar: RegistroArido | null = null;
 
-  // Propiedades para estadísticas
-  totalAridosEntregados = 0;
-  aridosPorProyecto: { [proyectoId: number]: number } = {};
-
-  constructor(public fb: FormBuilder) {
+  constructor(private fb: FormBuilder) {
     this.registroForm = this.fb.group({
       proyectoId: ['', Validators.required],
       aridoId: ['', Validators.required],
@@ -73,12 +72,120 @@ export class AridosComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Cargar datos de prueba (después se reemplazarán con llamadas a API)
     this.cargarDatosDePrueba();
-    this.calcularEstadisticas();
+    this.actualizarRegistrosFiltrados();
   }
 
-  // Método para cargar datos temporales de prueba
+  actualizarRegistrosFiltrados(): void {
+    this.registrosFiltrados = [...this.registros];
+  }
+
+  // Métodos para el modal de registro/edición
+  abrirModalAgregar(): void {
+    this.modoEdicion = false;
+    this.registroEditandoId = null;
+    this.registroForm.reset({
+      fechaEntrega: new Date().toISOString().split('T')[0],
+    });
+    this.mostrarModal = true;
+  }
+
+  cerrarModal(): void {
+    this.mostrarModal = false;
+    this.registroForm.reset();
+    this.modoEdicion = false;
+    this.registroEditandoId = null;
+  }
+
+  editarRegistro(registro: RegistroArido): void {
+    this.modoEdicion = true;
+    this.registroEditandoId = registro.id;
+    this.registroForm.patchValue({
+      proyectoId: registro.proyectoId,
+      aridoId: registro.aridoId,
+      cantidad: registro.cantidad,
+      fechaEntrega: new Date(registro.fechaEntrega).toISOString().split('T')[0],
+      operario: registro.operario,
+      observaciones: registro.observaciones || '',
+    });
+    this.mostrarModal = true;
+  }
+
+  // Métodos para el modal de confirmación de eliminación
+  confirmarEliminar(registro: RegistroArido): void {
+    this.registroAEliminar = registro;
+    this.mostrarModalConfirmacion = true;
+  }
+
+  cancelarEliminar(): void {
+    this.registroAEliminar = null;
+    this.mostrarModalConfirmacion = false;
+  }
+
+  eliminarRegistro(): void {
+    if (this.registroAEliminar) {
+      const index = this.registros.findIndex(
+        (r) => r.id === this.registroAEliminar!.id
+      );
+      if (index !== -1) {
+        this.registros.splice(index, 1);
+        this.actualizarRegistrosFiltrados();
+      }
+      this.mostrarModalConfirmacion = false;
+      this.registroAEliminar = null;
+    }
+  }
+
+  // Método para guardar/actualizar registro
+  agregarRegistro(): void {
+    if (this.registroForm.valid) {
+      const formData = this.registroForm.value;
+      const proyecto = this.proyectos.find(
+        (p) => p.id === +formData.proyectoId
+      );
+      const arido = this.aridos.find((a) => a.id === +formData.aridoId);
+
+      if (!proyecto || !arido) return;
+
+      const nuevoRegistro: RegistroArido = {
+        id: this.modoEdicion ? this.registroEditandoId! : this.generarNuevoId(),
+        proyectoId: +formData.proyectoId,
+        proyectoNombre: proyecto.nombre,
+        aridoId: +formData.aridoId,
+        aridoNombre: arido.nombre,
+        cantidad: +formData.cantidad,
+        fechaEntrega: new Date(formData.fechaEntrega),
+        operario: formData.operario,
+        observaciones: formData.observaciones,
+      };
+
+      if (this.modoEdicion && this.registroEditandoId) {
+        const index = this.registros.findIndex(
+          (r) => r.id === this.registroEditandoId
+        );
+        if (index !== -1) {
+          this.registros[index] = nuevoRegistro;
+        }
+      } else {
+        this.registros.unshift(nuevoRegistro);
+      }
+
+      this.actualizarRegistrosFiltrados();
+      this.cerrarModal();
+    }
+  }
+
+  private generarNuevoId(): number {
+    return this.registros.length > 0
+      ? Math.max(...this.registros.map((r) => r.id)) + 1
+      : 1;
+  }
+
+  getUnidadMedida(aridoId: number): string {
+    const arido = this.aridos.find((a) => a.id === aridoId);
+    return arido ? arido.unidadMedida : '';
+  }
+
   cargarDatosDePrueba(): void {
     // Proyectos de ejemplo
     this.proyectos = [
@@ -151,160 +258,7 @@ export class AridosComponent implements OnInit {
         observaciones: '',
       },
     ];
-  }
 
-  // Métodos para gestionar filtros
-  aplicarFiltros(): void {
-    // Implementar en el futuro - actual usa datos de prueba
-    this.calcularEstadisticas();
-  }
-
-  limpiarFiltros(): void {
-    this.filtroProyecto = null;
-    this.filtroArido = null;
-    this.calcularEstadisticas();
-  }
-
-  // Métodos para estadísticas
-  calcularEstadisticas(): void {
-    let registrosFiltrados = this.getRegistrosFiltrados();
-
-    // Calcular total de áridos entregados
-    this.totalAridosEntregados = registrosFiltrados.reduce(
-      (total, reg) => total + reg.cantidad,
-      0
-    );
-
-    // Calcular áridos por proyecto
-    this.aridosPorProyecto = {};
-    registrosFiltrados.forEach((reg) => {
-      if (!this.aridosPorProyecto[reg.proyectoId]) {
-        this.aridosPorProyecto[reg.proyectoId] = 0;
-      }
-      this.aridosPorProyecto[reg.proyectoId] += reg.cantidad;
-    });
-  }
-
-  getRegistrosFiltrados(): RegistroArido[] {
-    return this.registros.filter((reg) => {
-      // Aplicar filtro de proyecto si está activo
-      if (
-        this.filtroProyecto !== null &&
-        reg.proyectoId !== this.filtroProyecto
-      ) {
-        return false;
-      }
-
-      // Aplicar filtro de árido si está activo
-      if (this.filtroArido !== null && reg.aridoId !== this.filtroArido) {
-        return false;
-      }
-
-      return true;
-    });
-  }
-
-  // Métodos para el formulario
-  get registrosFiltrados(): RegistroArido[] {
-    return this.getRegistrosFiltrados();
-  }
-
-  agregarRegistro(): void {
-    if (this.registroForm.valid) {
-      const formValue = this.registroForm.value;
-
-      // Obtener nombres para proyectos y áridos
-      const proyecto = this.proyectos.find(
-        (p) => p.id === parseInt(formValue.proyectoId)
-      );
-      const arido = this.aridos.find(
-        (a) => a.id === parseInt(formValue.aridoId)
-      );
-
-      if (!proyecto || !arido) {
-        console.error('Proyecto o árido no encontrado');
-        return;
-      }
-
-      // Crear nuevo registro
-      const nuevoRegistro: RegistroArido = {
-        id:
-          this.modoEdicion && this.registroEditandoId
-            ? this.registroEditandoId
-            : this.registros.length + 1,
-        proyectoId: parseInt(formValue.proyectoId),
-        proyectoNombre: proyecto.nombre,
-        aridoId: parseInt(formValue.aridoId),
-        aridoNombre: arido.nombre,
-        cantidad: parseFloat(formValue.cantidad),
-        fechaEntrega: new Date(formValue.fechaEntrega),
-        operario: formValue.operario,
-        observaciones: formValue.observaciones || '',
-      };
-
-      if (this.modoEdicion && this.registroEditandoId) {
-        // Actualizar registro existente
-        const index = this.registros.findIndex(
-          (r) => r.id === this.registroEditandoId
-        );
-        if (index !== -1) {
-          this.registros[index] = nuevoRegistro;
-        }
-        this.modoEdicion = false;
-        this.registroEditandoId = null;
-      } else {
-        // Agregar nuevo registro
-        this.registros.push(nuevoRegistro);
-      }
-
-      // Resetear formulario y recalcular estadísticas
-      this.registroForm.reset({
-        fechaEntrega: new Date().toISOString().split('T')[0],
-      });
-      this.calcularEstadisticas();
-    }
-  }
-
-  editarRegistro(registro: RegistroArido): void {
-    this.modoEdicion = true;
-    this.registroEditandoId = registro.id;
-
-    this.registroForm.setValue({
-      proyectoId: registro.proyectoId,
-      aridoId: registro.aridoId,
-      cantidad: registro.cantidad,
-      fechaEntrega: new Date(registro.fechaEntrega).toISOString().split('T')[0],
-      operario: registro.operario,
-      observaciones: registro.observaciones || '',
-    });
-  }
-
-  eliminarRegistro(id: number): void {
-    if (confirm('¿Está seguro que desea eliminar este registro?')) {
-      const index = this.registros.findIndex((r) => r.id === id);
-      if (index !== -1) {
-        this.registros.splice(index, 1);
-        this.calcularEstadisticas();
-      }
-    }
-  }
-
-  cancelarEdicion(): void {
-    this.modoEdicion = false;
-    this.registroEditandoId = null;
-    this.registroForm.reset({
-      fechaEntrega: new Date().toISOString().split('T')[0],
-    });
-  }
-
-  // Getters para la vista
-  getNombreProyecto(id: number): string {
-    const proyecto = this.proyectos.find((p) => p.id === id);
-    return proyecto ? proyecto.nombre : 'Desconocido';
-  }
-
-  getUnidadMedida(aridoId: number): string {
-    const arido = this.aridos.find((a) => a.id === aridoId);
-    return arido ? arido.unidadMedida : '';
+    this.actualizarRegistrosFiltrados();
   }
 }

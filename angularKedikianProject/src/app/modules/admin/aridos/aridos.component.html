@@ -1,12 +1,70 @@
 <div class="aridos-container">
   <header class="aridos-header">
     <h1>Gestión de Áridos</h1>
+    <button class="btn btn-success" (click)="abrirModalAgregar()">
+      <i class="fas fa-plus"></i>
+      Nuevo Registro
+    </button>
   </header>
-  <!-- Sección principal con dos columnas -->
-  <div class="aridos-main-content">
-    <!-- Formulario de registro -->
-    <div class="registro-form-container">
+
+  <!-- Tabla de registros -->
+  <div class="registros-tabla-container">
+    <h2>Registros de Áridos</h2>
+    @if (registrosFiltrados.length === 0) {
+    <div class="no-registros">
+      No hay registros que coincidan con los criterios de búsqueda.
+    </div>
+    } @else {
+    <table class="tabla-registros">
+      <thead>
+        <tr>
+          <th>Proyecto</th>
+          <th>Árido</th>
+          <th>Cantidad</th>
+          <th>Fecha</th>
+          <th>Operario</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (registro of registrosFiltrados; track registro.id) {
+        <tr>
+          <td>{{ registro.proyectoNombre }}</td>
+          <td>{{ registro.aridoNombre }}</td>
+          <td>{{ registro.cantidad | number:'1.2-2' }} {{ getUnidadMedida(registro.aridoId) }}</td>
+          <td>{{ registro.fechaEntrega | date:'dd/MM/yyyy' }}</td>
+          <td>{{ registro.operario }}</td>
+          <td class="acciones">
+            <button class="btn-icon btn-edit" title="Editar" (click)="editarRegistro(registro)">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn-icon btn-delete" title="Eliminar" (click)="confirmarEliminar(registro)">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        @if (registro.observaciones) {
+        <tr class="fila-observaciones">
+          <td colspan="6">
+            <strong>Observaciones:</strong> {{ registro.observaciones }}
+          </td>
+        </tr>
+        }
+        }
+      </tbody>
+    </table>
+    }
+  </div>
+</div>
+
+<!-- Modal de Registro/Edición -->
+<div class="modal" *ngIf="mostrarModal">
+  <div class="modal-content">
+    <div class="modal-header">
       <h2>{{ modoEdicion ? 'Editar Registro' : 'Nuevo Registro de Áridos' }}</h2>
+      <button class="btn-close" (click)="cerrarModal()">&times;</button>
+    </div>
+    <div class="modal-body">
       <form [formGroup]="registroForm" (ngSubmit)="agregarRegistro()">
         <div class="form-group">
           <label for="proyectoId">Proyecto:</label>
@@ -72,63 +130,30 @@
         </div>
 
         <div class="form-buttons">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
           <button type="submit" class="btn btn-success" [disabled]="registroForm.invalid">
-            {{ modoEdicion ? 'Actualizar Registro' : 'Registrar Entrega' }}
+            {{ modoEdicion ? 'Actualizar' : 'Registrar' }}
           </button>
-          @if (modoEdicion) {
-          <button type="button" class="btn btn-secondary" (click)="cancelarEdicion()">Cancelar</button>
-          }
         </div>
       </form>
     </div>
+  </div>
+</div>
 
-    <!-- Tabla de registros -->
-    <div class="registros-tabla-container">
-      <h2>Registros de Áridos</h2>
-      @if (registrosFiltrados.length === 0) {
-      <div class="no-registros">
-        No hay registros que coincidan con los criterios de búsqueda.
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal" *ngIf="mostrarModalConfirmacion">
+  <div class="modal-content modal-confirmacion">
+    <div class="modal-header">
+      <h2>Confirmar Eliminación</h2>
+      <button class="btn-close" (click)="cancelarEliminar()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Está seguro que desea eliminar este registro?</p>
+      <p>Esta acción no se puede deshacer.</p>
+      <div class="form-buttons">
+        <button type="button" class="btn btn-secondary" (click)="cancelarEliminar()">Cancelar</button>
+        <button type="button" class="btn btn-danger" (click)="eliminarRegistro()">Eliminar</button>
       </div>
-      } @else {
-      <table class="tabla-registros">
-        <thead>
-          <tr>
-            <th>Proyecto</th>
-            <th>Árido</th>
-            <th>Cantidad</th>
-            <th>Fecha</th>
-            <th>Operario</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (registro of registrosFiltrados; track registro.id) {
-          <tr>
-            <td>{{ registro.proyectoNombre }}</td>
-            <td>{{ registro.aridoNombre }}</td>
-            <td>{{ registro.cantidad | number:'1.2-2' }} {{ getUnidadMedida(registro.aridoId) }}</td>
-            <td>{{ registro.fechaEntrega | date:'dd/MM/yyyy' }}</td>
-            <td>{{ registro.operario }}</td>
-            <td class="acciones">
-              <button class="btn-icon btn-edit" title="Editar" (click)="editarRegistro(registro)">
-                <i class="fa fa-edit"></i>
-              </button>
-              <button class="btn-icon btn-delete" title="Eliminar" (click)="eliminarRegistro(registro.id)">
-                <i class="fa fa-trash"></i>
-              </button>
-            </td>
-          </tr>
-          @if (registro.observaciones) {
-          <tr class="fila-observaciones">
-            <td colspan="6">
-              <strong>Observaciones:</strong> {{ registro.observaciones }}
-            </td>
-          </tr>
-          }
-          }
-        </tbody>
-      </table>
-      }
     </div>
   </div>
 </div>

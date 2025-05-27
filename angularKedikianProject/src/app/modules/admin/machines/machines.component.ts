@@ -1,6 +1,12 @@
 // maquinaria.component.ts
 import { CommonModule, NgClass } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { ProjectService } from '../../../core/services/project.service';
+import {
+  MachinesService,
+  Maquina,
+  ProyectoAsignado,
+} from '../../../core/services/machines.service';
 import {
   FormBuilder,
   FormGroup,
@@ -9,16 +15,9 @@ import {
 } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 
-interface Maquina {
-  codigo: number;
-  nombre: string;
-  estado: boolean;
-  horas_uso: number;
-}
-
 @Component({
   selector: 'app-maquinaria',
-  imports: [CommonModule, NgClass, FormsModule, ReactiveFormsModule], // Aquí puedes importar otros módulos si es necesario
+  imports: [CommonModule, NgClass, FormsModule, ReactiveFormsModule],
   templateUrl: './machines.component.html',
   styleUrls: ['./machines.component.css'],
 })
@@ -43,7 +42,11 @@ export class MaquinariaComponent implements OnInit {
   // Formulario
   maquinaForm: FormGroup;
 
-  constructor(private fb: FormBuilder) {
+  constructor(
+    private fb: FormBuilder,
+    private machinesService: MachinesService,
+    private projectService: ProjectService
+  ) {
     this.maquinaForm = this.fb.group({
       nombre: ['', [Validators.required]],
       estado: [true],
@@ -52,25 +55,83 @@ export class MaquinariaComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Cargar datos de ejemplo (en una app real, esto vendría de un servicio)
+    this.loadMachines();
     this.cargarDatosDePrueba();
-    this.filtrarMaquinas();
+  }
+
+  loadMachines(): void {
+    this.machinesService.obtenerMaquinas().subscribe((maquinas) => {
+      this.maquinas = maquinas;
+      this.maquinas.forEach((maquina) => {
+        this.loadMachineProjects(maquina);
+      });
+      this.filtrarMaquinas();
+    });
+  }
+
+  loadMachineProjects(maquina: Maquina): void {
+    this.projectService.findByIdMaquina(maquina.id).subscribe((proyectos) => {
+      maquina.proyectos = Array.from(
+        proyectos.map((proyecto) => ({
+          id: proyecto.id,
+          nombre: proyecto.nombre,
+          fechaAsignacion: new Date(proyecto.fechaAsignacion),
+        }))
+      );
+    });
   }
 
   // Cargar datos de prueba (simula una llamada a API)
   cargarDatosDePrueba(): void {
     this.maquinas = [
-      { codigo: 1, nombre: 'Excavadora HD500', estado: true, horas_uso: 1250 },
-      { codigo: 2, nombre: 'Tractor T-200', estado: false, horas_uso: 3400 },
-      { codigo: 3, nombre: 'Grúa Móvil G1000', estado: true, horas_uso: 780 },
-      { codigo: 4, nombre: 'Bulldozer B50', estado: true, horas_uso: 2100 },
       {
-        codigo: 5,
+        id: 1,
+        codigo: 'EXC001',
+        nombre: 'Excavadora HD500',
+        estado: true,
+        horas_uso: 1250,
+        proyectos: [],
+      },
+      {
+        id: 2,
+        codigo: 'TRC001',
+        nombre: 'Tractor T-200',
+        estado: false,
+        horas_uso: 3400,
+        proyectos: [],
+      },
+      {
+        id: 3,
+        codigo: 'GRU001',
+        nombre: 'Grúa Móvil G1000',
+        estado: true,
+        horas_uso: 780,
+        proyectos: [
+          {
+            id: 1,
+            nombre: 'Puente Villa Maria',
+            fechaAsignacion: new Date(),
+          },
+        ],
+      },
+      {
+        id: 4,
+        codigo: 'BUL001',
+        nombre: 'Bulldozer B50',
+        estado: true,
+        horas_uso: 2100,
+        proyectos: [],
+      },
+      {
+        id: 5,
+        codigo: 'CAR001',
         nombre: 'Cargadora Frontal CF300',
         estado: false,
         horas_uso: 4500,
+        proyectos: [],
       },
     ];
+    this.filtrarMaquinas();
   }
 
   // Filtrar máquinas según búsqueda y estado
@@ -151,10 +212,12 @@ export class MaquinariaComponent implements OnInit {
       // Crear nueva máquina
       const nuevoCodigo = this.generarNuevoCodigo();
       const nuevaMaquina: Maquina = {
-        codigo: nuevoCodigo,
+        id: this.generarNuevoCodigo(),
+        codigo: nuevoCodigo.toString(),
         nombre: formData.nombre,
         estado: formData.estado,
         horas_uso: formData.horas_uso,
+        proyectos: [],
       };
 
       this.maquinas.unshift(nuevaMaquina);
@@ -169,7 +232,7 @@ export class MaquinariaComponent implements OnInit {
   // Generar un nuevo código para la máquina
   generarNuevoCodigo(): number {
     return this.maquinas.length > 0
-      ? Math.max(...this.maquinas.map((m) => m.codigo)) + 1
+      ? Math.max(...this.maquinas.map((m) => Number(m.codigo))) + 1
       : 1;
   }
 
@@ -183,7 +246,7 @@ export class MaquinariaComponent implements OnInit {
   confirmarEliminarMaquina(): void {
     if (this.maquinaAEliminar !== null) {
       const index = this.maquinas.findIndex(
-        (m) => m.codigo === this.maquinaAEliminar
+        (m) => Number(m.codigo) === this.maquinaAEliminar
       );
       if (index !== -1) {
         // Obtener el nombre para el mensaje
