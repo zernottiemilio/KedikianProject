@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, delay, map } from 'rxjs/operators';
-
 import { environment } from '../../../environments/environment';
 
 // Interfaces para los datos del servicio (exportadas para su uso en componentes)
@@ -32,7 +31,6 @@ export interface InformesResponse {
   providedIn: 'root',
 })
 export class InformesService {
-  // URL base de la API
   private apiUrl = `${environment.apiUrl}/informes`;
 
   // Datos simulados para desarrollo

@@ -10,6 +10,7 @@ import {
 import { Observable } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import Modal from 'bootstrap/js/dist/modal';
+import { UserService } from '../../../core/services/user.service';
 
 // Interfaz de Usuario
 interface User {
@@ -29,129 +30,6 @@ interface UserFilters {
   email: string;
   roles: string;
   estado: any; // Puede ser string o boolean
-}
-
-// Servicio Mock para usuarios
-class MockUserService {
-  private mockUsers: User[] = [
-    {
-      id: 1,
-      nombre: 'Admin Usuario',
-      email: 'admin@example.com',
-      estado: true,
-      roles: 'administrador',
-      fecha_creacion: new Date('2024-04-15'),
-    },
-    {
-      id: 2,
-      nombre: 'Usuario Estándar',
-      email: 'usuario@example.com',
-      estado: true,
-      roles: 'operario',
-      fecha_creacion: new Date('2024-04-16'),
-    },
-    {
-      id: 3,
-      nombre: 'Operario Test',
-      email: 'editor@example.com',
-      estado: false,
-      roles: 'operario',
-      fecha_creacion: new Date('2024-04-17'),
-    },
-    {
-      id: 4,
-      nombre: 'Usuario Test 1',
-      email: 'test1@example.com',
-      estado: true,
-      roles: 'operario',
-      fecha_creacion: new Date('2024-04-18'),
-    },
-    {
-      id: 5,
-      nombre: 'Admin Test',
-      email: 'test2@example.com',
-      estado: false,
-      roles: 'administrador',
-      fecha_creacion: new Date('2024-04-19'),
-    },
-  ];
-
-  getUsers(): Observable<User[]> {
-    return new Observable<User[]>((observer) => {
-      setTimeout(() => {
-        observer.next([...this.mockUsers]);
-        observer.complete();
-      }, 300);
-    });
-  }
-
-  createUser(userData: Partial<User>): Observable<User> {
-    return new Observable<User>((observer) => {
-      setTimeout(() => {
-        const newUser: User = {
-          id: this.mockUsers.length + 1,
-          nombre: userData.nombre || '',
-          email: userData.email || '',
-          estado: userData.estado !== undefined ? userData.estado : true,
-          roles: userData.roles || 'operario',
-          fecha_creacion: new Date(),
-        };
-        this.mockUsers.push(newUser);
-        observer.next(newUser);
-        observer.complete();
-      }, 300);
-    });
-  }
-
-  updateUser(userData: Partial<User>): Observable<User> {
-    return new Observable<User>((observer) => {
-      setTimeout(() => {
-        const index = this.mockUsers.findIndex((u) => u.id === userData.id);
-        if (index !== -1) {
-          this.mockUsers[index] = {
-            ...this.mockUsers[index],
-            ...userData,
-          };
-          observer.next(this.mockUsers[index]);
-        } else {
-          observer.error(new Error('Usuario no encontrado'));
-        }
-        observer.complete();
-      }, 300);
-    });
-  }
-
-  deleteUser(id: number): Observable<any> {
-    return new Observable<any>((observer) => {
-      setTimeout(() => {
-        const index = this.mockUsers.findIndex((u) => u.id === id);
-        if (index !== -1) {
-          this.mockUsers.splice(index, 1);
-          observer.next({ success: true });
-        } else {
-          observer.error(new Error('Usuario no encontrado'));
-        }
-        observer.complete();
-      }, 300);
-    });
-  }
-}
-
-// Servicio Mock para mensajes toast
-class MockToastrService {
-  success(message: string, title?: string): void {
-    console.log(
-      `%c✓ ${title || 'Success'}: ${message}`,
-      'color: green; font-weight: bold'
-    );
-  }
-
-  error(message: string, title?: string): void {
-    console.log(
-      `%c✗ ${title || 'Error'}: ${message}`,
-      'color: red; font-weight: bold'
-    );
-  }
 }
 
 @Component({
@@ -199,11 +77,10 @@ export class UsersGestionComponent implements OnInit {
   isDeleteModalOpen = false;
   modalOverlayActive = false;
 
-  // Servicios
-  private userService = new MockUserService();
-  private toastr = new MockToastrService();
-
-  constructor(private fb: FormBuilder) {
+  constructor(
+    private fb: FormBuilder,
+    private userService: UserService
+  ) {
     this.userForm = this.fb.group({
       id: [null],
       nombre: ['', [Validators.required]],
@@ -252,7 +129,6 @@ export class UsersGestionComponent implements OnInit {
         this.applyFilters();
       },
       error: (err) => {
-        this.toastr.error('Error al cargar los usuarios', 'Error');
         console.error(err);
       },
     });
@@ -427,18 +303,18 @@ export class UsersGestionComponent implements OnInit {
       : this.userService.createUser(userData);
 
     operation.subscribe({
-      next: () => {
+      next: (response) => {
         const message = this.isEditMode
           ? 'Usuario actualizado correctamente'
           : 'Usuario creado correctamente';
-        this.toastr.success(message, 'Éxito');
+        console.log(message);
         this.loadUsers();
         this.closeModals();
       },
       error: (err) => {
         const action = this.isEditMode ? 'actualizar' : 'crear';
-        this.toastr.error(`Error al ${action} el usuario`, 'Error');
-        console.error(err);
+        console.error(`Error al ${action} el usuario:`, err);
+        // Aquí podrías mostrar un mensaje de error al usuario usando un servicio de notificaciones
       },
     });
   }
@@ -455,15 +331,13 @@ export class UsersGestionComponent implements OnInit {
 
     this.userService.deleteUser(this.userToDelete.id).subscribe({
       next: () => {
-        this.toastr.success('Usuario eliminado correctamente', 'Éxito');
+        console.log('Usuario eliminado correctamente');
         this.loadUsers();
-        if (this.deleteConfirmModal) {
-          this.deleteConfirmModal.hide();
-        }
+        this.closeModals();
       },
       error: (err) => {
-        this.toastr.error('Error al eliminar el usuario', 'Error');
-        console.error(err);
+        console.error('Error al eliminar el usuario:', err);
+        // Aquí podrías mostrar un mensaje de error al usuario usando un servicio de notificaciones
       },
       complete: () => {
         this.userToDelete = null;
@@ -499,7 +373,4 @@ export class UsersGestionComponent implements OnInit {
     this.userForm.get('contrasena')?.clearValidators();
     this.userForm.get('contrasena')?.updateValueAndValidity();
   }
-}
-function deleteUser(user: any, User: any) {
-  throw new Error('Function not implemented.');
 }

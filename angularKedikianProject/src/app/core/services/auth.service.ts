@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
 import { Router } from '@angular/router';
-
+import { environment } from '../../../environments/environment';
 export interface Usuario {
   id: string;
   nombreUsuario: string;
@@ -9,7 +9,8 @@ export interface Usuario {
   token?: string;
 }
 
-// Alias para mantener compatibilidad con componentes que usan inglés
+const apiUrl = `${environment.apiUrl}/auth`;
+
 export type User = Usuario;
 
 export interface CredencialesLogin {

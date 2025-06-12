@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
+import { environment } from '../../../environments/environment';
 export interface ProyectoAsignado {
   id: number;
   nombre: string;
@@ -22,7 +22,7 @@ export interface Maquina {
   providedIn: 'root',
 })
 export class MachinesService {
-  private apiUrl = 'api/maquinas'; // Cambiar según tu configuración de API
+  private apiUrl = `${environment.apiUrl}/maquinas`; // Cambiar según tu configuración de API
 
   constructor(private http: HttpClient) {}
 

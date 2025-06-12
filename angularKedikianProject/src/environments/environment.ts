@@ -1,9 +1,9 @@
 export const environment = {
   production: false,
   useSimulatedData: true,
-  apiUrl: 'http://localhost:8000/api',
+  apiUrl: 'http://localhost:8000/api/v1',
   firebaseConfig: {
-    apiKey: 'your-api-key',
+    apiKey: 'your-api-key', 
     authDomain: 'your-auth-domain',
     projectId: 'your-project-id',
     storageBucket: 'your-storage-bucket',

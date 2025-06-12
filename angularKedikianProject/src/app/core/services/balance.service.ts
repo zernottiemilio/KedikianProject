@@ -8,7 +8,7 @@ import { environment } from '../../../environments/environment'; // Asegúrate d
   providedIn: 'root',
 })
 export class BalanceService {
-  private apiUrl = environment.apiUrl;
+  private apiUrl = `${environment.apiUrl}/balance`;
 
   constructor(private http: HttpClient) {}
 

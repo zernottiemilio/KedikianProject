@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { List } from 'immutable';
+import { environment } from '../../../environments/environment';
 export interface Project {
   id: number;
   nombre: string;
@@ -100,9 +101,8 @@ export class ProjectService {
       ],
     },
   ];
-
+  private apiUrl = `${environment.apiUrl}/proyectos`; 
   private projectsSubject = new BehaviorSubject<Project[]>(this.projects);
-  private apiUrl = 'http://localhost:8000/api'; // Cambia esto a tu URL de API real
   constructor(private http: HttpClient) {
     this.calculateDaysRemaining();
   }
