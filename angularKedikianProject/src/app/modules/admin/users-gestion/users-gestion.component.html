@@ -128,15 +128,15 @@
       </div>
 
       <div class="form-group" *ngIf="!isEditMode">
-        <label for="contrasena">Contraseña</label>
-        <input type="password" id="contrasena" formControlName="contrasena" class="form-control" placeholder="Ingrese la contraseña">
+        <label for="hash_contrasena">Contraseña</label>
+        <input type="password" id="hash_contrasena" formControlName="hash_contrasena" class="form-control" placeholder="Ingrese la contraseña">
       </div>
 
       <div class="form-group">
         <label for="roles">Rol</label>
         <select id="roles" formControlName="roles" class="form-control">
           <option *ngFor="let role of roleOptions" [value]="role">
-            {{role === 'administrador' ? 'Administrador' : 'Operario'}}
+            {{role === 'ADMINISTRADOR' ? 'Administrador' : 'Operario'}}
           </option>
         </select>
       </div>

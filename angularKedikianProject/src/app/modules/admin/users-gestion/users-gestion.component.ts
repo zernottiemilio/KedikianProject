@@ -19,7 +19,7 @@ interface User {
   email: string;
   hash_contrasena?: string;
   estado: boolean;
-  roles: 'administrador' | 'operario';
+  roles: ['ADMINISTRADOR'] | ['OPERARIO'];
   fecha_creacion: Date;
 }
 
@@ -28,7 +28,7 @@ interface UserFilters {
   id: string;
   nombre: string;
   email: string;
-  roles: string;
+  roles: string[];
   estado: any; // Puede ser string o boolean
 }
 
@@ -55,7 +55,7 @@ export class UsersGestionComponent implements OnInit {
     id: '',
     nombre: '',
     email: '',
-    roles: '',
+    roles: [],
     estado: '',
   };
 
@@ -64,7 +64,7 @@ export class UsersGestionComponent implements OnInit {
   currentPage = 1;
   totalPages = 1;
   // Opciones de roles disponibles
-  roleOptions = ['administrador', 'operario'] as const;
+  roleOptions = ['ADMINISTRADOR', 'OPERARIO'] as const;
 
   // Ordenamiento
   sortColumn = 'id';
@@ -85,8 +85,8 @@ export class UsersGestionComponent implements OnInit {
       id: [null],
       nombre: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
-      contrasena: ['', [Validators.minLength(8)]],
-      roles: ['operario', [Validators.required]],
+      hash_contrasena: ['', [Validators.minLength(8)]],
+      roles: ['OPERARIO', [Validators.required]],
       estado: [true, [Validators.required]],
     });
   }
@@ -125,7 +125,10 @@ export class UsersGestionComponent implements OnInit {
   private loadUsers(): void {
     this.userService.getUsers().subscribe({
       next: (users) => {
-        this.users = users;
+        this.users = users.map(user => ({
+          ...user,
+          roles: [user.roles[0] as 'ADMINISTRADOR' | 'OPERARIO']
+        }));
         this.applyFilters();
       },
       error: (err) => {
@@ -169,7 +172,9 @@ export class UsersGestionComponent implements OnInit {
     }
 
     if (this.filters.roles) {
-      filtered = filtered.filter((user) => user.roles === this.filters.roles);
+      filtered = filtered.filter((user) =>
+        this.filters.roles.includes(user.roles[0])
+      );
     }
 
     if (this.filters.estado !== '') {
@@ -211,7 +216,7 @@ export class UsersGestionComponent implements OnInit {
           comparison = a.email.localeCompare(b.email);
           break;
         case 'roles':
-          comparison = a.roles.localeCompare(b.roles);
+          comparison = a.roles[0].localeCompare(b.roles[0]);
           break;
         case 'estado':
           comparison = Number(a.estado) - Number(b.estado);
@@ -249,7 +254,7 @@ export class UsersGestionComponent implements OnInit {
       id: '',
       nombre: '',
       email: '',
-      roles: '',
+      roles: [],
       estado: '',
     };
     this.applyFilters();
@@ -275,8 +280,8 @@ export class UsersGestionComponent implements OnInit {
       roles: user.roles,
       estado: user.estado,
     });
-    this.userForm.get('contrasena')?.clearValidators();
-    this.userForm.get('contrasena')?.updateValueAndValidity();
+    this.userForm.get('hash_contrasena')?.clearValidators();
+    this.userForm.get('hash_contrasena')?.updateValueAndValidity();
   }
 
   openDeleteModal(user: User): void {
@@ -297,6 +302,11 @@ export class UsersGestionComponent implements OnInit {
     if (this.userForm.invalid) return;
 
     const userData = this.userForm.value;
+
+    // Agregar fecha de creación solo si es un nuevo usuario
+    if (!this.isEditMode) {
+      userData.fecha_creacion = new Date();
+    }
 
     const operation = this.isEditMode
       ? this.userService.updateUser(userData)
@@ -350,13 +360,13 @@ export class UsersGestionComponent implements OnInit {
     this.isEditModalOpen = true;
     this.modalOverlayActive = true;
     this.userForm.reset({
-      roles: 'operario',
+      roles: ['OPERARIO'],
       estado: true,
     });
     this.userForm
-      .get('contrasena')
+      .get('hash_contrasena')
       ?.setValidators([Validators.required, Validators.minLength(8)]);
-    this.userForm.get('contrasena')?.updateValueAndValidity();
+    this.userForm.get('hash_contrasena')?.updateValueAndValidity();
   }
 
   editUser(user: User): void {
@@ -370,7 +380,7 @@ export class UsersGestionComponent implements OnInit {
       roles: user.roles,
       estado: user.estado,
     });
-    this.userForm.get('contrasena')?.clearValidators();
-    this.userForm.get('contrasena')?.updateValueAndValidity();
+    this.userForm.get('hash_contrasena')?.clearValidators();
+    this.userForm.get('hash_contrasena')?.updateValueAndValidity();
   }
 }
