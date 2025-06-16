@@ -1,0 +1,138 @@
+<div class="excel-import-container">
+  <div class="header-section">
+    <h2>Gestión de Operarios y Cálculo de Sueldos</h2>
+    <p class="description">
+      Agrega operarios y configura las tarifas para calcular los sueldos automáticamente
+    </p>
+  </div>
+
+  <!-- Configuración de Tarifas -->
+  <div class="config-section">
+    <h3>Configuración de Tarifas</h3>
+    <div class="config-grid">
+      <div class="config-item">
+        <label>Precio Hora Normal:</label>
+        <input 
+          type="number" 
+          [(ngModel)]="configuracion.horaNormal" 
+          (change)="recalcularTodos()"
+          placeholder="Ej: 1500">
+        <span class="currency">ARS</span>
+      </div>
+      <div class="config-item">
+        <label>Precio Hora Feriado:</label>
+        <input 
+          type="number" 
+          [(ngModel)]="configuracion.horaFeriado" 
+          (change)="recalcularTodos()"
+          placeholder="Ej: 3000">
+        <span class="currency">ARS</span>
+      </div>
+      <div class="config-item">
+        <label>Multiplicador Extra:</label>
+        <input 
+          type="number" 
+          step="0.1"
+          [(ngModel)]="configuracion.multiplicadorExtra" 
+          (change)="recalcularTodos()"
+          placeholder="Ej: 1.5">
+        <span class="currency">x</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Errores -->
+  <div class="error-section" *ngIf="errorMessage">
+    <div class="error-alert">
+      <span class="error-icon">⚠️</span>
+      <span>{{ errorMessage }}</span>
+    </div>
+  </div>
+
+  <!-- Tabla de Operarios -->
+  <div class="results-section">
+    <div class="results-header">
+      <h3>Lista de Operarios</h3>
+      <div class="summary">
+        <span class="summary-item">
+          <strong>Total Operarios:</strong> {{ operarios.length }}
+        </span>
+        <span class="summary-item">
+          <strong>Total a Pagar:</strong> ${{ getTotalGeneral() | number:'1.2-2' }} ARS
+        </span>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="operarios-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>DNI</th>
+            <th>H. Normales</th>
+            <th>H. Feriado</th>
+            <th>H. Extras</th>
+            <th>Subtotal Normal</th>
+            <th>Subtotal Feriado</th>
+            <th>Subtotal Extra</th>
+            <th class="total-column">Total</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let operario of operarios; let i = index" 
+              [class.row-even]="i % 2 === 0">
+            <td class="name-cell">
+              <input type="text" [(ngModel)]="operario.nombre" placeholder="Nombre">
+            </td>
+            <td>
+              <input type="text" [(ngModel)]="operario.dni" placeholder="DNI">
+            </td>
+            <td class="hours-cell">
+              <input type="number" [(ngModel)]="operario.horasNormales" (change)="operario.totalCalculado = calcularTotal(operario)">
+            </td>
+            <td class="hours-cell">
+              <input type="number" [(ngModel)]="operario.horasFeriado" (change)="operario.totalCalculado = calcularTotal(operario)">
+            </td>
+            <td class="hours-cell">
+              <input type="number" [(ngModel)]="operario.horasExtras" (change)="operario.totalCalculado = calcularTotal(operario)">
+            </td>
+            <td class="money-cell">
+              ${{ (operario.horasNormales * operario.precioHoraNormal) | number:'1.2-2' }}
+            </td>
+            <td class="money-cell">
+              ${{ (operario.horasFeriado * operario.precioHoraFeriado) | number:'1.2-2' }}
+            </td>
+            <td class="money-cell">
+              ${{ (operario.horasExtras * operario.precioHoraExtra) | number:'1.2-2' }}
+            </td>
+            <td class="total-cell">
+              ${{ operario.totalCalculado | number:'1.2-2' }}
+            </td>
+            <td>
+              <button class="btn btn-danger" (click)="eliminarOperario(i)">
+                <span class="btn-icon">🗑️</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Botones de Acción -->
+  <div class="actions-section">
+    <button class="btn btn-primary" (click)="agregarOperario()">
+      <span class="btn-icon">➕</span>
+      Agregar Operario
+    </button>
+    <button class="btn btn-success" (click)="exportarResultados()">
+      <span class="btn-icon">📊</span>
+      Exportar a Excel
+    </button>
+    <button class="btn btn-secondary" (click)="limpiarDatos()">
+      <span class="btn-icon">🗑️</span>
+      Limpiar Todo
+    </button>
+  </div>
+</div> 

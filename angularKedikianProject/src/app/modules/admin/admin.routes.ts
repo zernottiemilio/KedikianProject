@@ -9,6 +9,7 @@ import { InventarioComponent } from './inventario/inventario.component';
 import { BalanceComponent } from './balance/balance.component';
 import { AridosComponent } from './aridos/aridos.component';
 import { InformesComponent } from './informes/informes.component';
+import { ExcelImportComponent } from './excel-import/excel-import.component';
 
 export const adminRoutes = [
   {
@@ -23,6 +24,7 @@ export const adminRoutes = [
       { path: 'balance', component: BalanceComponent },
       { path: 'aridos', component: AridosComponent },
       { path: 'informes', component: InformesComponent },
+      { path: 'excel-import', component: ExcelImportComponent },
     ],
   },
 ];

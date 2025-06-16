@@ -13,6 +13,7 @@ import { IngresoComponent } from './modules/admin/balance/ingreso/ingreso.compon
 import { EgresoComponent } from './modules/admin/balance/egreso/egreso.component';
 import { AridosComponent } from './modules/admin/aridos/aridos.component';
 import { InformesComponent } from './modules/admin/informes/informes.component';
+import { ExcelImportComponent } from './modules/admin/excel-import/excel-import.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -31,6 +32,7 @@ export const routes: Routes = [
       { path: 'balance', component: BalanceComponent },
       { path: 'aridos', component: AridosComponent },
       { path: 'informes', component: InformesComponent },
+      { path: 'excel-import', component: ExcelImportComponent },
       // Otras rutas protegidas que deberían usar el layout admin
     ],
   },
