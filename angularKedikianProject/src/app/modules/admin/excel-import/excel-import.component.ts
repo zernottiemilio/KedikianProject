@@ -140,6 +140,7 @@ export class ExcelImportComponent implements OnInit {
     const basicValue = this.configuracion.horaNormal;
     const basicRemunerativo = totalHorasNormales * basicValue;
 
+    // Calcular el 20% del valor total de las horas comunes
     const perfectAttendancePercentage = 0.20;
     const perfectAttendanceRemunerativo = basicRemunerativo * perfectAttendancePercentage;
 
@@ -154,7 +155,6 @@ export class ExcelImportComponent implements OnInit {
 
     // Helper para formatear moneda para la exportación a Excel
     const formatCurrencyForExcel = (value: number) => {
-      // Formatear a 2 decimales, reemplazar punto por coma decimal, y añadir separador de miles
       return `$ ${value.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
     };
 
@@ -163,11 +163,11 @@ export class ExcelImportComponent implements OnInit {
       ['', '', '', 'Vijande mayo 2025', ''], // Fila de título, se fusionará sobre D y E
       ['Concepto', 'Unidades', 'Valor', 'Remunerativo', 'Adelantos'],
       ['Basico', totalHorasNormales, formatCurrencyForExcel(basicValue), formatCurrencyForExcel(basicRemunerativo), ''],
-      ['Asistencia perfecta', `${perfectAttendancePercentage * 100}%`, formatCurrencyForExcel(perfectAttendanceRemunerativo), formatCurrencyForExcel(perfectAttendanceRemunerativo), ''],
+      ['Asistencia perfecta (20%)', `${perfectAttendancePercentage * 100}%`, formatCurrencyForExcel(basicRemunerativo), formatCurrencyForExcel(perfectAttendanceRemunerativo), ''],
       ['Pago feriado', totalHorasFeriado, formatCurrencyForExcel(holidayHoursValue), formatCurrencyForExcel(holidayHoursRemunerativo), ''],
       ['Horas extras', totalHorasExtras, formatCurrencyForExcel(extraHoursValue), formatCurrencyForExcel(extraHoursRemunerativo), ''],
-      ['', '', 'Total', formatCurrencyForExcel(totalRemunerativoFinal), formatCurrencyForExcel(this.getTotalGeneral())], // Primera fila de Total
-      ['', '', '', 'Total', formatCurrencyForExcel(totalRemunerativoFinal)], // Segunda fila de Total, replicando la imagen
+      ['', '', 'Total', formatCurrencyForExcel(totalRemunerativoFinal), formatCurrencyForExcel(this.getTotalGeneral())],
+      ['', '', '', 'Total', formatCurrencyForExcel(totalRemunerativoFinal)],
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(excelData);
