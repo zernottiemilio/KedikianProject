@@ -3,10 +3,10 @@
   <div class="actions">
     <div class="search-container">
       <input type="text" class="search-input" placeholder="Buscar ingresos..." [(ngModel)]="filtroTexto">
-      <span class="material-icons">search</span>
+      <span class="material-icons"></span>
     </div>
     <button class="add-btn" (click)="toggleFormulario()">
-      <span class="material-icons">{{ mostrarFormulario ? 'close' : 'add' }}</span>
+      <span class="material-icons">{{ mostrarFormulario ? 'close' : '' }}</span>
       {{ mostrarFormulario ? 'Cancelar' : 'Nuevo Ingreso' }}
     </button>
   </div>

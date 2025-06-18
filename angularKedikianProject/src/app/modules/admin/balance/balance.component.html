@@ -35,7 +35,9 @@
               name="fechaFin">
           </div>
         </div>
-        <button class="search-btn" (click)="buscarPorFechas()">Buscar</button>
+        <button class="search-btn" (click)="buscarPorFechas()">
+          <i class="fas fa-search"></i> Buscar
+        </button>
       </div>
     </div>
 
@@ -43,7 +45,7 @@
       <div class="card ingreso">
         <div class="card-header">
           <h2>Total Ingresos</h2>
-          <span class="material-icons">attach_money</span>
+          <span class="material-icons"></span>
         </div>
         <div class="card-body">
           <span class="amount">{{ totalIngresos | currency }}</span>
@@ -53,7 +55,7 @@
       <div class="card egreso">
         <div class="card-header">
           <h2>Total Egresos</h2>
-          <span class="material-icons">money_off</span>
+          <span class="material-icons"></span>
         </div>
         <div class="card-body">
           <span class="amount">{{ totalEgresos | currency }}</span>
@@ -63,7 +65,7 @@
       <div class="card balance" [ngClass]="{'positive': balance >= 0, 'negative': balance < 0}">
         <div class="card-header">
           <h2>Balance Total</h2>
-          <span class="material-icons">account_balance</span>
+          <span class="material-icons"></span>
         </div>
         <div class="card-body">
           <span class="amount">{{ balance | currency }}</span>

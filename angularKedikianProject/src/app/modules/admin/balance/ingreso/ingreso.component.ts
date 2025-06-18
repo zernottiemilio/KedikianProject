@@ -33,10 +33,10 @@ interface Producto {
 
 @Component({
   selector: 'app-ingreso',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule], // Importar los módulos necesarios aquí
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './ingreso.component.html',
-  styleUrls: ['./ingreso.component.css'],
-  providers: [BalanceService],
+  styleUrls: ['./ingreso.component.css']
 })
 export class IngresoComponent implements OnInit {
   @Input() pagos: Pago[] = [];
@@ -56,7 +56,7 @@ export class IngresoComponent implements OnInit {
       producto_id: ['', Validators.required],
       monto: ['', [Validators.required, Validators.min(0)]],
       fecha: [new Date().toISOString().substring(0, 10), Validators.required],
-      descripcion: [''],
+      descripcion: ['']
     });
   }
 
@@ -96,7 +96,7 @@ export class IngresoComponent implements OnInit {
 
   resetForm(): void {
     this.pagoForm.reset({
-      fecha: new Date().toISOString().substring(0, 10),
+      fecha: new Date().toISOString().substring(0, 10)
     });
     this.modoEdicion = false;
     this.pagoSeleccionadoId = null;
@@ -104,7 +104,7 @@ export class IngresoComponent implements OnInit {
 
   guardarPago(): void {
     if (this.pagoForm.invalid) {
-      Object.keys(this.pagoForm.controls).forEach((key) => {
+      Object.keys(this.pagoForm.controls).forEach(key => {
         const control = this.pagoForm.get(key);
         if (control) {
           control.markAsTouched();
@@ -116,18 +116,16 @@ export class IngresoComponent implements OnInit {
     const pago = this.pagoForm.value;
 
     if (this.modoEdicion && this.pagoSeleccionadoId) {
-      this.balanceService
-        .actualizarPago(this.pagoSeleccionadoId, pago)
-        .subscribe(
-          () => {
-            this.actualizarBalance.emit();
-            this.resetForm();
-            this.mostrarFormulario = false;
-          },
-          (error) => {
-            console.error('Error al actualizar pago:', error);
-          }
-        );
+      this.balanceService.actualizarPago(this.pagoSeleccionadoId, pago).subscribe(
+        () => {
+          this.actualizarBalance.emit();
+          this.resetForm();
+          this.mostrarFormulario = false;
+        },
+        (error) => {
+          console.error('Error al actualizar pago:', error);
+        }
+      );
     } else {
       this.balanceService.crearPago(pago).subscribe(
         () => {
@@ -150,7 +148,7 @@ export class IngresoComponent implements OnInit {
       producto_id: pago.producto_id,
       monto: pago.monto,
       fecha: new Date(pago.fecha).toISOString().substring(0, 10),
-      descripcion: pago.descripcion,
+      descripcion: pago.descripcion
     });
     this.mostrarFormulario = true;
   }
@@ -169,12 +167,12 @@ export class IngresoComponent implements OnInit {
   }
 
   getNombreProyecto(proyecto_id: number): string {
-    const proyecto = this.proyectos.find((p) => p.id === proyecto_id);
+    const proyecto = this.proyectos.find(p => p.id === proyecto_id);
     return proyecto ? proyecto.nombre : 'Desconocido';
   }
 
   getNombreProducto(producto_id: number): string {
-    const producto = this.productos.find((p) => p.id === producto_id);
+    const producto = this.productos.find(p => p.id === producto_id);
     return producto ? producto.nombre : 'Desconocido';
   }
 
@@ -184,13 +182,9 @@ export class IngresoComponent implements OnInit {
     }
 
     const filtro = this.filtroTexto.toLowerCase();
-    return this.pagos.filter((pago) => {
-      const proyectoNombre = this.getNombreProyecto(
-        pago.proyecto_id
-      ).toLowerCase();
-      const productoNombre = this.getNombreProducto(
-        pago.producto_id
-      ).toLowerCase();
+    return this.pagos.filter(pago => {
+      const proyectoNombre = this.getNombreProyecto(pago.proyecto_id).toLowerCase();
+      const productoNombre = this.getNombreProducto(pago.producto_id).toLowerCase();
       const descripcion = pago.descripcion?.toLowerCase() || '';
       const fecha = new Date(pago.fecha).toLocaleDateString();
 

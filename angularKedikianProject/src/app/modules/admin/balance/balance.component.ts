@@ -270,6 +270,18 @@ export class BalanceComponent implements OnInit, OnDestroy {
 
   buscarPorFechas(): void {
     console.log('Buscando por fechas personalizadas');
+    // Asegurarse de que las fechas estén en el formato correcto
+    this.fechaInicio = new Date(this.fechaInicioStr);
+    this.fechaFin = new Date(this.fechaFinStr);
+    
+    // Establecer las horas para el inicio y fin del día
+    this.fechaInicio.setHours(0, 0, 0, 0);
+    this.fechaFin.setHours(23, 59, 59, 999);
+    
+    // Actualizar el periodo seleccionado a 'personalizado'
+    this.periodoSeleccionado = 'personalizado';
+    
+    // Cargar los datos con las nuevas fechas
     this.cargarDatos();
   }
 }
