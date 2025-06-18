@@ -114,7 +114,7 @@ export class SidebarComponent implements OnInit {
   }
 
   checkScreenSize(): void {
-    this.isMobile = this.screenWidth < 768;
+    this.isMobile = this.screenWidth < 1265;
     // Si cambia a vista de escritorio, asegurarse de que el sidebar esté abierto
     if (!this.isMobile) {
       this.isOpen = true;
