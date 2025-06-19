@@ -87,7 +87,7 @@ export class UsersGestionComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       hash_contrasena: ['', [Validators.minLength(8)]],
       roles: ['OPERARIO', [Validators.required]],
-      estado: [true, [Validators.required]],
+      estado: [[true], [Validators.required]],
     });
   }
 
