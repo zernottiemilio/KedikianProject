@@ -28,8 +28,8 @@ interface UserFilters {
   id: string;
   nombre: string;
   email: string;
-  roles: string[];
-  estado: any; // Puede ser string o boolean
+  roles: string;
+  estado: any;
 }
 
 @Component({
@@ -55,7 +55,7 @@ export class UsersGestionComponent implements OnInit {
     id: '',
     nombre: '',
     email: '',
-    roles: [],
+    roles: '',
     estado: '',
   };
 
@@ -86,6 +86,10 @@ export class UsersGestionComponent implements OnInit {
       nombre: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       hash_contrasena: ['', [Validators.minLength(8)]],
+
+
+
+      
       roles: ['OPERARIO', [Validators.required]],
       estado: [[true], [Validators.required]],
     });
@@ -125,14 +129,21 @@ export class UsersGestionComponent implements OnInit {
   private loadUsers(): void {
     this.userService.getUsers().subscribe({
       next: (users) => {
-        this.users = users.map(user => ({
-          ...user,
-          roles: [user.roles[0] as 'ADMINISTRADOR' | 'OPERARIO']
-        }));
+        this.users = users.map(user => {
+          // Normalizar el formato de roles
+          let role = Array.isArray(user.roles) ? user.roles[0] : user.roles;
+          // Limpiar el string de roles (quitar {}, espacios y otros caracteres)
+          role = (role || '').replace(/[{}\s]/g, '').toUpperCase();
+          
+          return {
+            ...user,
+            roles: [role as 'ADMINISTRADOR' | 'OPERARIO']
+          };
+        });
         this.applyFilters();
       },
       error: (err) => {
-        console.error(err);
+        console.error('Error al cargar usuarios:', err);
       },
     });
   }
@@ -173,7 +184,7 @@ export class UsersGestionComponent implements OnInit {
 
     if (this.filters.roles) {
       filtered = filtered.filter((user) =>
-        this.filters.roles.includes(user.roles[0])
+        user.roles[0].toLowerCase() === this.filters.roles.toLowerCase()
       );
     }
 
@@ -254,7 +265,7 @@ export class UsersGestionComponent implements OnInit {
       id: '',
       nombre: '',
       email: '',
-      roles: [],
+      roles: '',
       estado: '',
     };
     this.applyFilters();
@@ -279,6 +290,10 @@ export class UsersGestionComponent implements OnInit {
       email: user.email,
       roles: user.roles,
       estado: user.estado,
+
+
+
+      
     });
     this.userForm.get('hash_contrasena')?.clearValidators();
     this.userForm.get('hash_contrasena')?.updateValueAndValidity();

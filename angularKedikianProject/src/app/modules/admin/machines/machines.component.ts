@@ -56,7 +56,6 @@ export class MaquinariaComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadMachines();
-    this.cargarDatosDePrueba();
   }
 
   loadMachines(): void {
@@ -72,66 +71,13 @@ export class MaquinariaComponent implements OnInit {
   loadMachineProjects(maquina: Maquina): void {
     this.projectService.findByIdMaquina(maquina.id).subscribe((proyectos) => {
       maquina.proyectos = Array.from(
-        proyectos.map((proyecto) => ({
+        proyectos.map((proyecto: any) => ({
           id: proyecto.id,
           nombre: proyecto.nombre,
-          fechaAsignacion: new Date(proyecto.fechaAsignacion),
+          fechaAsignacion: new Date(proyecto.fechaAsignacion || Date.now()),
         }))
       );
     });
-  }
-
-  // Cargar datos de prueba (simula una llamada a API)
-  cargarDatosDePrueba(): void {
-    this.maquinas = [
-      {
-        id: 1,
-        codigo: 'EXC001',
-        nombre: 'Excavadora HD500',
-        estado: true,
-        horas_uso: 1250,
-        proyectos: [],
-      },
-      {
-        id: 2,
-        codigo: 'TRC001',
-        nombre: 'Tractor T-200',
-        estado: false,
-        horas_uso: 3400,
-        proyectos: [],
-      },
-      {
-        id: 3,
-        codigo: 'GRU001',
-        nombre: 'Grúa Móvil G1000',
-        estado: true,
-        horas_uso: 780,
-        proyectos: [
-          {
-            id: 1,
-            nombre: 'Puente Villa Maria',
-            fechaAsignacion: new Date(),
-          },
-        ],
-      },
-      {
-        id: 4,
-        codigo: 'BUL001',
-        nombre: 'Bulldozer B50',
-        estado: true,
-        horas_uso: 2100,
-        proyectos: [],
-      },
-      {
-        id: 5,
-        codigo: 'CAR001',
-        nombre: 'Cargadora Frontal CF300',
-        estado: false,
-        horas_uso: 4500,
-        proyectos: [],
-      },
-    ];
-    this.filtrarMaquinas();
   }
 
   // Filtrar máquinas según búsqueda y estado
@@ -195,38 +141,42 @@ export class MaquinariaComponent implements OnInit {
     const formData = this.maquinaForm.value;
 
     if (this.modoEdicion && this.maquinaEditando) {
-      // Actualizar máquina existente
-      const index = this.maquinas.findIndex(
-        (m) => m.codigo === this.maquinaEditando!.codigo
-      );
-      if (index !== -1) {
-        this.maquinas[index] = {
-          ...this.maquinas[index],
-          nombre: formData.nombre,
-          estado: formData.estado,
-          horas_uso: formData.horas_uso,
-        };
-        this.mostrarMensaje('Máquina actualizada correctamente');
-      }
+      // Actualizar máquina existente en el backend
+      this.machinesService.actualizarMaquina({
+        ...this.maquinaEditando,
+        nombre: formData.nombre,
+        estado: formData.estado,
+        horas_uso: formData.horas_uso,
+      }).subscribe({
+        next: () => {
+          this.loadMachines();
+          this.mostrarMensaje('Máquina actualizada correctamente');
+          this.cerrarModal();
+        },
+        error: () => {
+          this.mostrarMensaje('Error al actualizar la máquina');
+        }
+      });
     } else {
-      // Crear nueva máquina
+      // Crear nueva máquina en el backend
       const nuevoCodigo = this.generarNuevoCodigo();
-      const nuevaMaquina: Maquina = {
-        id: this.generarNuevoCodigo(),
+      this.machinesService.crearMaquina({
         codigo: nuevoCodigo.toString(),
         nombre: formData.nombre,
         estado: formData.estado,
         horas_uso: formData.horas_uso,
         proyectos: [],
-      };
-
-      this.maquinas.unshift(nuevaMaquina);
-      this.mostrarMensaje('Máquina agregada correctamente');
+      }).subscribe({
+        next: (maquinaCreada) => {
+          this.loadMachines();
+          this.mostrarMensaje('Máquina agregada correctamente');
+          this.cerrarModal();
+        },
+        error: () => {
+          this.mostrarMensaje('Error al agregar la máquina');
+        }
+      });
     }
-
-    // Actualizar la lista filtrada
-    this.filtrarMaquinas();
-    this.cerrarModal();
   }
 
   // Generar un nuevo código para la máquina
@@ -237,29 +187,25 @@ export class MaquinariaComponent implements OnInit {
   }
 
   // Mostrar confirmación antes de eliminar máquina
-  eliminarMaquina(codigo: number): void {
-    this.maquinaAEliminar = codigo;
+  eliminarMaquina(id: number): void {
+    this.maquinaAEliminar = id;
     this.modalConfirmacionVisible = true;
   }
 
   // Confirmar eliminación de máquina
   confirmarEliminarMaquina(): void {
     if (this.maquinaAEliminar !== null) {
-      const index = this.maquinas.findIndex(
-        (m) => Number(m.codigo) === this.maquinaAEliminar
-      );
-      if (index !== -1) {
-        // Obtener el nombre para el mensaje
-        const nombreMaquina = this.maquinas[index].nombre;
-        // Eliminar la máquina
-        this.maquinas.splice(index, 1);
-        this.filtrarMaquinas();
-        this.mostrarMensaje(
-          `Máquina "${nombreMaquina}" eliminada correctamente`
-        );
-      }
-      // Cerrar el modal de confirmación
-      this.cancelarEliminarMaquina();
+      this.machinesService.eliminarMaquina(this.maquinaAEliminar).subscribe({
+        next: () => {
+          this.loadMachines();
+          this.mostrarMensaje('Máquina eliminada correctamente');
+          this.cancelarEliminarMaquina();
+        },
+        error: () => {
+          this.mostrarMensaje('Error al eliminar la máquina');
+          this.cancelarEliminarMaquina();
+        }
+      });
     }
   }
 
