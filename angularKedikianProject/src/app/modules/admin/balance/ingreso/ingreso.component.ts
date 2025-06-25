@@ -1,6 +1,7 @@
 // ingreso.component.ts
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { BalanceService } from '../../../../core/services/balance.service';
+import { ProjectService, Project } from '../../../../core/services/project.service';
 import { Router } from '@angular/router';
 import {
   FormBuilder,
@@ -16,7 +17,7 @@ interface Pago {
   id: number;
   proyecto_id: number;
   producto_id: number;
-  monto: number;
+  importe_total: number;
   fecha: Date;
   descripcion: string;
 }
@@ -42,7 +43,7 @@ export class IngresoComponent implements OnInit {
   @Input() pagos: Pago[] = [];
   @Output() actualizarBalance = new EventEmitter<void>();
 
-  proyectos: Proyecto[] = [];
+  proyectos: Project[] = [];
   productos: Producto[] = [];
   pagoForm: FormGroup;
   mostrarFormulario = false;
@@ -50,11 +51,15 @@ export class IngresoComponent implements OnInit {
   pagoSeleccionadoId: number | null = null;
   filtroTexto = '';
 
-  constructor(private balanceService: BalanceService, private fb: FormBuilder) {
+  constructor(
+    private balanceService: BalanceService,
+    private projectService: ProjectService,
+    private fb: FormBuilder
+  ) {
     this.pagoForm = this.fb.group({
       proyecto_id: ['', Validators.required],
       producto_id: ['', Validators.required],
-      monto: ['', [Validators.required, Validators.min(0)]],
+      importe_total: ['', [Validators.required, Validators.min(0)]],
       fecha: [new Date().toISOString().substring(0, 10), Validators.required],
       descripcion: ['']
     });
@@ -66,8 +71,8 @@ export class IngresoComponent implements OnInit {
   }
 
   cargarProyectos(): void {
-    this.balanceService.getProyectos().subscribe(
-      (data: Proyecto[]) => {
+    this.projectService.getProjects().subscribe(
+      (data: Project[]) => {
         this.proyectos = data;
       },
       (error) => {
@@ -146,7 +151,7 @@ export class IngresoComponent implements OnInit {
     this.pagoForm.patchValue({
       proyecto_id: pago.proyecto_id,
       producto_id: pago.producto_id,
-      monto: pago.monto,
+      importe_total: pago.importe_total,
       fecha: new Date(pago.fecha).toISOString().substring(0, 10),
       descripcion: pago.descripcion
     });
@@ -193,7 +198,7 @@ export class IngresoComponent implements OnInit {
         productoNombre.includes(filtro) ||
         descripcion.includes(filtro) ||
         fecha.includes(filtro) ||
-        pago.monto.toString().includes(filtro)
+        pago.importe_total.toString().includes(filtro)
       );
     });
   }

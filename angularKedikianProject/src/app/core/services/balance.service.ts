@@ -96,116 +96,79 @@ export class BalanceService {
 
   // Gastos (Egresos)
   getGastos(fechaInicio: Date, fechaFin: Date): Observable<any> {
-    // Simular filtrado por fecha
-    const gastosFiltrados = this.datosPrueba.gastos.filter(gasto => 
-      gasto.fecha >= fechaInicio && gasto.fecha <= fechaFin
-    );
-    return of(gastosFiltrados);
+    const params = new HttpParams()
+      .set('fechaInicio', fechaInicio.toISOString())
+      .set('fechaFin', fechaFin.toISOString());
+    return this.http.get<any>(`${environment.apiUrl}/gastos`, { params });
   }
 
   getGasto(id: number): Observable<any> {
-    const gasto = this.datosPrueba.gastos.find(g => g.id === id);
-    return of(gasto);
+    return this.http.get<any>(`${environment.apiUrl}/gastos/${id}`);
   }
 
-  crearGasto(gasto: FormData): Observable<any> {
-    const nuevoGasto = {
-      id: this.datosPrueba.gastos.length + 1,
-      usuario_id: Number(gasto.get('usuario_id')),
-      maquina_id: Number(gasto.get('maquina_id')),
-      tipo: gasto.get('tipo') as string,
-      importe_total: Number(gasto.get('importe_total')),
-      fecha: new Date(gasto.get('fecha') as string),
-      descripcion: gasto.get('descripcion') as string,
-      imagen: 'https://via.placeholder.com/150'
-    };
-    this.datosPrueba.gastos.push(nuevoGasto);
-    return of(nuevoGasto);
-  }
-
-  actualizarGasto(id: number, gasto: FormData): Observable<any> {
-    const index = this.datosPrueba.gastos.findIndex(g => g.id === id);
-    if (index !== -1) {
-      this.datosPrueba.gastos[index] = {
-        ...this.datosPrueba.gastos[index],
-        usuario_id: Number(gasto.get('usuario_id')),
-        maquina_id: Number(gasto.get('maquina_id')),
-        tipo: gasto.get('tipo') as string,
-        importe_total: Number(gasto.get('importe_total')),
-        fecha: new Date(gasto.get('fecha') as string),
-        descripcion: gasto.get('descripcion') as string
-      };
+  crearGasto(gasto: any): Observable<any> {
+    if (gasto instanceof FormData) {
+      return this.http.post<any>(`${environment.apiUrl}/gastos`, gasto);
+    } else {
+      return this.http.post<any>(`${environment.apiUrl}/gastos`, gasto, {
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
-    return of(this.datosPrueba.gastos[index]);
+  }
+
+  actualizarGasto(id: number, gasto: any): Observable<any> {
+    if (gasto instanceof FormData) {
+      return this.http.put<any>(`${environment.apiUrl}/gastos/${id}`, gasto);
+    } else {
+      return this.http.put<any>(`${environment.apiUrl}/gastos/${id}`, gasto, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
   }
 
   eliminarGasto(id: number): Observable<any> {
-    const index = this.datosPrueba.gastos.findIndex(g => g.id === id);
-    if (index !== -1) {
-      this.datosPrueba.gastos.splice(index, 1);
-    }
-    return of({ success: true });
+    return this.http.delete<any>(`${environment.apiUrl}/gastos/${id}`);
   }
 
   // Pagos (Ingresos)
   getPagos(fechaInicio: Date, fechaFin: Date): Observable<any> {
-    // Simular filtrado por fecha
-    const pagosFiltrados = this.datosPrueba.pagos.filter(pago => 
-      pago.fecha >= fechaInicio && pago.fecha <= fechaFin
-    );
-    return of(pagosFiltrados);
+    const params = new HttpParams()
+      .set('fechaInicio', fechaInicio.toISOString())
+      .set('fechaFin', fechaFin.toISOString());
+    return this.http.get<any>(`${environment.apiUrl}/pagos`, { params });
   }
 
   getPago(id: number): Observable<any> {
-    const pago = this.datosPrueba.pagos.find(p => p.id === id);
-    return of(pago);
+    return this.http.get<any>(`${environment.apiUrl}/pagos/${id}`);
   }
 
   crearPago(pago: any): Observable<any> {
-    const nuevoPago = {
-      id: this.datosPrueba.pagos.length + 1,
-      ...pago,
-      fecha: new Date(pago.fecha)
-    };
-    this.datosPrueba.pagos.push(nuevoPago);
-    return of(nuevoPago);
+    return this.http.post<any>(`${environment.apiUrl}/pagos`, pago);
   }
 
   actualizarPago(id: number, pago: any): Observable<any> {
-    const index = this.datosPrueba.pagos.findIndex(p => p.id === id);
-    if (index !== -1) {
-      this.datosPrueba.pagos[index] = {
-        ...this.datosPrueba.pagos[index],
-        ...pago,
-        fecha: new Date(pago.fecha)
-      };
-    }
-    return of(this.datosPrueba.pagos[index]);
+    return this.http.put<any>(`${environment.apiUrl}/pagos/${id}`, pago);
   }
 
   eliminarPago(id: number): Observable<any> {
-    const index = this.datosPrueba.pagos.findIndex(p => p.id === id);
-    if (index !== -1) {
-      this.datosPrueba.pagos.splice(index, 1);
-    }
-    return of({ success: true });
+    return this.http.delete<any>(`${environment.apiUrl}/pagos/${id}`);
   }
 
   // Datos Relacionados
   getUsuarios(): Observable<any> {
-    return of(this.datosPrueba.usuarios);
+    return this.http.get<any>(`${environment.apiUrl}/usuarios`);
   }
 
   getMaquinas(): Observable<any> {
-    return of(this.datosPrueba.maquinas);
+    return this.http.get<any>(`${environment.apiUrl}/maquinas`);
   }
 
   getProyectos(): Observable<any> {
-    return of(this.datosPrueba.proyectos);
+    return this.http.get<any>(`${environment.apiUrl}/proyectos`);
   }
 
   getProductos(): Observable<any> {
-    return of(this.datosPrueba.productos);
+    return this.http.get<any>(`${environment.apiUrl}/productos`);
   }
 
   // Resumen o Estadísticas

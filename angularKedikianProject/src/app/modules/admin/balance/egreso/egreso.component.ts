@@ -137,28 +137,30 @@ export class EgresoComponent implements OnInit {
       return;
     }
 
-    const gastoData = new FormData();
     const formValue = this.gastoForm.value;
+    let dataToSend: any;
+    let isFormData = false;
 
-    // Agregar campos del formulario al FormData
-    Object.keys(formValue).forEach((key) => {
-      if (key !== 'imagen') {
-        gastoData.append(key, formValue[key]);
-      }
-    });
-
-    // Agregar imagen si existe
+    // Si hay imagen seleccionada, usar FormData
     if (this.imagenSeleccionada) {
-      gastoData.append(
-        'imagen',
-        this.imagenSeleccionada,
-        this.imagenSeleccionada.name
-      );
+      isFormData = true;
+      const gastoData = new FormData();
+      Object.keys(formValue).forEach((key) => {
+        if (key !== 'imagen') {
+          gastoData.append(key, formValue[key]);
+        }
+      });
+      gastoData.append('imagen', this.imagenSeleccionada, this.imagenSeleccionada.name);
+      dataToSend = gastoData;
+    } else {
+      // Si no hay imagen, enviar JSON plano y poner imagen: ""
+      const { imagen, ...jsonData } = formValue;
+      dataToSend = { ...jsonData, imagen: "" };
     }
 
     if (this.modoEdicion && this.gastoSeleccionadoId) {
       this.balanceService
-        .actualizarGasto(this.gastoSeleccionadoId, gastoData)
+        .actualizarGasto(this.gastoSeleccionadoId, dataToSend)
         .subscribe(
           () => {
             this.actualizarBalance.emit();
@@ -170,7 +172,7 @@ export class EgresoComponent implements OnInit {
           }
         );
     } else {
-      this.balanceService.crearGasto(gastoData).subscribe(
+      this.balanceService.crearGasto(dataToSend).subscribe(
         () => {
           this.actualizarBalance.emit();
           this.resetForm();

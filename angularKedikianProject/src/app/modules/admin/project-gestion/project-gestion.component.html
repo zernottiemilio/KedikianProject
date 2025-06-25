@@ -40,15 +40,6 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="description">Descripción</label>
-        <textarea id="description" formControlName="description" class="form-control" rows="3"></textarea>
-        <div class="error-message"
-          *ngIf="projectForm.get('description')?.invalid && projectForm.get('description')?.touched">
-          La descripción es obligatoria
-        </div>
-      </div>
-
       <div class="form-row">
         <div class="form-group">
           <label for="ubicacion">Ubicación</label>
@@ -111,6 +102,15 @@
       </div>
 
       <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea id="description" formControlName="description" class="form-control" rows="3"></textarea>
+        <div class="error-message"
+          *ngIf="projectForm.get('description')?.invalid && projectForm.get('description')?.touched">
+          La descripción es obligatoria
+        </div>
+      </div>
+
+      <div class="form-group">
         <label for="project-images">Imágenes del Proyecto</label>
         <div class="image-upload-container">
           <div class="image-preview-container" *ngIf="imagePreviewUrls && imagePreviewUrls.length > 0">
@@ -164,7 +164,8 @@
             <span>{{ project.progress }}%</span>
           </div>
           <div class="project-days" [ngClass]="getDaysPriorityClass(project.daysRemaining)">
-            {{ project.daysRemaining }} días restantes
+            <span *ngIf="project.isOverdue" class="overdue-indicator">⚠️</span>
+            {{ project.isOverdue ? 'Atrasado' : (project.daysRemaining + ' días restantes') }}
           </div>
           <div class="project-status">
             <span class="status-badge" [ngClass]="project.estado ? 'status-active' : 'status-inactive'">
@@ -216,11 +217,6 @@
       </div>
 
       <div class="detail-row">
-        <label>Descripción:</label>
-        <p>{{ selectedProject.description }}</p>
-      </div>
-
-      <div class="detail-row">
         <label>Responsable:</label>
         <p>{{ selectedProject.manager }}</p>
       </div>
@@ -233,6 +229,11 @@
       <div class="detail-row">
         <label>Contrato:</label>
         <p>{{ getContratoNombre(selectedProject.contrato_id) }}</p>
+      </div>
+
+      <div class="detail-row">
+        <label>Descripción:</label>
+        <p>{{ selectedProject.description }}</p>
       </div>
 
       <div class="detail-grid">
@@ -254,7 +255,8 @@
         <div class="detail-item">
           <label>Días restantes:</label>
           <p [ngClass]="getDaysPriorityClass(selectedProject.daysRemaining)">
-            {{ selectedProject.daysRemaining }} días
+            <span *ngIf="selectedProject.isOverdue" class="overdue-indicator">⚠️</span>
+            {{ selectedProject.isOverdue ? 'Proyecto atrasado' : (selectedProject.daysRemaining + ' días restantes') }}
           </p>
         </div>
       </div>

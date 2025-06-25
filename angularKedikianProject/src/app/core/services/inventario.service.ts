@@ -72,8 +72,8 @@ export interface FiltrosProducto {
 })
 export class InventarioService {
   private readonly baseUrl = `${environment.apiUrl}/inventario`;
-  private readonly productosEndpoint = `${this.baseUrl}/productos`;
-  private readonly movimientosEndpoint = `${this.baseUrl}/movimientos`;
+  private readonly productosEndpoint = `${environment.apiUrl}/productos`;
+  private readonly movimientosEndpoint = `${environment.apiUrl}/movimientos-inventario`;
 
   constructor(private http: HttpClient) {}
 
@@ -129,7 +129,7 @@ export class InventarioService {
   /**
    * Crea un nuevo producto
    */
-  crearProducto(producto: NuevoProducto): Observable<RespuestaAPI<Producto>> {
+  crearProducto(producto: NuevoProducto | FormData): Observable<RespuestaAPI<Producto>> {
     return this.http.post<RespuestaAPI<Producto>>(this.productosEndpoint, producto)
       .pipe(catchError(this.manejarError));
   }

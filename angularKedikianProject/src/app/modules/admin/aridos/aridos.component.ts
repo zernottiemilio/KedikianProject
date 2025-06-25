@@ -7,6 +7,7 @@ import {
 } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { AridosService } from '../../../core/services/aridos.service';
 
 // Interfaces
 export interface Arido {
@@ -57,7 +58,7 @@ export class AridosComponent implements OnInit {
   registroEditandoId: number | null = null;
   registroAEliminar: RegistroArido | null = null;
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, private aridosService: AridosService) {
     this.registroForm = this.fb.group({
       proyectoId: ['', Validators.required],
       aridoId: ['', Validators.required],
@@ -72,8 +73,43 @@ export class AridosComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.cargarDatosDePrueba();
-    this.actualizarRegistrosFiltrados();
+    this.cargarDatosReales();
+  }
+
+  cargarDatosReales(): void {
+    // Cargar proyectos
+    this.aridosService.getProyectos().subscribe({
+      next: (proyectos) => {
+        this.proyectos = proyectos;
+      },
+      error: (error) => {
+        console.error('Error al cargar proyectos:', error);
+        this.mostrarMensaje('Error al cargar proyectos');
+      }
+    });
+
+    // Cargar áridos
+    this.aridosService.getAridos().subscribe({
+      next: (aridos) => {
+        this.aridos = aridos;
+      },
+      error: (error) => {
+        console.error('Error al cargar áridos:', error);
+        this.mostrarMensaje('Error al cargar áridos');
+      }
+    });
+
+    // Cargar registros
+    this.aridosService.getRegistrosAridos().subscribe({
+      next: (registros) => {
+        this.registros = registros;
+        this.actualizarRegistrosFiltrados();
+      },
+      error: (error) => {
+        console.error('Error al cargar registros:', error);
+        this.mostrarMensaje('Error al cargar registros');
+      }
+    });
   }
 
   actualizarRegistrosFiltrados(): void {
@@ -124,15 +160,20 @@ export class AridosComponent implements OnInit {
 
   eliminarRegistro(): void {
     if (this.registroAEliminar) {
-      const index = this.registros.findIndex(
-        (r) => r.id === this.registroAEliminar!.id
-      );
-      if (index !== -1) {
-        this.registros.splice(index, 1);
-        this.actualizarRegistrosFiltrados();
-      }
-      this.mostrarModalConfirmacion = false;
-      this.registroAEliminar = null;
+      this.aridosService.eliminarRegistroArido(this.registroAEliminar.id).subscribe({
+        next: () => {
+          this.cargarDatosReales();
+          this.mostrarMensaje('Registro eliminado correctamente');
+          this.mostrarModalConfirmacion = false;
+          this.registroAEliminar = null;
+        },
+        error: (error) => {
+          console.error('Error al eliminar registro:', error);
+          this.mostrarMensaje('Error al eliminar el registro');
+          this.mostrarModalConfirmacion = false;
+          this.registroAEliminar = null;
+        }
+      });
     }
   }
 
@@ -145,10 +186,12 @@ export class AridosComponent implements OnInit {
       );
       const arido = this.aridos.find((a) => a.id === +formData.aridoId);
 
-      if (!proyecto || !arido) return;
+      if (!proyecto || !arido) {
+        this.mostrarMensaje('Error: Proyecto o árido no encontrado');
+        return;
+      }
 
-      const nuevoRegistro: RegistroArido = {
-        id: this.modoEdicion ? this.registroEditandoId! : this.generarNuevoId(),
+      const nuevoRegistro: Omit<RegistroArido, 'id'> = {
         proyectoId: +formData.proyectoId,
         proyectoNombre: proyecto.nombre,
         aridoId: +formData.aridoId,
@@ -160,25 +203,38 @@ export class AridosComponent implements OnInit {
       };
 
       if (this.modoEdicion && this.registroEditandoId) {
-        const index = this.registros.findIndex(
-          (r) => r.id === this.registroEditandoId
-        );
-        if (index !== -1) {
-          this.registros[index] = nuevoRegistro;
-        }
+        // Actualizar registro existente
+        const registroActualizado: RegistroArido = {
+          ...nuevoRegistro,
+          id: this.registroEditandoId
+        };
+        
+        this.aridosService.actualizarRegistroArido(registroActualizado).subscribe({
+          next: () => {
+            this.cargarDatosReales();
+            this.mostrarMensaje('Registro actualizado correctamente');
+            this.cerrarModal();
+          },
+          error: (error) => {
+            console.error('Error al actualizar registro:', error);
+            this.mostrarMensaje('Error al actualizar el registro');
+          }
+        });
       } else {
-        this.registros.unshift(nuevoRegistro);
+        // Crear nuevo registro
+        this.aridosService.crearRegistroArido(nuevoRegistro).subscribe({
+          next: () => {
+            this.cargarDatosReales();
+            this.mostrarMensaje('Registro creado correctamente');
+            this.cerrarModal();
+          },
+          error: (error) => {
+            console.error('Error al crear registro:', error);
+            this.mostrarMensaje('Error al crear el registro');
+          }
+        });
       }
-
-      this.actualizarRegistrosFiltrados();
-      this.cerrarModal();
     }
-  }
-
-  private generarNuevoId(): number {
-    return this.registros.length > 0
-      ? Math.max(...this.registros.map((r) => r.id)) + 1
-      : 1;
   }
 
   getUnidadMedida(aridoId: number): string {
@@ -186,79 +242,29 @@ export class AridosComponent implements OnInit {
     return arido ? arido.unidadMedida : '';
   }
 
-  cargarDatosDePrueba(): void {
-    // Proyectos de ejemplo
-    this.proyectos = [
-      {
-        id: 1,
-        nombre: 'Edificio Residencial Aurora',
-        ubicacion: 'Av. Principal 123',
-        estado: 'activo',
-      },
-      {
-        id: 2,
-        nombre: 'Centro Comercial Plaza Norte',
-        ubicacion: 'Ruta 25 km 14',
-        estado: 'activo',
-      },
-      {
-        id: 3,
-        nombre: 'Puente Costanera',
-        ubicacion: 'Sector Costanera Sur',
-        estado: 'pausado',
-      },
-    ];
+  mostrarMensaje(mensaje: string): void {
+    // Implementación simple de notificación sin dependencias externas
+    const notificacion = document.createElement('div');
+    notificacion.textContent = mensaje;
+    notificacion.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 4px;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    `;
+    document.body.appendChild(notificacion);
 
-    // Áridos de ejemplo
-    this.aridos = [
-      { id: 1, nombre: 'Arena Fina', tipo: 'Arena', unidadMedida: 'm³' },
-      { id: 2, nombre: 'Grava', tipo: 'Piedra', unidadMedida: 'm³' },
-      {
-        id: 3,
-        nombre: 'Piedra Partida',
-        tipo: 'Piedra',
-        unidadMedida: 'toneladas',
-      },
-      { id: 4, nombre: 'Arena Gruesa', tipo: 'Arena', unidadMedida: 'm³' },
-    ];
-
-    // Registros de ejemplo
-    this.registros = [
-      {
-        id: 1,
-        proyectoId: 1,
-        proyectoNombre: 'Edificio Residencial Aurora',
-        aridoId: 1,
-        aridoNombre: 'Arena Fina',
-        cantidad: 15,
-        fechaEntrega: new Date('2025-04-20'),
-        operario: 'Juan Pérez',
-        observaciones: 'Entrega completa sin inconvenientes',
-      },
-      {
-        id: 2,
-        proyectoId: 2,
-        proyectoNombre: 'Centro Comercial Plaza Norte',
-        aridoId: 2,
-        aridoNombre: 'Grava',
-        cantidad: 22.5,
-        fechaEntrega: new Date('2025-04-22'),
-        operario: 'María Gómez',
-        observaciones: 'Se requiere más material para la próxima semana',
-      },
-      {
-        id: 3,
-        proyectoId: 1,
-        proyectoNombre: 'Edificio Residencial Aurora',
-        aridoId: 3,
-        aridoNombre: 'Piedra Partida',
-        cantidad: 8,
-        fechaEntrega: new Date('2025-04-25'),
-        operario: 'Carlos Rodríguez',
-        observaciones: '',
-      },
-    ];
-
-    this.actualizarRegistrosFiltrados();
+    // Eliminar después de 3 segundos
+    setTimeout(() => {
+      if (document.body.contains(notificacion)) {
+        document.body.removeChild(notificacion);
+      }
+    }, 3000);
   }
 }

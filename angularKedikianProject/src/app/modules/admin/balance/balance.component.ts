@@ -25,7 +25,7 @@ interface Pago {
   id: number;
   proyecto_id: number;
   producto_id: number;
-  monto: number;
+  importe_total: number;
   fecha: Date;
   descripcion: string;
 }
@@ -251,7 +251,7 @@ export class BalanceComponent implements OnInit, OnDestroy {
   }
 
   calcularTotalIngresos(): void {
-    this.totalIngresos = this.pagos.reduce((sum, pago) => sum + pago.monto, 0);
+    this.totalIngresos = this.pagos.reduce((sum, pago) => sum + pago.importe_total, 0);
     console.log('Total ingresos calculado:', this.totalIngresos);
   }
 

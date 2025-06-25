@@ -8,26 +8,21 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-
-interface Project {
-  id: number;
-  nombre: string;
-  description: string;
-  startDate: Date;
-  endDate: Date;
-  daysRemaining: number;
-  estado: boolean; // true = activo, false = inactivo
-  progress: number;
-  manager: string;
-  fecha_creacion: Date;
-  contrato_id: number;
-  ubicacion: string;
-  images?: string[]; // URLs de las imágenes
-}
+import { ProjectService, Project } from '../../../core/services/project.service';
+import { MachinesService, Maquina } from '../../../core/services/machines.service';
 
 interface Contrato {
   id: number;
   nombre: string;
+}
+
+interface MaquinaAsignada {
+  id: number;
+  codigo: string;
+  nombre: string;
+  estado: boolean;
+  horas_uso: number;
+  fechaAsignacion: Date;
 }
 
 @Component({
@@ -62,7 +57,11 @@ export class ProjectGestionComponent implements OnInit {
   // Contratos simulados para el select
   contratos: Contrato[] = [];
 
-  constructor(private fb: FormBuilder) {
+  constructor(
+    private fb: FormBuilder,
+    private projectService: ProjectService,
+    private machinesService: MachinesService
+  ) {
     this.initForm();
   }
 
@@ -70,7 +69,6 @@ export class ProjectGestionComponent implements OnInit {
     this.projectForm = this.fb.group({
       id: [null],
       nombre: ['', Validators.required],
-      description: ['', Validators.required],
       startDate: ['', Validators.required],
       endDate: ['', Validators.required],
       manager: ['', Validators.required],
@@ -81,14 +79,15 @@ export class ProjectGestionComponent implements OnInit {
       ],
       ubicacion: ['', Validators.required],
       contrato_id: [null, Validators.required],
+      description: ['', Validators.required],
     });
   }
 
   ngOnInit(): void {
-    // Cargar contratos simulados
+    // Cargar contratos simulados (por ahora)
     this.loadContratos();
-
-    // Cargar proyectos simulados
+    
+    // Cargar proyectos reales desde el backend
     this.loadProjects();
 
     this.calculateDaysRemaining();
@@ -107,92 +106,116 @@ export class ProjectGestionComponent implements OnInit {
   }
 
   loadProjects(): void {
-    // Simular datos que vendrían de la base de datos
-    this.projects = [
-      {
-        id: 1,
-        nombre: 'Construcción Carretera Norte',
-        description:
-          'Proyecto de construcción y ampliación de la carretera norte para mejorar la conectividad entre poblaciones rurales.',
-        startDate: new Date(2025, 3, 1),
-        endDate: new Date(2025, 5, 6),
-        daysRemaining: 12,
-        estado: true,
-        progress: 75,
-        manager: 'Carlos Rodríguez',
-        fecha_creacion: new Date(2025, 2, 15),
-        contrato_id: 1,
-        ubicacion: 'Sector Norte, Km 45',
-        images: [
-          'https://via.placeholder.com/800x600?text=Imagen+Carretera+1',
-          'https://via.placeholder.com/800x600?text=Imagen+Carretera+2',
-        ],
-      },
-      {
-        id: 2,
-        nombre: 'Urbanización Los Pinos',
-        description:
-          'Desarrollo urbano en el sector sur con 120 viviendas y áreas verdes comunitarias.',
-        startDate: new Date(2025, 2, 15),
-        endDate: new Date(2025, 6, 20),
-        daysRemaining: 25,
-        estado: true,
-        progress: 50,
-        manager: 'María González',
-        fecha_creacion: new Date(2025, 1, 10),
-        contrato_id: 3,
-        ubicacion: 'Sector Sur, Parcela 23',
-        images: [
-          'https://via.placeholder.com/800x600?text=Urbanización+1',
-          'https://via.placeholder.com/800x600?text=Urbanización+2',
-          'https://via.placeholder.com/800x600?text=Urbanización+3',
-        ],
-      },
-      {
-        id: 3,
-        nombre: 'Canalización Río Sur',
-        description:
-          'Obras de canalización y protección del cauce del río para prevenir inundaciones en la zona.',
-        startDate: new Date(2025, 3, 10),
-        endDate: new Date(2025, 4, 30),
-        daysRemaining: 5,
-        estado: true,
-        progress: 90,
-        manager: 'Juan Pérez',
-        fecha_creacion: new Date(2025, 2, 5),
-        contrato_id: 2,
-        ubicacion: 'Cuenca del Río Sur, Sección B4',
-        images: ['https://via.placeholder.com/800x600?text=Río+Sur+1'],
-      },
-      {
-        id: 4,
-        nombre: 'Renovación Edificio Municipal',
-        description:
-          'Proyecto de renovación y modernización de las instalaciones del edificio municipal central.',
-        startDate: new Date(2024, 10, 12),
-        endDate: new Date(2025, 3, 15),
-        daysRemaining: -10,
-        estado: false,
-        progress: 100,
-        manager: 'Laura Martínez',
-        fecha_creacion: new Date(2024, 9, 30),
-        contrato_id: 4,
-        ubicacion: 'Centro de la Ciudad, Plaza Principal',
-        images: [
-          'https://via.placeholder.com/800x600?text=Edificio+1',
-          'https://via.placeholder.com/800x600?text=Edificio+2',
-        ],
-      },
-    ];
+    this.projectService.getProjects().subscribe({
+      next: (projects) => {
+        console.log('Datos originales del backend:', projects);
+        console.log('Estructura del primer proyecto:', projects[0] ? Object.keys(projects[0]) : 'No hay proyectos');
+        
+        this.projects = projects.map(project => {
+          // Valores por defecto para campos faltantes del backend
+          const defaultProject = {
+            description: 'Sin descripción',
+            startDate: new Date(),
+            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días desde hoy
+            manager: 'Sin asignar',
+            progress: 0,
+            daysRemaining: 0
+          };
 
-    this.filteredProjects = [...this.projects];
+          console.log('Proyecto original del backend:', project);
+          console.log('Campos disponibles:', Object.keys(project));
+          console.log('fecha_inicio:', project.fecha_inicio);
+          console.log('fecha_fin:', project.fecha_fin);
+          console.log('descripcion:', project.descripcion);
+          console.log('gerente:', project.gerente);
+          console.log('progreso:', project.progreso);
+
+          const mappedProject = {
+            ...defaultProject,
+            ...project,
+            // Mapear campos del backend a campos del frontend
+            description: project.descripcion || project.description || defaultProject.description,
+            startDate: project.fecha_inicio ? new Date(project.fecha_inicio) : 
+                      project.startDate ? new Date(project.startDate) : defaultProject.startDate,
+            endDate: project.fecha_fin ? new Date(project.fecha_fin) : 
+                    project.endDate ? new Date(project.endDate) : defaultProject.endDate,
+            manager: project.gerente || project.manager || defaultProject.manager,
+            progress: project.progreso || project.progress || defaultProject.progress,
+            fecha_creacion: project.fecha_creacion ? new Date(project.fecha_creacion) : new Date()
+          };
+          
+          console.log('Proyecto mapeado:', mappedProject);
+          console.log('Fechas finales:', {
+            startDate: mappedProject.startDate,
+            endDate: mappedProject.endDate
+          });
+          return mappedProject;
+        });
+        
+        console.log('Proyectos mapeados:', this.projects);
+        this.calculateDaysRemaining();
+        this.filterProjects();
+        this.calculateTotalPages();
+      },
+      error: (error) => {
+        console.error('Error al cargar proyectos:', error);
+        this.mostrarMensaje('Error al cargar proyectos');
+      }
+    });
   }
 
   calculateDaysRemaining(): void {
     const today = new Date();
+    console.log('Fecha actual para cálculo:', today);
+    
     this.projects.forEach((project) => {
-      const diffTime = project.endDate.getTime() - today.getTime();
-      project.daysRemaining = Math.ceil(diffTime / (1000 * 3600 * 24));
+      try {
+        console.log(`Calculando días para proyecto "${project.nombre}":`);
+        console.log('- Fecha de inicio:', project.startDate);
+        console.log('- Fecha de fin:', project.endDate);
+        console.log('- Tipo de fecha de inicio:', typeof project.startDate);
+        console.log('- Tipo de fecha de fin:', typeof project.endDate);
+        
+        // Verificar que las fechas sean válidas
+        if (project.startDate && project.endDate && 
+            !isNaN(project.startDate.getTime()) && !isNaN(project.endDate.getTime())) {
+          
+          // Calcular duración total del proyecto (días)
+          const totalDuration = Math.ceil((project.endDate.getTime() - project.startDate.getTime()) / (1000 * 3600 * 24));
+          
+          // Calcular días transcurridos desde el inicio
+          const daysElapsed = Math.ceil((today.getTime() - project.startDate.getTime()) / (1000 * 3600 * 24));
+          
+          // Calcular días restantes
+          const daysRemaining = totalDuration - daysElapsed;
+          
+          // Asegurar que no sea negativo
+          project.daysRemaining = Math.max(0, daysRemaining);
+          
+          // Determinar si el proyecto está atrasado
+          project.isOverdue = daysElapsed > totalDuration;
+          
+          console.log('- Duración total del proyecto:', totalDuration, 'días');
+          console.log('- Días transcurridos:', daysElapsed, 'días');
+          console.log('- Días restantes:', project.daysRemaining, 'días');
+          console.log('- Proyecto atrasado:', project.isOverdue);
+          
+        } else {
+          project.daysRemaining = 0;
+          project.isOverdue = false;
+          console.warn('- Fechas inválidas para proyecto:', project.nombre);
+          if (!project.startDate || isNaN(project.startDate.getTime())) {
+            console.warn('  - Fecha de inicio inválida');
+          }
+          if (!project.endDate || isNaN(project.endDate.getTime())) {
+            console.warn('  - Fecha de fin inválida');
+          }
+        }
+      } catch (error) {
+        project.daysRemaining = 0;
+        project.isOverdue = false;
+        console.error('- Error calculando días restantes para proyecto:', project.nombre, error);
+      }
     });
   }
 
@@ -207,8 +230,14 @@ export class ProjectGestionComponent implements OnInit {
   saveProject(): void {
     if (this.projectForm.valid) {
       const formValues = this.projectForm.value;
+      console.log('Valores del formulario:', formValues);
+      console.log('Formulario válido:', this.projectForm.valid);
+      console.log('Errores del formulario:', this.projectForm.errors);
+      
       const startDate = new Date(formValues.startDate);
       const endDate = new Date(formValues.endDate);
+      
+      console.log('Fechas parseadas:', { startDate, endDate });
 
       // Calcular días restantes
       const today = new Date();
@@ -217,86 +246,77 @@ export class ProjectGestionComponent implements OnInit {
 
       if (this.isEditing && formValues.id) {
         // Actualizar proyecto existente
-        const index = this.projects.findIndex((p) => p.id === formValues.id);
-        if (index !== -1) {
-          // Mantener imágenes existentes y añadir nuevas si las hay
-          const existingImages = this.projects[index].images || [];
-          const newImages: string[] = [...existingImages];
-
-          // Simular carga de nuevas imágenes
-          if (this.selectedFiles.length > 0) {
-            this.selectedFiles.forEach((file) => {
-              // En un entorno real, aquí subiríamos la imagen y obtendríamos una URL
-              const fakeImageUrl = `https://via.placeholder.com/800x600?text=${encodeURIComponent(
-                file.name
-              )}`;
-              newImages.push(fakeImageUrl);
-            });
-          }
-
-          this.projects[index] = {
-            ...formValues,
-            id: formValues.id,
-            startDate: startDate,
-            endDate: endDate,
-            daysRemaining: daysRemaining,
-            fecha_creacion: this.projects[index].fecha_creacion,
-            images: newImages,
-          };
-
-          // Si el proyecto actualizado es el seleccionado actualmente, actualizarlo también
-          if (
-            this.selectedProject &&
-            this.selectedProject.id === formValues.id
-          ) {
-            this.selectedProject = { ...this.projects[index] };
-          }
-        }
-      } else {
-        // Crear nuevo proyecto
-        const newImages: string[] = [];
-
-        // Simular carga de imágenes
-        if (this.selectedFiles.length > 0) {
-          this.selectedFiles.forEach((file) => {
-            // En un entorno real, aquí subiríamos la imagen y obtendríamos una URL
-            const fakeImageUrl = `https://via.placeholder.com/800x600?text=${encodeURIComponent(
-              file.name
-            )}`;
-            newImages.push(fakeImageUrl);
-          });
-        }
-
-        const newProject: Project = {
-          id: this.getNextId(),
+        const projectToUpdate = {
+          id: formValues.id,
           nombre: formValues.nombre,
-          description: formValues.description,
-          startDate: startDate,
-          endDate: endDate,
-          daysRemaining: daysRemaining,
+          fecha_inicio: startDate.toISOString().split('T')[0],
+          fecha_fin: endDate.toISOString().split('T')[0],
           estado: formValues.estado,
-          progress: formValues.progress,
-          manager: formValues.manager,
-          fecha_creacion: new Date(),
+          progreso: formValues.progress,
+          gerente: formValues.manager,
           contrato_id: formValues.contrato_id,
           ubicacion: formValues.ubicacion,
-          images: newImages.length > 0 ? newImages : undefined,
+          description: formValues.description,
         };
 
-        this.projects.push(newProject);
+        console.log('Datos a enviar al backend:', projectToUpdate);
+
+        this.projectService.updateProject(projectToUpdate as unknown as Project).subscribe({
+          next: () => {
+            this.loadProjects();
+            this.mostrarMensaje('Proyecto actualizado correctamente');
+            this.showAddForm = false;
+            this.isEditing = false;
+            this.clearImagePreviews();
+          },
+          error: (error) => {
+            console.error('Error al actualizar proyecto:', error);
+            this.mostrarMensaje('Error al actualizar el proyecto');
+          }
+        });
+      } else {
+        // Crear nuevo proyecto
+        const newProject = {
+          nombre: formValues.nombre,
+          fecha_inicio: startDate.toISOString().split('T')[0],
+          fecha_fin: endDate.toISOString().split('T')[0],
+          estado: formValues.estado,
+          progreso: formValues.progress,
+          gerente: formValues.manager,
+          contrato_id: formValues.contrato_id,
+          ubicacion: formValues.ubicacion,
+          description: formValues.description,
+        };
+
+        console.log('Datos a enviar al backend:', newProject);
+        console.log('Datos a enviar al backend (JSON):', JSON.stringify(newProject, null, 2));
+
+        this.projectService.createProject(newProject).subscribe({
+          next: () => {
+            this.loadProjects();
+            this.mostrarMensaje('Proyecto creado correctamente');
+            this.showAddForm = false;
+            this.isEditing = false;
+            this.clearImagePreviews();
+          },
+          error: (error) => {
+            console.error('Error al crear proyecto:', error);
+            this.mostrarMensaje('Error al crear el proyecto');
+          }
+        });
       }
-
-      // Actualizar listado filtrado y paginación
-      this.filterProjects();
-      this.calculateTotalPages();
-      this.showAddForm = false;
-      this.isEditing = false;
-      this.clearImagePreviews();
+    } else {
+      console.error('Formulario inválido:', this.projectForm.errors);
+      console.error('Estado de los campos:');
+      Object.keys(this.projectForm.controls).forEach(key => {
+        const control = this.projectForm.get(key);
+        console.error(`- ${key}:`, {
+          value: control?.value,
+          valid: control?.valid,
+          errors: control?.errors
+        });
+      });
     }
-  }
-
-  getNextId(): number {
-    return Math.max(...this.projects.map((p) => p.id), 0) + 1;
   }
 
   selectProject(project: Project): void {
@@ -312,7 +332,6 @@ export class ProjectGestionComponent implements OnInit {
     this.projectForm.patchValue({
       id: project.id,
       nombre: project.nombre,
-      description: project.description,
       startDate: this.formatDateForInput(project.startDate),
       endDate: this.formatDateForInput(project.endDate),
       manager: project.manager,
@@ -320,6 +339,7 @@ export class ProjectGestionComponent implements OnInit {
       progress: project.progress,
       ubicacion: project.ubicacion,
       contrato_id: project.contrato_id,
+      description: project.description,
     });
   }
 
@@ -342,42 +362,50 @@ export class ProjectGestionComponent implements OnInit {
 
   deleteProject(id: number): void {
     if (confirm('¿Está seguro que desea eliminar este proyecto?')) {
-      this.projects = this.projects.filter((project) => project.id !== id);
-
-      if (this.selectedProject && this.selectedProject.id === id) {
-        this.selectedProject = null;
-      }
-
-      this.filterProjects();
-      this.calculateTotalPages();
+      this.projectService.deleteProject(id).subscribe({
+        next: () => {
+          this.loadProjects();
+          this.mostrarMensaje('Proyecto eliminado correctamente');
+          if (this.selectedProject && this.selectedProject.id === id) {
+            this.selectedProject = null;
+          }
+        },
+        error: (error) => {
+          console.error('Error al eliminar proyecto:', error);
+          this.mostrarMensaje('Error al eliminar el proyecto');
+        }
+      });
     }
   }
 
   updateProjectProgress(project: Project, progress: number): void {
-    // Actualizar en la lista de proyectos
-    const index = this.projects.findIndex((p) => p.id === project.id);
-    if (index !== -1) {
-      this.projects[index].progress = Number(progress);
-    }
-
-    // Actualizar en el proyecto seleccionado
-    if (this.selectedProject && this.selectedProject.id === project.id) {
-      this.selectedProject.progress = Number(progress);
-    }
+    const projectToUpdate = { ...project, progress: Number(progress) };
+    
+    this.projectService.updateProject(projectToUpdate).subscribe({
+      next: () => {
+        this.loadProjects();
+        this.mostrarMensaje('Progreso actualizado correctamente');
+      },
+      error: (error) => {
+        console.error('Error al actualizar progreso:', error);
+        this.mostrarMensaje('Error al actualizar progreso');
+      }
+    });
   }
 
   toggleProjectStatus(project: Project): void {
-    // Invertir el estado
-    project.estado = !project.estado;
-
-    // Actualizar en la lista de proyectos
-    const index = this.projects.findIndex((p) => p.id === project.id);
-    if (index !== -1) {
-      this.projects[index].estado = project.estado;
-    }
-
-    // Volver a aplicar filtros si corresponde
-    this.filterProjects();
+    const projectToUpdate = { ...project, estado: !project.estado };
+    
+    this.projectService.updateProject(projectToUpdate).subscribe({
+      next: () => {
+        this.loadProjects();
+        this.mostrarMensaje('Estado del proyecto actualizado correctamente');
+      },
+      error: (error) => {
+        console.error('Error al actualizar estado:', error);
+        this.mostrarMensaje('Error al actualizar estado del proyecto');
+      }
+    });
   }
 
   filterProjects(): void {
@@ -444,9 +472,10 @@ export class ProjectGestionComponent implements OnInit {
   }
 
   getDaysPriorityClass(days: number): string {
-    if (days <= 5) return 'priority-high';
-    if (days <= 15) return 'priority-medium';
-    return 'priority-normal';
+    if (days <= 0) return 'days-overdue';
+    if (days <= 7) return 'days-urgent';
+    if (days <= 30) return 'days-warning';
+    return 'days-normal';
   }
 
   getContratoNombre(contratoId: number): string {
@@ -514,5 +543,31 @@ export class ProjectGestionComponent implements OnInit {
       this.currentImageIndex--;
       this.currentImage = this.selectedProject.images[this.currentImageIndex];
     }
+  }
+
+  mostrarMensaje(mensaje: string): void {
+    // Implementación simple de notificación sin dependencias externas
+    const notificacion = document.createElement('div');
+    notificacion.textContent = mensaje;
+    notificacion.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 4px;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    `;
+    document.body.appendChild(notificacion);
+
+    // Eliminar después de 3 segundos
+    setTimeout(() => {
+      if (document.body.contains(notificacion)) {
+        document.body.removeChild(notificacion);
+      }
+    }, 3000);
   }
 }

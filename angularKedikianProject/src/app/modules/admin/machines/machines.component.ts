@@ -61,22 +61,11 @@ export class MaquinariaComponent implements OnInit {
   loadMachines(): void {
     this.machinesService.obtenerMaquinas().subscribe((maquinas) => {
       this.maquinas = maquinas;
+      // Inicializar proyectos como array vacío para cada máquina
       this.maquinas.forEach((maquina) => {
-        this.loadMachineProjects(maquina);
+        maquina.proyectos = [];
       });
       this.filtrarMaquinas();
-    });
-  }
-
-  loadMachineProjects(maquina: Maquina): void {
-    this.projectService.findByIdMaquina(maquina.id).subscribe((proyectos) => {
-      maquina.proyectos = Array.from(
-        proyectos.map((proyecto: any) => ({
-          id: proyecto.id,
-          nombre: proyecto.nombre,
-          fechaAsignacion: new Date(proyecto.fechaAsignacion || Date.now()),
-        }))
-      );
     });
   }
 
