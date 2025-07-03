@@ -162,7 +162,7 @@ export class ExcelImportComponent implements OnInit {
       return `$ ${value.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
     };
 
-    // Construir los datos para la hoja de Excel según el formato de la imagen
+
     const excelData = [
       ['', '', '', 'Vijande mayo 2025', ''], // Fila de título, se fusionará sobre D y E
       ['Concepto', 'Unidades', 'Valor', 'Remunerativo', 'Adelantos'],
