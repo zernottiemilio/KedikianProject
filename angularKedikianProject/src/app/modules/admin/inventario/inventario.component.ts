@@ -157,6 +157,8 @@ export class InventarioComponent implements OnInit {
     formData.append('inventario', formValue.inventario.toString());
     if (this.imagenSeleccionada) {
       formData.append('imagen', this.imagenSeleccionada);
+    } else {
+      formData.append('imagen', '');
     }
     this.inventarioService.crearProducto(formData).subscribe({
       next: (resp: RespuestaAPI<Producto>) => {

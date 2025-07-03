@@ -3,6 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as XLSX from 'xlsx';
+import { UserService } from '../../../core/services/user.service';
+import { HttpClient } from '@angular/common/http';
 
 interface Operario {
   nombre: string;
@@ -43,38 +45,40 @@ export class ExcelImportComponent implements OnInit {
     multiplicadorExtra: 1.5
   };
 
+  constructor(private userService: UserService, private http: HttpClient) {}
+
   ngOnInit() {
     this.calcularPrecioHoraExtra();
-    // Cargar datos de ejemplo
-    this.cargarDatosEjemplo();
+    this.cargarOperariosDesdeBackend();
   }
 
-  cargarDatosEjemplo() {
-    this.operarios = [
-      {
-        nombre: 'Juan Pérez',
-        dni: '12345678',
-        horasNormales: 160,
-        horasFeriado: 8,
-        horasExtras: 10,
-        precioHoraNormal: this.configuracion.horaNormal,
-        precioHoraFeriado: this.configuracion.horaFeriado,
-        precioHoraExtra: this.configuracion.horaExtra,
-        totalCalculado: 0
+  cargarOperariosDesdeBackend() {
+    this.isLoading = true;
+    this.userService.getUsers().subscribe({
+      next: (users) => {
+        // Filtrar solo operarios activos
+        this.operarios = users
+          .filter(user => Array.isArray(user.roles) ? user.roles.includes('operario') : user.roles === 'operario')
+          .filter(user => user.estado)
+          .map(user => ({
+            nombre: user.nombre,
+            dni: user.id ? user.id.toString() : '', // Ajustar si hay campo dni real
+            horasNormales: 0,
+            horasFeriado: 0,
+            horasExtras: 0,
+            precioHoraNormal: this.configuracion.horaNormal,
+            precioHoraFeriado: this.configuracion.horaFeriado,
+            precioHoraExtra: this.configuracion.horaExtra,
+            totalCalculado: 0
+          }));
+        this.recalcularTodos();
+        this.isLoading = false;
       },
-      {
-        nombre: 'María García',
-        dni: '87654321',
-        horasNormales: 170,
-        horasFeriado: 0,
-        horasExtras: 5,
-        precioHoraNormal: this.configuracion.horaNormal,
-        precioHoraFeriado: this.configuracion.horaFeriado,
-        precioHoraExtra: this.configuracion.horaExtra,
-        totalCalculado: 0
+      error: (err) => {
+        this.errorMessage = 'Error al cargar operarios desde el backend.';
+        this.isLoading = false;
       }
-    ];
-    this.recalcularTodos();
+    });
   }
 
   calcularPrecioHoraExtra() {
