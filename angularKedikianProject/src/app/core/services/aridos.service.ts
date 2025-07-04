@@ -45,18 +45,18 @@ export class AridosService {
   getRegistrosAridos(filtros?: {
     proyectoId?: number;
     aridoId?: number;
-  }): Observable<RegistroArido[]> {
+  }): Observable<any[]> {
     let url = `${this.apiUrl}/registros`;
     if (filtros) {
       const params = new HttpParams();
       if (filtros.proyectoId) params.set('proyectoId', filtros.proyectoId.toString());
       if (filtros.aridoId) params.set('aridoId', filtros.aridoId.toString());
-      return this.http.get<RegistroArido[]>(url, { params }).pipe(
-        catchError(this.handleError<RegistroArido[]>('getRegistrosAridos', []))
+      return this.http.get<any[]>(url, { params }).pipe(
+        catchError(this.handleError<any[]>('getRegistrosAridos', []))
       );
     }
-    return this.http.get<RegistroArido[]>(url).pipe(
-      catchError(this.handleError<RegistroArido[]>('getRegistrosAridos', []))
+    return this.http.get<any[]>(url).pipe(
+      catchError(this.handleError<any[]>('getRegistrosAridos', []))
     );
   }
 
@@ -67,10 +67,25 @@ export class AridosService {
   }
 
   crearRegistroArido(
-    registro: Omit<RegistroArido, 'id'>
+    registro: {
+      proyecto_id: number;
+      usuario_id: number;
+      tipo_arido: string;
+      cantidad: number;
+      fecha_entrega: string;
+    }
   ): Observable<RegistroArido> {
+    console.log('Enviando registro al backend:', registro);
+    console.log('JSON que se envía:', JSON.stringify(registro, null, 2));
     return this.http.post<RegistroArido>(`${this.apiUrl}/registros`, registro).pipe(
-      catchError(this.handleError<RegistroArido>('crearRegistroArido'))
+      catchError((error) => {
+        console.error('Error completo:', error);
+        console.error('Error status:', error.status);
+        console.error('Error message:', error.message);
+        console.error('Error body:', error.error);
+        console.error('Error detail:', JSON.stringify(error.error, null, 2));
+        return this.handleError<RegistroArido>('crearRegistroArido')(error);
+      })
     );
   }
 
@@ -85,6 +100,8 @@ export class AridosService {
       catchError(this.handleError<void>('eliminarRegistroArido'))
     );
   }
+
+
 
   // Método para manejar errores
   private handleError<T>(operation = 'operation', result?: T) {

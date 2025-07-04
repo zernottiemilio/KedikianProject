@@ -118,9 +118,14 @@
 
         <div class="form-group">
           <label for="operario">Operario:</label>
-          <input type="text" id="operario" formControlName="operario" class="form-control" required>
+          <select id="operario" formControlName="operario" class="form-control" required>
+            <option value="">Seleccione un operario</option>
+            @for (operario of operarios; track operario.id) {
+            <option [value]="operario.nombre">{{ operario.nombre }}</option>
+            }
+          </select>
           @if (registroForm.get('operario')?.invalid && registroForm.get('operario')?.touched) {
-          <div class="error-message">El nombre del operario es obligatorio</div>
+          <div class="error-message">El operario es obligatorio</div>
           }
         </div>
 
