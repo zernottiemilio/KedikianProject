@@ -103,15 +103,25 @@ export class InventarioService {
       }
     }
 
-    return this.http.get<RespuestaPaginada<Producto>>(this.productosEndpoint, { params })
+    return this.http.get<any>(this.productosEndpoint, { params })
       .pipe(
         map(response => {
+          // Si la respuesta es un array directo, envuélvelo en un objeto con data
+          if (Array.isArray(response)) {
+            response = { data: response };
+          }
+          // Verificación defensiva para evitar error si data es undefined
+          if (!response.data) {
+            response.data = [];
+          }
           // Convertir fechas de string a Date si es necesario
-          response.data = response.data.map(producto => ({
-            ...producto,
-            created_at: producto.created_at ? producto.created_at : undefined,
-            updated_at: producto.updated_at ? producto.updated_at : undefined
-          }));
+          response.data = Array.isArray(response.data)
+            ? response.data.map((producto: any) => ({
+                ...producto,
+                created_at: producto.created_at ? producto.created_at : undefined,
+                updated_at: producto.updated_at ? producto.updated_at : undefined
+              }))
+            : [];
           return response;
         }),
         catchError(this.manejarError)
@@ -213,10 +223,12 @@ export class InventarioService {
       .pipe(
         map(response => {
           // Convertir fechas de string a Date
-          response.data = response.data.map(movimiento => ({
-            ...movimiento,
-            fecha: typeof movimiento.fecha === 'string' ? new Date(movimiento.fecha) : movimiento.fecha
-          }));
+          response.data = Array.isArray(response.data)
+            ? response.data.map((movimiento: any) => ({
+                ...movimiento,
+                fecha: typeof movimiento.fecha === 'string' ? new Date(movimiento.fecha) : movimiento.fecha
+              }))
+            : [];
           return response;
         }),
         catchError(this.manejarError)
@@ -259,10 +271,12 @@ export class InventarioService {
       .pipe(
         map(response => {
           // Convertir fechas de string a Date
-          response.data = response.data.map(movimiento => ({
-            ...movimiento,
-            fecha: typeof movimiento.fecha === 'string' ? new Date(movimiento.fecha) : movimiento.fecha
-          }));
+          response.data = Array.isArray(response.data)
+            ? response.data.map((movimiento: any) => ({
+                ...movimiento,
+                fecha: typeof movimiento.fecha === 'string' ? new Date(movimiento.fecha) : movimiento.fecha
+              }))
+            : [];
           return response;
         }),
         catchError(this.manejarError)

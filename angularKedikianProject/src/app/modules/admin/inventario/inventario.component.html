@@ -1,4 +1,20 @@
 <div class="inventario-container">
+  <!-- Mensaje de éxito -->
+  <div *ngIf="mensajeExito" class="alert alert-success text-center" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999;">
+    {{ mensajeExito }}
+  </div>
+
+  <!-- Modal de confirmación para eliminar -->
+  <div *ngIf="mostrarConfirmacionEliminar" class="modal-backdrop-custom">
+    <div class="modal-custom">
+      <h5>¿Estás seguro de que deseas eliminar el producto "{{ productoAEliminar?.nombre }}"?</h5>
+      <div class="d-flex justify-content-end mt-3">
+        <button class="btn btn-danger mr-2" (click)="confirmarEliminarProducto()">Eliminar</button>
+        <button class="btn btn-secondary" (click)="cancelarEliminarProducto()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Header con título y acciones principales -->
   <header class="header">
     <div class="header-title">
@@ -89,6 +105,9 @@
                 <button class="btn btn-sm btn-outline-primary"
                   (click)="seleccionarProducto(producto); $event.stopPropagation()">
                   <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger ml-2" (click)="eliminarProducto(producto, $event)">
+                  <i class="fas fa-times"></i>
                 </button>
               </td>
             </tr>

@@ -42,6 +42,10 @@ export class InventarioComponent implements OnInit {
 
   imagenSeleccionada: File | null = null;
 
+  mensajeExito: string | null = null;
+  productoAEliminar: any = null;
+  mostrarConfirmacionEliminar: boolean = false;
+
   constructor(private fb: FormBuilder, private inventarioService: InventarioService) {
     // Inicializar formulario de movimientos
     this.movimientoForm = this.fb.group({
@@ -123,8 +127,12 @@ export class InventarioComponent implements OnInit {
       next: (resp: RespuestaPaginada<Producto>) => {
         this.productos = resp.data;
         this.productosFiltrados = [...this.productos];
-        this.totalItems = resp.pagination.total;
+        this.totalItems = resp.pagination ? resp.pagination.total : this.productos.length;
         this.cargando = false;
+        // Logs para depuración
+        console.log('Respuesta del backend:', resp);
+        console.log('Productos:', this.productos);
+        console.log('Productos filtrados:', this.productosFiltrados);
       },
       error: () => {
         this.cargando = false;
@@ -148,6 +156,7 @@ export class InventarioComponent implements OnInit {
         const control = this.productoForm.get(key);
         control?.markAsTouched();
       });
+      console.log('Formulario inválido:', this.productoForm.value);
       return;
     }
     const formValue = this.productoForm.value;
@@ -157,16 +166,18 @@ export class InventarioComponent implements OnInit {
     formData.append('inventario', formValue.inventario.toString());
     if (this.imagenSeleccionada) {
       formData.append('imagen', this.imagenSeleccionada);
-    } else {
-      formData.append('imagen', '');
     }
+    console.log('Enviando FormData:', formValue);
+
     this.inventarioService.crearProducto(formData).subscribe({
-      next: (resp: RespuestaAPI<Producto>) => {
-        console.log('Respuesta del backend al crear producto:', resp);
-        if (resp && resp.data && resp.data.nombre) {
+      next: (resp: any) => {
+        console.log('Respuesta al crear producto:', resp);
+        if ((resp && resp.data && resp.data.nombre) || (resp && resp.nombre)) {
           this.cerrarModalNuevoProducto();
+          this.busquedaForm.patchValue({ termino: '', tipoFiltro: 'todos' });
+          this.paginaActual = 1;
           this.cargarProductosBackend();
-          alert(`Producto "${resp.data.nombre}" agregado con éxito.`);
+          alert(`Producto "${resp.nombre || resp.data.nombre}" agregado con éxito.`);
         } else {
           alert('Producto creado, pero la respuesta del servidor no es válida.');
         }
@@ -179,6 +190,7 @@ export class InventarioComponent implements OnInit {
         }
         alert(msg);
         this.imagenSeleccionada = null;
+        console.log('Error al crear producto:', err);
       }
     });
   }
@@ -217,10 +229,12 @@ export class InventarioComponent implements OnInit {
       return;
     }
     const formValue = this.movimientoForm.value;
-    const nuevoMovimiento: NuevoMovimiento = {
+    const nuevoMovimiento: any = {
       producto_id: formValue.producto_id,
       cantidad: formValue.cantidad,
       tipo_transaccion: formValue.tipo_transaccion,
+      usuario_id: 1, // TODO: reemplazar por el ID real del usuario autenticado si está disponible
+      fecha: new Date().toISOString()
     };
     this.inventarioService.registrarMovimiento(nuevoMovimiento).subscribe({
       next: () => {
@@ -324,5 +338,36 @@ export class InventarioComponent implements OnInit {
 
   obtenerMovimientosProducto(productoId: number): MovimientoProducto[] {
     return this.movimientos.filter(m => m.producto_id === productoId);
+  }
+
+  eliminarProducto(producto: any, event: Event): void {
+    event.stopPropagation();
+    this.productoAEliminar = producto;
+    this.mostrarConfirmacionEliminar = true;
+  }
+
+  confirmarEliminarProducto(): void {
+    if (!this.productoAEliminar) return;
+    this.inventarioService.eliminarProducto(this.productoAEliminar.id).subscribe({
+      next: () => {
+        this.mensajeExito = 'Producto eliminado correctamente.';
+        this.cargarProductosBackend();
+        this.mostrarConfirmacionEliminar = false;
+        this.productoAEliminar = null;
+        setTimeout(() => this.mensajeExito = null, 3000);
+      },
+      error: (err) => {
+        this.mensajeExito = 'Error al eliminar el producto.';
+        this.mostrarConfirmacionEliminar = false;
+        this.productoAEliminar = null;
+        setTimeout(() => this.mensajeExito = null, 3000);
+        console.log('Error al eliminar producto:', err);
+      }
+    });
+  }
+
+  cancelarEliminarProducto(): void {
+    this.mostrarConfirmacionEliminar = false;
+    this.productoAEliminar = null;
   }
 }
