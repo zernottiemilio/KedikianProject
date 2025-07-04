@@ -16,6 +16,12 @@ interface Operario {
   precioHoraFeriado: number;
   precioHoraExtra: number;
   totalCalculado: number;
+  email?: string;
+  estado?: boolean;
+  roles?: string[];
+  hash_contrasena?: string;
+  fecha_creacion?: string;
+  id?: number | string;
 }
 
 interface ConfiguracionTarifas {
@@ -69,7 +75,13 @@ export class ExcelImportComponent implements OnInit {
             precioHoraNormal: this.configuracion.horaNormal,
             precioHoraFeriado: this.configuracion.horaFeriado,
             precioHoraExtra: this.configuracion.horaExtra,
-            totalCalculado: 0
+            totalCalculado: 0,
+            email: user.email || '',
+            estado: user.estado !== undefined ? user.estado : true,
+            roles: Array.isArray(user.roles) ? user.roles : [user.roles || 'operario'],
+            hash_contrasena: user.hash_contrasena || '',
+            fecha_creacion: typeof user.fecha_creacion === 'string' ? user.fecha_creacion : (new Date()).toISOString(),
+            id: user.id
           }));
         this.recalcularTodos();
         this.isLoading = false;
@@ -95,7 +107,13 @@ export class ExcelImportComponent implements OnInit {
       precioHoraNormal: this.configuracion.horaNormal,
       precioHoraFeriado: this.configuracion.horaFeriado,
       precioHoraExtra: this.configuracion.horaExtra,
-      totalCalculado: 0
+      totalCalculado: 0,
+      email: '',
+      estado: true,
+      roles: ['operario'],
+      hash_contrasena: '',
+      fecha_creacion: (new Date()).toISOString(),
+      id: undefined
     };
     this.operarios.push(nuevoOperario);
   }
@@ -197,5 +215,35 @@ export class ExcelImportComponent implements OnInit {
   limpiarDatos() {
     this.operarios = [];
     this.errorMessage = '';
+  }
+
+  // Método para guardar los resultados calculados en la base de datos real
+  guardarResultados() {
+    // Calcular el periodo actual en formato YYYY-MM
+    const now = new Date();
+    const periodo = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+
+    // Enviar cada operario individualmente como objeto
+    this.operarios.forEach(op => {
+      const payload = {
+        nombre: op.nombre,
+        email: op.email || '',
+        estado: op.estado !== undefined ? op.estado : true,
+        roles: op.roles || ['operario'],
+        hash_contrasena: op.hash_contrasena || '',
+        periodo: periodo,
+        horas_normales: op.horasNormales,
+        horas_feriado: op.horasFeriado,
+        horas_extras: op.horasExtras
+      };
+      this.http.post('http://localhost:8000/api/v1/excel/operarios', payload).subscribe({
+        next: (response) => {
+          // Puedes mostrar un mensaje de éxito por cada operario o manejarlo como prefieras
+        },
+        error: (err) => {
+          this.errorMessage = 'Error al guardar el sueldo de un operario en la base de datos.';
+        }
+      });
+    });
   }
 }

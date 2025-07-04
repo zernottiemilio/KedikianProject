@@ -91,11 +91,29 @@ export class AridosComponent implements OnInit {
     // Cargar áridos
     this.aridosService.getAridos().subscribe({
       next: (aridos) => {
+        // Áridos por defecto
+        const aridosPorDefecto: Arido[] = [
+          { id: -1, nombre: 'Arena Fina', tipo: 'árido', unidadMedida: 'm3' },
+          { id: -2, nombre: 'Granza', tipo: 'árido', unidadMedida: 'm3' },
+          { id: -3, nombre: 'Arena Comun', tipo: 'árido', unidadMedida: 'm3' }
+        ];
+        // Agrega los que no estén ya en la lista
+        aridosPorDefecto.forEach(defecto => {
+          if (!aridos.some(a => a.nombre === defecto.nombre)) {
+            aridos.push(defecto);
+          }
+        });
         this.aridos = aridos;
       },
       error: (error) => {
         console.error('Error al cargar áridos:', error);
         this.mostrarMensaje('Error al cargar áridos');
+        // Si falla la carga, muestra los por defecto
+        this.aridos = [
+          { id: -1, nombre: 'Arena Fina', tipo: 'árido', unidadMedida: 'm3' },
+          { id: -2, nombre: 'Granza', tipo: 'árido', unidadMedida: 'm3' },
+          { id: -3, nombre: 'Arena Comun', tipo: 'árido', unidadMedida: 'm3' }
+        ];
       }
     });
 
