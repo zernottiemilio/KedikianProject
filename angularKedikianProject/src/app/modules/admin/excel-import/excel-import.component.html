@@ -120,6 +120,42 @@
     </div>
   </div>
 
+  <!-- Tabla de Resúmenes Guardados SIEMPRE visible, sin título, entre la tabla de operarios y los botones de acción -->
+  <div class="resumenes-section" *ngIf="resumenes.length > 0">
+    <div class="table-container">
+      <table class="resumenes-table">
+        <thead>
+          <tr>
+            <th>Periodo</th>
+            <th>Horas Normales</th>
+            <th>Horas Feriado</th>
+            <th>Horas Extras</th>
+            <th>Básico Remunerativo</th>
+            <th>Asistencia Perfecta</th>
+            <th>Feriado Remunerativo</th>
+            <th>Extras Remunerativo</th>
+            <th>Total Remunerativo</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let resumen of resumenes">
+            <td>{{ resumen.periodo }}</td>
+            <td>{{ resumen.total_horas_normales }}</td>
+            <td>{{ resumen.total_horas_feriado }}</td>
+            <td>{{ resumen.total_horas_extras }}</td>
+            <td>${{ resumen.basico_remunerativo | number:'1.2-2' }}</td>
+            <td>${{ resumen.asistencia_perfecta_remunerativo | number:'1.2-2' }}</td>
+            <td>${{ resumen.feriado_remunerativo | number:'1.2-2' }}</td>
+            <td>${{ resumen.extras_remunerativo | number:'1.2-2' }}</td>
+            <td><strong>${{ resumen.total_remunerativo | number:'1.2-2' }}</strong></td>
+            <td>{{ resumen.observaciones }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Botones de Acción -->
   <div class="actions-section">
     <button class="btn btn-primary" (click)="agregarOperario()">
@@ -134,7 +170,7 @@
       <span class="btn-icon">🗑️</span>
       Limpiar Todo
     </button>
-    <button class="btn btn-info" (click)="guardarResultados()">
+    <button class="btn btn-info" (click)="guardarResumenSueldo()">
       <span class="btn-icon">💾</span>
       Guardar
     </button>

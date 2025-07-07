@@ -43,6 +43,8 @@ export class ExcelImportComponent implements OnInit {
   fileName: string = '';
   isLoading: boolean = false;
   errorMessage: string = '';
+  observaciones: string = '';
+  resumenes: any[] = [];
 
   configuracion: ConfiguracionTarifas = {
     horaNormal: 6500,
@@ -55,7 +57,8 @@ export class ExcelImportComponent implements OnInit {
 
   ngOnInit() {
     this.calcularPrecioHoraExtra();
-    this.cargarOperariosDesdeBackend();
+    this.cargarResumenes(); // Ahora se cargan automáticamente los resúmenes del mes actual
+    // this.cargarOperariosDesdeBackend(); // Comentado para no cargar operarios automáticamente
   }
 
   cargarOperariosDesdeBackend() {
@@ -224,9 +227,11 @@ export class ExcelImportComponent implements OnInit {
     const periodo = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 
     // Enviar cada operario individualmente como objeto
+    /*
     this.operarios.forEach(op => {
       const payload = {
         nombre: op.nombre,
+        dni: op.dni,
         email: op.email || '',
         estado: op.estado !== undefined ? op.estado : true,
         roles: op.roles || ['operario'],
@@ -244,6 +249,65 @@ export class ExcelImportComponent implements OnInit {
           this.errorMessage = 'Error al guardar el sueldo de un operario en la base de datos.';
         }
       });
+    });
+    */
+  }
+
+  // Método para guardar el resumen de sueldos en la base de datos
+  guardarResumenSueldo() {
+    const now = new Date();
+    const periodo = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+
+    // Calcular totales
+    const total_horas_normales = this.operarios.reduce((sum, op) => sum + op.horasNormales, 0);
+    const total_horas_feriado = this.operarios.reduce((sum, op) => sum + op.horasFeriado, 0);
+    const total_horas_extras = this.operarios.reduce((sum, op) => sum + op.horasExtras, 0);
+
+    const basico_remunerativo = total_horas_normales * this.configuracion.horaNormal;
+    const asistencia_perfecta_remunerativo = basico_remunerativo * 0.20;
+    const feriado_remunerativo = total_horas_feriado * this.configuracion.horaFeriado;
+    const extras_remunerativo = total_horas_extras * (this.configuracion.horaNormal * this.configuracion.multiplicadorExtra);
+
+    const total_remunerativo = basico_remunerativo + asistencia_perfecta_remunerativo + feriado_remunerativo + extras_remunerativo;
+
+    const resumen = {
+      periodo: periodo,
+      total_horas_normales,
+      total_horas_feriado,
+      total_horas_extras,
+      basico_remunerativo,
+      asistencia_perfecta_remunerativo,
+      feriado_remunerativo,
+      extras_remunerativo,
+      total_remunerativo,
+      observaciones: this.observaciones && this.observaciones.trim() !== ''
+        ? this.observaciones
+        : `Sueldo correspondiente a ${now.toLocaleString('es-AR', { month: 'long', year: 'numeric' })}`
+    };
+
+    this.http.post('http://localhost:8000/api/v1/excel/resumen-sueldo', resumen).subscribe({
+      next: (response) => {
+        this.errorMessage = '';
+        alert('¡Resumen de sueldos guardado exitosamente!');
+      },
+      error: (err) => {
+        this.errorMessage = 'Error al guardar el resumen de sueldos en la base de datos.';
+      }
+    });
+  }
+
+  // Método para cargar los resúmenes de sueldo guardados desde el backend
+  cargarResumenes() {
+    this.http.get<any[]>('http://localhost:8000/api/v1/excel/resumen-sueldo').subscribe({
+      next: (data) => {
+        // Filtrar para mostrar solo los resúmenes del mes actual
+        const now = new Date();
+        const periodoActual = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+        this.resumenes = data.filter(res => res.periodo === periodoActual);
+      },
+      error: (err) => {
+        this.errorMessage = 'Error al cargar los resúmenes de sueldo desde el backend.';
+      }
     });
   }
 }
