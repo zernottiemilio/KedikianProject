@@ -45,6 +45,8 @@ export class ExcelImportComponent implements OnInit {
   errorMessage: string = '';
   observaciones: string = '';
   resumenes: any[] = [];
+  modalEditarResumenAbierto: boolean = false;
+  resumenEditando: any = null;
 
   configuracion: ConfiguracionTarifas = {
     horaNormal: 6500,
@@ -282,8 +284,12 @@ export class ExcelImportComponent implements OnInit {
       total_remunerativo,
       observaciones: this.observaciones && this.observaciones.trim() !== ''
         ? this.observaciones
-        : `Sueldo correspondiente a ${now.toLocaleString('es-AR', { month: 'long', year: 'numeric' })}`
+        : `Sueldo correspondiente a ${now.toLocaleString('es-AR', { month: 'long', year: 'numeric' })}`,
+      nombre: this.operarios.length > 0 ? this.operarios[0].nombre : '',
+      dni: this.operarios.length > 0 ? this.operarios[0].dni : ''
     };
+
+    console.log('Payload enviado:', resumen);
 
     this.http.post('http://localhost:8000/api/v1/excel/resumen-sueldo', resumen).subscribe({
       next: (response) => {
@@ -307,6 +313,46 @@ export class ExcelImportComponent implements OnInit {
       },
       error: (err) => {
         this.errorMessage = 'Error al cargar los resúmenes de sueldo desde el backend.';
+      }
+    });
+  }
+
+  // Eliminar un resumen de sueldo
+  eliminarResumen(resumen: any) {
+    if (confirm('¿Estás seguro de que deseas eliminar este registro?')) {
+      this.http.delete(`http://localhost:8000/api/v1/excel/resumen-sueldo/${resumen.id}`).subscribe({
+        next: () => {
+          this.cargarResumenes();
+        },
+        error: () => {
+          this.errorMessage = 'Error al eliminar el registro de resumen de sueldo.';
+        }
+      });
+    }
+  }
+
+  // Abrir el modal de edición
+  editarResumen(resumen: any) {
+    this.resumenEditando = { ...resumen };
+    this.modalEditarResumenAbierto = true;
+  }
+
+  // Cerrar el modal de edición
+  cerrarModalEditarResumen() {
+    this.modalEditarResumenAbierto = false;
+    this.resumenEditando = null;
+  }
+
+  // Guardar los cambios del resumen editado
+  guardarEdicionResumen() {
+    if (!this.resumenEditando || !this.resumenEditando.id) return;
+    this.http.put(`http://localhost:8000/api/v1/excel/resumen-sueldo/${this.resumenEditando.id}`, this.resumenEditando).subscribe({
+      next: () => {
+        this.cargarResumenes();
+        this.cerrarModalEditarResumen();
+      },
+      error: () => {
+        this.errorMessage = 'Error al guardar los cambios del resumen.';
       }
     });
   }

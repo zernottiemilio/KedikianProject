@@ -80,6 +80,23 @@
           </tr>
         </thead>
         <tbody>
+          <!-- Filas de registros guardados del mes actual -->
+          <tr *ngFor="let resumen of resumenes; let i = index">
+            <td>{{ resumen.nombre }}</td>
+            <td>{{ resumen.dni }}</td>
+            <td>{{ resumen.total_horas_normales }}</td>
+            <td>{{ resumen.total_horas_feriado }}</td>
+            <td>{{ resumen.total_horas_extras }}</td>
+            <td>${{ resumen.basico_remunerativo | number:'1.2-2' }}</td>
+            <td>${{ resumen.feriado_remunerativo | number:'1.2-2' }}</td>
+            <td>${{ resumen.extras_remunerativo | number:'1.2-2' }}</td>
+            <td><strong>${{ resumen.total_remunerativo | number:'1.2-2' }}</strong></td>
+            <td>
+              <button class="btn btn-warning btn-action" (click)="editarResumen(resumen)"><span class="btn-icon">✏️</span></button>
+              <button class="btn btn-danger btn-action" (click)="eliminarResumen(resumen)"><span class="btn-icon">🗑️</span></button>
+            </td>
+          </tr>
+          <!-- Fin filas registros guardados -->
           <tr *ngFor="let operario of operarios; let i = index" 
               [class.row-even]="i % 2 === 0">
             <td class="name-cell">
@@ -120,42 +137,6 @@
     </div>
   </div>
 
-  <!-- Tabla de Resúmenes Guardados SIEMPRE visible, sin título, entre la tabla de operarios y los botones de acción -->
-  <div class="resumenes-section" *ngIf="resumenes.length > 0">
-    <div class="table-container">
-      <table class="resumenes-table">
-        <thead>
-          <tr>
-            <th>Periodo</th>
-            <th>Horas Normales</th>
-            <th>Horas Feriado</th>
-            <th>Horas Extras</th>
-            <th>Básico Remunerativo</th>
-            <th>Asistencia Perfecta</th>
-            <th>Feriado Remunerativo</th>
-            <th>Extras Remunerativo</th>
-            <th>Total Remunerativo</th>
-            <th>Observaciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let resumen of resumenes">
-            <td>{{ resumen.periodo }}</td>
-            <td>{{ resumen.total_horas_normales }}</td>
-            <td>{{ resumen.total_horas_feriado }}</td>
-            <td>{{ resumen.total_horas_extras }}</td>
-            <td>${{ resumen.basico_remunerativo | number:'1.2-2' }}</td>
-            <td>${{ resumen.asistencia_perfecta_remunerativo | number:'1.2-2' }}</td>
-            <td>${{ resumen.feriado_remunerativo | number:'1.2-2' }}</td>
-            <td>${{ resumen.extras_remunerativo | number:'1.2-2' }}</td>
-            <td><strong>${{ resumen.total_remunerativo | number:'1.2-2' }}</strong></td>
-            <td>{{ resumen.observaciones }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
   <!-- Botones de Acción -->
   <div class="actions-section">
     <button class="btn btn-primary" (click)="agregarOperario()">
@@ -174,5 +155,77 @@
       <span class="btn-icon">💾</span>
       Guardar
     </button>
+  </div>
+
+  <!-- Modal para editar registro de resumen -->
+  <div class="modal-backdrop" *ngIf="modalEditarResumenAbierto">
+    <div class="modal modal-edit-resumen">
+      <div class="modal-header">
+        <h3>Editar Registro de Sueldo</h3>
+        <button type="button" class="close-btn" (click)="cerrarModalEditarResumen()">&times;</button>
+      </div>
+      <form #editForm="ngForm" (ngSubmit)="guardarEdicionResumen()">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombre</label>
+              <input type="text" [(ngModel)]="resumenEditando.nombre" name="nombre" required>
+            </div>
+            <div class="form-group">
+              <label>DNI</label>
+              <input type="text" [(ngModel)]="resumenEditando.dni" name="dni" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Horas Normales</label>
+              <input type="number" [(ngModel)]="resumenEditando.total_horas_normales" name="total_horas_normales" required>
+            </div>
+            <div class="form-group">
+              <label>Horas Feriado</label>
+              <input type="number" [(ngModel)]="resumenEditando.total_horas_feriado" name="total_horas_feriado" required>
+            </div>
+            <div class="form-group">
+              <label>Horas Extras</label>
+              <input type="number" [(ngModel)]="resumenEditando.total_horas_extras" name="total_horas_extras" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Básico Remunerativo</label>
+              <input type="number" [(ngModel)]="resumenEditando.basico_remunerativo" name="basico_remunerativo" required>
+            </div>
+            <div class="form-group">
+              <label>Asistencia Perfecta</label>
+              <input type="number" [(ngModel)]="resumenEditando.asistencia_perfecta_remunerativo" name="asistencia_perfecta_remunerativo" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Feriado Remunerativo</label>
+              <input type="number" [(ngModel)]="resumenEditando.feriado_remunerativo" name="feriado_remunerativo" required>
+            </div>
+            <div class="form-group">
+              <label>Extras Remunerativo</label>
+              <input type="number" [(ngModel)]="resumenEditando.extras_remunerativo" name="extras_remunerativo" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Total Remunerativo</label>
+              <input type="number" [(ngModel)]="resumenEditando.total_remunerativo" name="total_remunerativo" required>
+            </div>
+            <div class="form-group" style="flex:2">
+              <label>Observaciones</label>
+              <textarea [(ngModel)]="resumenEditando.observaciones" name="observaciones" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-success" [disabled]="editForm.invalid">Guardar</button>
+          <button type="button" class="btn btn-secondary" (click)="cerrarModalEditarResumen()">Cancelar</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div> 
