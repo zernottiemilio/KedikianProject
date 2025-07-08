@@ -32,13 +32,7 @@
         <tr *ngFor="let maquina of maquinasFiltradas">          <td>{{maquina.codigo}}</td>
           <td>{{maquina.nombre}}</td>
           <td>
-            <div class="proyectos-lista">
-              <span *ngIf="!maquina.proyectos?.length" class="sin-proyectos">Sin proyectos asignados</span>
-              <div *ngFor="let proyecto of maquina.proyectos" class="proyecto-item">
-                <span class="proyecto-nombre">{{proyecto.nombre}}</span>
-                <span class="fecha-asignacion">{{proyecto.fechaAsignacion | date:'dd/MM/yyyy'}}</span>
-              </div>
-            </div>
+            {{ getNombreProyecto(maquina.proyecto_id) }}
           </td>
           <td>
             <span class="estado" [ngClass]="{'activo': maquina.estado, 'inactivo': !maquina.estado}">
@@ -98,6 +92,14 @@
             *ngIf="maquinaForm.get('horas_uso')?.invalid && maquinaForm.get('horas_uso')?.touched">
             Las horas deben ser un número válido mayor o igual a 0
           </div>
+        </div>
+
+        <div class="form-group">
+          <label for="proyecto_id">Proyecto asignado:</label>
+          <select id="proyecto_id" formControlName="proyecto_id">
+            <option [ngValue]="null">Sin proyecto</option>
+            <option *ngFor="let proyecto of proyectos" [ngValue]="proyecto.id">{{ proyecto.nombre }}</option>
+          </select>
         </div>
 
         <div class="form-actions">

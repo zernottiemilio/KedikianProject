@@ -9,6 +9,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AridosService } from '../../../core/services/aridos.service';
 import { UserService } from '../../../core/services/user.service';
+import { forkJoin } from 'rxjs';
 
 // Interfaces
 export interface Arido {
@@ -92,91 +93,53 @@ export class AridosComponent implements OnInit {
   }
 
   cargarDatosReales(): void {
-    // Cargar proyectos
-    this.aridosService.getProyectos().subscribe({
-      next: (proyectos) => {
+    forkJoin({
+      proyectos: this.aridosService.getProyectos(),
+      aridos: this.aridosService.getAridos(),
+      usuarios: this.userService.getUsers()
+    }).subscribe({
+      next: ({ proyectos, aridos, usuarios }) => {
+        // Proyectos
         this.proyectos = proyectos;
-      },
-      error: (error) => {
-        console.error('Error al cargar proyectos:', error);
-        this.mostrarMensaje('Error al cargar proyectos');
-      }
-    });
 
-    // Cargar áridos
-    this.aridosService.getAridos().subscribe({
-      next: (aridos) => {
-        // Áridos por defecto
+        // Áridos (agrega los por defecto si faltan)
         const aridosPorDefecto: Arido[] = [
           { id: -1, nombre: 'Arena Fina', tipo: 'árido', unidadMedida: 'm3' },
           { id: -2, nombre: 'Granza', tipo: 'árido', unidadMedida: 'm3' },
           { id: -3, nombre: 'Arena Comun', tipo: 'árido', unidadMedida: 'm3' }
         ];
-        // Agrega los que no estén ya en la lista
         aridosPorDefecto.forEach(defecto => {
           if (!aridos.some(a => a.nombre === defecto.nombre)) {
             aridos.push(defecto);
           }
         });
         this.aridos = aridos;
-      },
-      error: (error) => {
-        console.error('Error al cargar áridos:', error);
-        this.mostrarMensaje('Error al cargar áridos');
-        // Si falla la carga, muestra los por defecto
-        this.aridos = [
-          { id: -1, nombre: 'Arena Fina', tipo: 'árido', unidadMedida: 'm3' },
-          { id: -2, nombre: 'Granza', tipo: 'árido', unidadMedida: 'm3' },
-          { id: -3, nombre: 'Arena Comun', tipo: 'árido', unidadMedida: 'm3' }
-        ];
-      }
-    });
 
-    // Cargar operarios
-    this.userService.getUsers().subscribe({
-      next: (usuarios) => {
-        console.log('Usuarios cargados:', usuarios);
-        // Filtrar solo los usuarios que son operarios y están activos
+        // Operarios
         this.operarios = usuarios.filter(usuario => {
-          console.log('Usuario:', usuario.nombre, 'Roles:', usuario.roles, 'Estado:', usuario.estado);
-          
-          // Normalizar el formato de roles como en users-gestion
           let role = '';
           if (Array.isArray(usuario.roles)) {
             role = usuario.roles[0] || '';
           } else {
             role = String(usuario.roles || '');
           }
-          
-          // Limpiar el string de roles (quitar {}, espacios y otros caracteres) y convertir a mayúsculas
           role = (role || '').replace(/[{}\s]/g, '').toUpperCase();
-          
-          const esOperario = role === 'OPERARIO';
-          const estaActivo = Boolean(usuario.estado);
-          
-          console.log('Roles procesados:', role, 'Es operario:', esOperario, 'Está activo:', estaActivo);
-          
-          return estaActivo && esOperario;
+          return Boolean(usuario.estado) && role === 'OPERARIO';
         });
-        console.log('Operarios filtrados:', this.operarios);
-      },
-      error: (error) => {
-        console.error('Error al cargar operarios:', error);
-        this.mostrarMensaje('Error al cargar operarios');
-      }
-    });
 
-    // Cargar registros
-    this.aridosService.getRegistrosAridos().subscribe({
-      next: (registrosBackend) => {
-        console.log('Registros del backend:', registrosBackend);
-        this.registros = this.mapearRegistros(registrosBackend);
-        console.log('Registros mapeados en el componente:', this.registros);
-        this.actualizarRegistrosFiltrados();
+        // Ahora sí, carga los registros
+        this.aridosService.getRegistrosAridos().subscribe({
+          next: (registrosBackend) => {
+            this.registros = this.mapearRegistros(registrosBackend);
+            this.actualizarRegistrosFiltrados();
+          },
+          error: (error) => {
+            this.mostrarMensaje('Error al cargar registros');
+          }
+        });
       },
       error: (error) => {
-        console.error('Error al cargar registros:', error);
-        this.mostrarMensaje('Error al cargar registros');
+        this.mostrarMensaje('Error al cargar datos iniciales');
       }
     });
   }

@@ -1,11 +1,10 @@
 // maquinaria.component.ts
 import { CommonModule, NgClass } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { ProjectService } from '../../../core/services/project.service';
+import { ProjectService, Project } from '../../../core/services/project.service';
 import {
   MachinesService,
   Maquina,
-  ProyectoAsignado,
 } from '../../../core/services/machines.service';
 import {
   FormBuilder,
@@ -14,6 +13,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-maquinaria',
@@ -25,6 +25,7 @@ export class MaquinariaComponent implements OnInit {
   // Datos de máquinas
   maquinas: Maquina[] = [];
   maquinasFiltradas: Maquina[] = [];
+  proyectos: Project[] = [];
 
   // Variables para filtrado
   terminoBusqueda: string = '';
@@ -51,20 +52,21 @@ export class MaquinariaComponent implements OnInit {
       nombre: ['', [Validators.required]],
       estado: [true],
       horas_uso: [0, [Validators.required, Validators.min(0)]],
+      proyecto_id: [null], // Usar proyecto_id
     });
   }
 
   ngOnInit(): void {
-    this.loadMachines();
+    this.loadData();
   }
 
-  loadMachines(): void {
-    this.machinesService.obtenerMaquinas().subscribe((maquinas) => {
+  loadData(): void {
+    forkJoin({
+      maquinas: this.machinesService.obtenerMaquinas(),
+      proyectos: this.projectService.getProjects()
+    }).subscribe(({ maquinas, proyectos }) => {
       this.maquinas = maquinas;
-      // Inicializar proyectos como array vacío para cada máquina
-      this.maquinas.forEach((maquina) => {
-        maquina.proyectos = [];
-      });
+      this.proyectos = proyectos;
       this.filtrarMaquinas();
     });
   }
@@ -99,6 +101,7 @@ export class MaquinariaComponent implements OnInit {
       nombre: '',
       estado: true,
       horas_uso: 0,
+      proyecto_id: null,
     });
     this.modalVisible = true;
   }
@@ -111,6 +114,7 @@ export class MaquinariaComponent implements OnInit {
       nombre: maquina.nombre,
       estado: maquina.estado,
       horas_uso: maquina.horas_uso,
+      proyecto_id: (maquina as any).proyecto_id || null,
     });
     this.modalVisible = true;
   }
@@ -130,15 +134,16 @@ export class MaquinariaComponent implements OnInit {
     const formData = this.maquinaForm.value;
 
     if (this.modoEdicion && this.maquinaEditando) {
-      // Actualizar máquina existente en el backend
       this.machinesService.actualizarMaquina({
-        ...this.maquinaEditando,
+        id: this.maquinaEditando.id,
+        codigo: this.maquinaEditando.codigo,
         nombre: formData.nombre,
         estado: formData.estado,
         horas_uso: formData.horas_uso,
+        proyecto_id: formData.proyecto_id || null,
       }).subscribe({
         next: () => {
-          this.loadMachines();
+          this.loadData();
           this.mostrarMensaje('Máquina actualizada correctamente');
           this.cerrarModal();
         },
@@ -147,17 +152,16 @@ export class MaquinariaComponent implements OnInit {
         }
       });
     } else {
-      // Crear nueva máquina en el backend
       const nuevoCodigo = this.generarNuevoCodigo();
       this.machinesService.crearMaquina({
         codigo: nuevoCodigo.toString(),
         nombre: formData.nombre,
         estado: formData.estado,
         horas_uso: formData.horas_uso,
-        proyectos: [],
-      }).subscribe({
+        proyecto_id: formData.proyecto_id || null,
+      } as any).subscribe({
         next: (maquinaCreada) => {
-          this.loadMachines();
+          this.loadData();
           this.mostrarMensaje('Máquina agregada correctamente');
           this.cerrarModal();
         },
@@ -186,7 +190,7 @@ export class MaquinariaComponent implements OnInit {
     if (this.maquinaAEliminar !== null) {
       this.machinesService.eliminarMaquina(this.maquinaAEliminar).subscribe({
         next: () => {
-          this.loadMachines();
+          this.loadData();
           this.mostrarMensaje('Máquina eliminada correctamente');
           this.cancelarEliminarMaquina();
         },
@@ -227,5 +231,12 @@ export class MaquinariaComponent implements OnInit {
     setTimeout(() => {
       document.body.removeChild(notificacion);
     }, 3000);
+  }
+
+  // En la tabla, para mostrar el nombre del proyecto, puedes usar una función auxiliar:
+  getNombreProyecto(proyecto_id: number | null): string {
+    if (!proyecto_id) return 'Sin proyecto asignado';
+    const proyecto = this.proyectos.find(p => Number(p.id) === Number(proyecto_id));
+    return proyecto ? proyecto.nombre : 'Proyecto no encontrado';
   }
 }

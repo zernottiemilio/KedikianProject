@@ -15,7 +15,7 @@ export interface Maquina {
   nombre: string;
   estado: boolean;
   horas_uso: number;
-  proyectos: ProyectoAsignado[];
+  proyecto_id: number | null;
 }
 
 @Injectable({
