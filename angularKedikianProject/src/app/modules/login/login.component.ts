@@ -235,13 +235,10 @@ export class LoginComponent {
       .subscribe({
         next: (user: User) => {
           this.loading = false;
+          console.log('🎯 Login exitoso, redirigiendo a dashboard');
           
-          // Redireccionar según el rol
-          if (user.rol === 'operario') {
-            this.router.navigate(['/operator/dashboard']);
-          } else if (user.rol === 'administrador') {
-            this.router.navigate(['/admin/dashboard']);
-          }
+          // Redireccionar al dashboard (ruta correcta según app.routes.ts)
+          this.router.navigate(['/dashboard']);
         },
         error: (error: unknown) => {
           this.loading = false;
