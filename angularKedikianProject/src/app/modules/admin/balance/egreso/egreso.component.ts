@@ -137,7 +137,14 @@ export class EgresoComponent implements OnInit {
       return;
     }
 
+    // Validar tipo de gasto permitido
     const formValue = this.gastoForm.value;
+    const tiposPermitidos = this.tiposGasto.map(t => t.value);
+    if (!tiposPermitidos.includes(formValue.tipo)) {
+      alert('El tipo de gasto seleccionado no es válido.');
+      return;
+    }
+
     let dataToSend: any;
     let isFormData = false;
 
@@ -231,6 +238,12 @@ export class EgresoComponent implements OnInit {
   getTipoLabel(tipo: string): string {
     const tipoEncontrado = this.tiposGasto.find((t) => t.value === tipo);
     return tipoEncontrado ? tipoEncontrado.label : tipo;
+  }
+
+  getImagenSrc(imagen: string): string {
+    if (!imagen) return '';
+    // Puedes ajustar el tipo según corresponda (image/png, image/jpeg, etc.)
+    return 'data:image/png;base64,' + imagen;
   }
 
   get gastosFiltrados(): Gasto[] {

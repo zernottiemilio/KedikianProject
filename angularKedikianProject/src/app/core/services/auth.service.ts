@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 export interface Usuario {
   id: string;
   nombreUsuario: string;
@@ -9,7 +11,7 @@ export interface Usuario {
   token?: string;
 }
 
-const apiUrl = `${environment.apiUrl}/auth`;
+const apiUrl = `${environment.apiUrl}`;
 
 export type User = Usuario;
 
@@ -28,7 +30,7 @@ export class AuthService {
   // Alias para componentes que usan nombres en inglés
   public currentUser$ = this.usuarioActual$;
 
-  constructor(private router: Router) {
+  constructor(private router: Router, private http: HttpClient) {
     this.cargarUsuarioDesdeAlmacenamiento();
   }
 
@@ -44,47 +46,32 @@ export class AuthService {
     }
   }
 
-  // Método con nombre en inglés para compatibilidad
   login(username: string, password: string): Observable<Usuario> {
-    return this.iniciarSesion({
-      nombreUsuario: username,
-      contraseña: password,
+    const body = new URLSearchParams();
+    // Codificar usuario y contraseña en base64
+    body.set('username', btoa(username));
+    body.set('password', btoa(password));
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/x-www-form-urlencoded'
     });
-  }
-
-  private iniciarSesion(credenciales: CredencialesLogin): Observable<Usuario> {
-    // Validar credenciales y asignar rol correspondiente
-    if (
-      credenciales.nombreUsuario === 'administrador' &&
-      credenciales.contraseña === '1234'
-    ) {
-      const mockUsuario: Usuario = {
-        id: '1',
-        nombreUsuario: credenciales.nombreUsuario,
-        rol: 'administrador', // Ahora asignamos el rol correcto
-        token: 'fake-jwt-token',
-      };
-
-      localStorage.setItem('usuarioActual', JSON.stringify(mockUsuario));
-      this.usuarioActualSubject.next(mockUsuario);
-      return of(mockUsuario); // Usando 'of' de rxjs para crear un Observable
-    } else if (
-      credenciales.nombreUsuario === 'operario' &&
-      credenciales.contraseña === '1234'
-    ) {
-      const mockUsuario: Usuario = {
-        id: '2',
-        nombreUsuario: credenciales.nombreUsuario,
-        rol: 'operario',
-        token: 'fake-jwt-token',
-      };
-
-      localStorage.setItem('usuarioActual', JSON.stringify(mockUsuario));
-      this.usuarioActualSubject.next(mockUsuario);
-      return of(mockUsuario);
-    } else {
-      return throwError(() => new Error('Credenciales inválidas'));
-    }
+    
+    const loginUrl = `${apiUrl}/login`;
+    console.log('🚀 Intentando login en:', loginUrl);
+    console.log('📦 Datos enviados:', body.toString());
+    
+    return this.http.post<Usuario>(
+      loginUrl,
+      body.toString(),
+      { headers }
+    ).pipe(
+      // Manejar la respuesta exitosa
+      tap((usuario: Usuario) => {
+        // Guardar el usuario en localStorage
+        localStorage.setItem('usuarioActual', JSON.stringify(usuario));
+        // Actualizar el BehaviorSubject
+        this.usuarioActualSubject.next(usuario);
+      })
+    );
   }
 
   cerrarSesion(): void {

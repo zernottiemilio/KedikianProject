@@ -228,10 +228,14 @@ export class LoginComponent {
     }
 
     this.loading = true;
+    this.error = ''; // Limpiar errores anteriores
+
     this.authService
       .login(this.f['username'].value, this.f['password'].value)
       .subscribe({
         next: (user: User) => {
+          this.loading = false;
+          
           // Redireccionar según el rol
           if (user.rol === 'operario') {
             this.router.navigate(['/operator/dashboard']);
@@ -240,8 +244,21 @@ export class LoginComponent {
           }
         },
         error: (error: unknown) => {
-          this.error = 'Usuario o contraseña incorrectos';
           this.loading = false;
+          console.error('Error de login:', error);
+          
+          // Manejar diferentes tipos de errores
+          if (error && typeof error === 'object' && 'status' in error) {
+            if (error.status === 401) {
+              this.error = 'Usuario o contraseña incorrectos';
+            } else if (error.status === 0) {
+              this.error = 'Error de conexión. Verifique su conexión a internet.';
+            } else {
+              this.error = 'Error en el servidor. Intente nuevamente.';
+            }
+          } else {
+            this.error = 'Usuario o contraseña incorrectos';
+          }
         },
       });
   }

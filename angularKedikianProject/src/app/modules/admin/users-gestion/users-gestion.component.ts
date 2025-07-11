@@ -76,6 +76,21 @@ export class UsersGestionComponent implements OnInit {
   isEditModalOpen = false;
   isDeleteModalOpen = false;
   modalOverlayActive = false;
+  private originalUser: User | null = null;
+
+  // Función para mapear roles al formato del backend
+  private mapRolesToBackend(roles: string[]): string[] {
+    return roles.map(role => {
+      switch (role.toUpperCase()) {
+        case 'ADMINISTRADOR':
+          return 'admin';
+        case 'OPERARIO':
+          return 'user';
+        default:
+          return role.toLowerCase();
+      }
+    });
+  }
 
   constructor(
     private fb: FormBuilder,
@@ -86,12 +101,9 @@ export class UsersGestionComponent implements OnInit {
       nombre: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       hash_contrasena: ['', [Validators.minLength(8)]],
-
-
-
-      
       roles: ['OPERARIO', [Validators.required]],
       estado: [[true], [Validators.required]],
+      fecha_creacion: [''],
     });
   }
 
@@ -249,6 +261,7 @@ export class UsersGestionComponent implements OnInit {
       this.sortDirection = 'asc';
     }
 
+    
     this.applyFilters();
   }
 
@@ -290,13 +303,13 @@ export class UsersGestionComponent implements OnInit {
       email: user.email,
       roles: user.roles,
       estado: user.estado,
-
-
-
-      
+      fecha_creacion: typeof user.fecha_creacion === 'string'
+        ? user.fecha_creacion
+        : new Date(user.fecha_creacion).toISOString(),
     });
     this.userForm.get('hash_contrasena')?.clearValidators();
     this.userForm.get('hash_contrasena')?.updateValueAndValidity();
+    this.originalUser = user;
   }
 
   openDeleteModal(user: User): void {
@@ -311,17 +324,49 @@ export class UsersGestionComponent implements OnInit {
     this.modalOverlayActive = false;
     this.userForm.reset();
     this.userToDelete = null;
+    this.originalUser = null;
   }
 
   saveUser(): void {
     if (this.userForm.invalid) return;
 
-    const userData = this.userForm.value;
+    const userData = { ...this.userForm.value };
 
-    // Agregar fecha de creación solo si es un nuevo usuario
-    if (!this.isEditMode) {
-      userData.fecha_creacion = new Date();
+    // Mapear roles al formato del backend
+    userData.roles = this.mapRolesToBackend(
+      Array.isArray(userData.roles) ? userData.roles : [userData.roles]
+    );
+
+    // Si es edición, enviar el valor original o la fecha actual si no existe
+    if (this.isEditMode && this.originalUser) {
+      let fechaCreacion: string = '';
+
+      // Prioridad: valor del formulario > valor original > fecha actual
+      if (typeof userData.fecha_creacion === 'string' && userData.fecha_creacion.trim() !== '') {
+        fechaCreacion = userData.fecha_creacion;
+      } else if (this.originalUser.fecha_creacion instanceof Date) {
+        fechaCreacion = this.originalUser.fecha_creacion.toISOString();
+      } else if (typeof this.originalUser.fecha_creacion === 'string') {
+        const fechaStr = this.originalUser.fecha_creacion as string;
+        if (fechaStr.trim() !== '') {
+          fechaCreacion = fechaStr;
+        } else {
+          fechaCreacion = new Date().toISOString();
+        }
+      } else {
+        fechaCreacion = new Date().toISOString();
+      }
+
+      userData.fecha_creacion = fechaCreacion;
+    } else if (!this.isEditMode) {
+      userData.fecha_creacion = new Date().toISOString();
     }
+
+    // Última defensa: nunca enviar fecha_creacion vacío
+    if (!userData.fecha_creacion || userData.fecha_creacion.trim() === '') {
+      userData.fecha_creacion = new Date().toISOString();
+    }
+    console.log('Usuario a enviar:', userData);
 
     const operation = this.isEditMode
       ? this.userService.updateUser(userData)
@@ -397,5 +442,18 @@ export class UsersGestionComponent implements OnInit {
     });
     this.userForm.get('hash_contrasena')?.clearValidators();
     this.userForm.get('hash_contrasena')?.updateValueAndValidity();
+  }
+
+  getDisplayRole(role: string): string {
+    switch (role.toLowerCase()) {
+      case 'admin':
+      case 'administrador':
+        return 'ADMINISTRADOR';
+      case 'user':
+      case 'operario':
+        return 'OPERARIO';
+      default:
+        return role;
+    }
   }
 }

@@ -80,7 +80,7 @@
         <div class="file-input-container">
           <input type="file" id="imagen" (change)="onImagenChange($event)" accept="image/*">
           <label for="imagen" class="file-input-label">
-            <span class="material-icons">upload_file</span>
+            <span class="material-icons"></span>
             <span>{{ imagenSeleccionada ? imagenSeleccionada.name : 'Seleccionar archivo' }}</span>
           </label>
         </div>
@@ -124,9 +124,7 @@
           <td>{{ gasto.fecha | date:'dd/MM/yyyy' }}</td>
           <td>{{ gasto.descripcion }}</td>
           <td>
-            <a *ngIf="gasto.imagen" [href]="gasto.imagen" target="_blank" class="view-image">
-              <span class="material-icons">image</span>
-            </a>
+            <img *ngIf="gasto.imagen" [src]="getImagenSrc(gasto.imagen)" alt="Comprobante" style="max-width: 100px; max-height: 100px;" />
             <span *ngIf="!gasto.imagen">-</span>
           </td>
           <td class="actions-cell">
