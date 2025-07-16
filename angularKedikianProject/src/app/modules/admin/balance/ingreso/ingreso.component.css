@@ -301,3 +301,49 @@
   }
 }
 
+/* Estilos para botones con iconos Font Awesome */
+.actions button {
+  margin-right: 8px;
+  border-radius: 5px;
+  padding: 7px 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.actions button i {
+  margin-right: 4px;
+}
+
+.actions button:last-child {
+  margin-right: 0;
+}
+
+.actions button.btn-info {
+  background: #17a2b8;
+  color: white;
+}
+
+.actions button.btn-info:hover {
+  background: #138496;
+  transform: translateY(-1px);
+}
+
+.actions button.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.actions button.btn-danger:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: 0.25rem;
+}
+

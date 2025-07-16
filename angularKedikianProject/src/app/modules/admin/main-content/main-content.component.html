@@ -26,7 +26,7 @@
             <div class="machines-list">
               <div class="machine-item" *ngFor="let maquina of proyecto.maquinas">
                 <span class="machine-name">{{ maquina.nombre }}</span>
-                <span class="machine-hours">{{ maquina.horasSemanales }}h/sem</span>
+                <span class="machine-hours">{{ getMaquinaHours(maquina) }}h/sem</span>
               </div>
             </div>
             <div class="total-hours">
@@ -53,8 +53,8 @@
           <div class="materials-section">
             <h3>Áridos Utilizados</h3>
             <div class="materials-list">
-              <span class="material-tag" *ngFor="let arido of proyecto.aridos">
-                {{ arido }}
+              <span class="material-tag" *ngFor="let arido of proyecto.aridos; let i = index">
+                {{ getAridoDisplayName(arido, i) }}
               </span>
             </div>
           </div>

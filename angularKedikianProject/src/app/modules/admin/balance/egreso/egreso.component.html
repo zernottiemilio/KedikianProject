@@ -124,15 +124,20 @@
           <td>{{ gasto.fecha | date:'dd/MM/yyyy' }}</td>
           <td>{{ gasto.descripcion }}</td>
           <td>
-            <img *ngIf="gasto.imagen" [src]="getImagenSrc(gasto.imagen)" alt="Comprobante" style="max-width: 100px; max-height: 100px;" />
+            <img *ngIf="gasto.imagen" 
+                 [src]="getImagenSrc(gasto.imagen)" 
+                 alt="Comprobante" 
+                 style="max-width: 100px; max-height: 100px; cursor: pointer;" 
+                 (click)="abrirModalImagen(gasto.imagen)"
+                 class="comprobante-thumbnail" />
             <span *ngIf="!gasto.imagen">-</span>
           </td>
           <td class="actions-cell">
-            <button class="icon-btn edit" (click)="editarGasto(gasto)">
-              <span class="material-icons">edit</span>
+            <button class="btn btn-sm btn-info" (click)="editarGasto(gasto)" title="Editar">
+              <i class="fas fa-edit"></i>
             </button>
-            <button class="icon-btn delete" (click)="eliminarGasto(gasto.id)">
-              <span class="material-icons">delete</span>
+            <button class="btn btn-sm btn-danger" (click)="eliminarGasto(gasto.id)" title="Eliminar">
+              <i class="fas fa-trash"></i>
             </button>
           </td>
         </tr>
@@ -141,6 +146,21 @@
     <div class="no-data" *ngIf="gastosFiltrados.length === 0">
       <span class="material-icons">info</span>
       <p>No hay egresos registrados en este período</p>
+    </div>
+  </div>
+
+  <!-- Modal para mostrar imagen en tamaño grande -->
+  <div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Comprobante</h3>
+        <button class="modal-close" (click)="cerrarModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <img [src]="getImagenSrc(imagenModal)" alt="Comprobante" class="modal-image" />
+      </div>
     </div>
   </div>
 </div>

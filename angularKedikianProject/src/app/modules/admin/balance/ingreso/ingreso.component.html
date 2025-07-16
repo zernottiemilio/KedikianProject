@@ -86,11 +86,11 @@
           <td>{{ pago.fecha | date:'dd/MM/yyyy' }}</td>
           <td>{{ pago.descripcion }}</td>
           <td class="actions-cell">
-            <button class="icon-btn edit" (click)="editarPago(pago)">
-              <span class="material-icons">edit</span>
+            <button class="btn btn-sm btn-info" (click)="editarPago(pago)" title="Editar">
+              <i class="fas fa-edit"></i>
             </button>
-            <button class="icon-btn delete" (click)="eliminarPago(pago.id)">
-              <span class="material-icons">delete</span>
+            <button class="btn btn-sm btn-danger" (click)="eliminarPago(pago.id)" title="Eliminar">
+              <i class="fas fa-trash"></i>
             </button>
           </td>
         </tr>

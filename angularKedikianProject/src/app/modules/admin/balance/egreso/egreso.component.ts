@@ -46,6 +46,8 @@ export class EgresoComponent implements OnInit {
   filtroTexto = '';
   imagenSeleccionada: File | null = null;
   previewURL: string | ArrayBuffer | null = null;
+  mostrarModal = false;
+  imagenModal = '';
   tiposGasto = [
     { value: 'material', label: 'Material' },
     { value: 'servicio', label: 'Servicio' },
@@ -244,6 +246,16 @@ export class EgresoComponent implements OnInit {
     if (!imagen) return '';
     // Puedes ajustar el tipo según corresponda (image/png, image/jpeg, etc.)
     return 'data:image/png;base64,' + imagen;
+  }
+
+  abrirModalImagen(imagen: string): void {
+    this.imagenModal = imagen;
+    this.mostrarModal = true;
+  }
+
+  cerrarModal(): void {
+    this.mostrarModal = false;
+    this.imagenModal = '';
   }
 
   get gastosFiltrados(): Gasto[] {
