@@ -3,7 +3,7 @@ import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
 import { tap, switchMap, catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 export interface Usuario {
   id: string;
   nombreUsuario: string;
@@ -53,19 +53,25 @@ export class AuthService {
   }
 
   login(username: string, password: string): Observable<Usuario> {
-    // Crear el body manualmente sin codificación
-    const body = `username=${username}&password=${password}`;
+    // Codificar en base64
+    const usernameBase64 = btoa(username);
+    const passwordBase64 = btoa(password);
+
+    // Enviar el body como formulario x-www-form-urlencoded
+    const body = new HttpParams()
+      .set('username', usernameBase64)
+      .set('password', passwordBase64);
     const headers = new HttpHeaders({
       'Content-Type': 'application/x-www-form-urlencoded'
     });
     
     const loginUrl = `${apiUrl}/auth/login`;
     console.log('🚀 Intentando login en:', loginUrl);
-    console.log('📦 Datos enviados:', body);
+    console.log('📦 Datos enviados:', body.toString());
     
     return this.http.post<LoginResponse>(
       loginUrl,
-      body,
+      body.toString(),
       { headers }
     ).pipe(
       // Después del login exitoso, obtener información del usuario

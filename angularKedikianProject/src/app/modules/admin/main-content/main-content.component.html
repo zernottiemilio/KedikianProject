@@ -1,54 +1,62 @@
 <div class="main-content">
-  <div class="dashboard-header">
-    <h1>Dashboard de Proyectos</h1>
+  <div *ngIf="loading" class="dashboard-header">
+    <h2>Cargando proyectos...</h2>
   </div>
-
-  <div class="projects-grid">
-    <div class="project-card" *ngFor="let proyecto of proyectos">
-      <div class="card-header">
-        <h2>{{ proyecto.nombre }}</h2>
-        <span class="status-badge" [ngClass]="getStatusClass(proyecto.fechaInicio, proyecto.fechaFin)">
-          {{ getProjectStatus(proyecto.fechaInicio, proyecto.fechaFin) }}
-        </span>
-      </div>
-
-      <div class="card-content">
-        <div class="description-section">
-          <h3>Descripción</h3>
-          <p>{{ proyecto.descripcion }}</p>
+  <div *ngIf="error" class="dashboard-header">
+    <h2 style="color: red;">{{ error }}</h2>
+  </div>
+  <div *ngIf="!loading && !error">
+    <div class="projects-grid">
+      <div class="project-card" *ngFor="let proyecto of proyectos">
+        <div class="card-header">
+          <h2>{{ proyecto.nombre }}</h2>
+          <span class="status-badge" [ngClass]="getStatusClass(proyecto.fechaInicio, proyecto.fechaFin)">
+            {{ getProjectStatus(proyecto.fechaInicio, proyecto.fechaFin) }}
+          </span>
         </div>
 
-        <div class="machines-section">
-          <h3>Máquinas Asignadas</h3>
-          <div class="machines-list">
-            <div class="machine-item" *ngFor="let maquina of proyecto.maquinas">
-              <span class="machine-name">{{ maquina.nombre }}</span>
-              <span class="machine-hours">{{ maquina.horasSemanales }}h/sem</span>
+        <div class="card-content">
+          <div class="description-section">
+            <h3>Descripción</h3>
+            <p>{{ proyecto.descripcion }}</p>
+          </div>
+
+          <div class="machines-section">
+            <h3>Máquinas Asignadas</h3>
+            <div class="machines-list">
+              <div class="machine-item" *ngFor="let maquina of proyecto.maquinas">
+                <span class="machine-name">{{ maquina.nombre }}</span>
+                <span class="machine-hours">{{ maquina.horasSemanales }}h/sem</span>
+              </div>
+            </div>
+            <div class="total-hours">
+              <strong>Total horas semanales: {{ getTotalHours(proyecto.maquinas) }}h</strong>
             </div>
           </div>
-          <div class="total-hours">
-            <strong>Total horas semanales: {{ getTotalHours(proyecto.maquinas) }}h</strong>
+
+          <div class="dates-section">
+            <div class="date-item">
+              <span class="date-label">Inicio:</span>
+              <span class="date-value">{{ proyecto.fechaInicio | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="date-item">
+              <span class="date-label">Fin:</span>
+              <span class="date-value">{{ proyecto.fechaFin | date:'dd/MM/yyyy' }}</span>
+            </div>
           </div>
-        </div>
 
-        <div class="dates-section">
-          <div class="date-item">
-            <span class="date-label">Inicio:</span>
-            <span class="date-value">{{ proyecto.fechaInicio | date:'dd/MM/yyyy' }}</span>
+          <div class="location-section">
+            <h3>Ubicación</h3>
+            <p class="location">{{ proyecto.ubicacion }}</p>
           </div>
-        </div>
 
-        <div class="location-section">
-          <h3>Ubicación</h3>
-          <p class="location">{{ proyecto.ubicacion }}</p>
-        </div>
-
-        <div class="materials-section">
-          <h3>Áridos Utilizados</h3>
-          <div class="materials-list">
-            <span class="material-tag" *ngFor="let arido of proyecto.aridos">
-              {{ arido }}
-            </span>
+          <div class="materials-section">
+            <h3>Áridos Utilizados</h3>
+            <div class="materials-list">
+              <span class="material-tag" *ngFor="let arido of proyecto.aridos">
+                {{ arido }}
+              </span>
+            </div>
           </div>
         </div>
       </div>

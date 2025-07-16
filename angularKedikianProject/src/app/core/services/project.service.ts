@@ -110,4 +110,14 @@ export class ProjectService {
   deleteProject(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
+
+  // Obtener máquinas asignadas a un proyecto
+  getMaquinasPorProyecto(id: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${id}/maquinas`);
+  }
+
+  // Obtener áridos utilizados en un proyecto
+  getAridosPorProyecto(id: number): Observable<string[]> {
+    return this.http.get<string[]>(`${this.apiUrl}/${id}/aridos`);
+  }
 }

@@ -135,6 +135,7 @@ export class ProjectGestionComponent implements OnInit {
             ...project,
             // Mapear campos del backend a campos del frontend
             description: project.descripcion || project.description || defaultProject.description,
+            contrato_id: project.contrato_id ?? null, // Mapeo explícito de contrato_id
             startDate: project.fecha_inicio ? new Date(project.fecha_inicio) : 
                       project.startDate ? new Date(project.startDate) : defaultProject.startDate,
             endDate: project.fecha_fin ? new Date(project.fecha_fin) : 
@@ -256,7 +257,7 @@ export class ProjectGestionComponent implements OnInit {
           gerente: formValues.manager,
           contrato_id: formValues.contrato_id,
           ubicacion: formValues.ubicacion,
-          description: formValues.description,
+          descripcion: formValues.description, // CAMBIO: antes era 'description'
         };
 
         console.log('Datos a enviar al backend:', projectToUpdate);
@@ -285,7 +286,7 @@ export class ProjectGestionComponent implements OnInit {
           gerente: formValues.manager,
           contrato_id: formValues.contrato_id,
           ubicacion: formValues.ubicacion,
-          description: formValues.description,
+          descripcion: formValues.description, // CAMBIO: antes era 'description'
         };
 
         console.log('Datos a enviar al backend:', newProject);
