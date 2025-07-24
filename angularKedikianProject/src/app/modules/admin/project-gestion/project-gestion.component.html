@@ -164,8 +164,13 @@
             <span>{{ project.progress }}%</span>
           </div>
           <div class="project-days" [ngClass]="getDaysPriorityClass(project.daysRemaining)">
-            <span *ngIf="project.isOverdue" class="overdue-indicator">⚠️</span>
-            {{ project.isOverdue ? 'Atrasado' : (project.daysRemaining + ' días restantes') }}
+            <ng-container *ngIf="project.progress === 100; else diasRestantes">
+              <span class="completed-indicator">Completado</span>
+            </ng-container>
+            <ng-template #diasRestantes>
+              <span *ngIf="project.isOverdue" class="overdue-indicator">⚠️</span>
+              {{ project.isOverdue ? 'Atrasado' : (project.daysRemaining + ' días restantes') }}
+            </ng-template>
           </div>
           <div class="project-status">
             <span class="status-badge" [ngClass]="project.estado ? 'status-active' : 'status-inactive'">
