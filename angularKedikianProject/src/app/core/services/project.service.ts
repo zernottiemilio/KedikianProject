@@ -1,7 +1,7 @@
 // src/app/services/project.service.ts
 import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { catchError, tap } from 'rxjs/operators';
 
@@ -27,6 +27,21 @@ export interface Project {
   fecha_fin?: string | Date;
   gerente?: string;
   progreso?: number;
+}
+
+// Nuevas interfaces para los endpoints
+export interface CantidadProyectosActivos {
+  cantidad_activos: number;
+}
+
+export interface ProyectosPaginadosResponse {
+  proyectos: Project[];
+  total: number;
+  skip: number;
+  limit: number;
+  // En caso de que el backend devuelva la estructura de otra forma
+  items?: Project[];
+  count?: number;
 }
 
 @Injectable({
@@ -59,6 +74,46 @@ export class ProjectService {
 
   getActiveProjects(): Observable<Project[]> {
     return this.http.get<Project[]>(`${this.apiUrl}/activos`);
+  }
+
+  /**
+   * NUEVO: Obtener la cantidad de proyectos activos
+   * Endpoint: GET /proyectos/activos/cantidad
+   */
+  getCantidadProyectosActivos(): Observable<CantidadProyectosActivos> {
+    return this.http.get<CantidadProyectosActivos>(`${this.apiUrl}/activos/cantidad`).pipe(
+      tap((response) => {
+        console.log('Cantidad de proyectos activos obtenida:', response);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error al obtener cantidad de proyectos activos:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * NUEVO: Obtener proyectos de forma paginada
+   * Endpoint: GET /proyectos/paginado?skip=0&limit=15
+   */
+  getProyectosPaginados(skip: number = 0, limit: number = 15): Observable<ProyectosPaginadosResponse> {
+    const params = new HttpParams()
+      .set('skip', skip.toString())
+      .set('limit', limit.toString());
+
+    return this.http.get<ProyectosPaginadosResponse>(`${this.apiUrl}/paginado`, { params }).pipe(
+      tap((response) => {
+        console.log('Proyectos paginados obtenidos:', response);
+        console.log(`Skip: ${skip}, Limit: ${limit}`);
+        console.log(`Total de proyectos: ${response.total || response.count || 0}`);
+        console.log(`Proyectos en esta página: ${response.proyectos?.length || response.items?.length || 0}`);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error al obtener proyectos paginados:', error);
+        console.error('Parámetros enviados:', { skip, limit });
+        return throwError(() => error);
+      })
+    );
   }
 
   createProject(project: any): Observable<any> {

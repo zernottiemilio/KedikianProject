@@ -13,6 +13,9 @@ import {
   Informe,
   ResumenDatos,
 } from '../../../core/services/informes.service';
+// Importar el nuevo servicio de proyectos
+import {Project, ProyectosPaginadosResponse} from '../../../core/services/project.service';
+import { ProjectService} from '../../../core/services/project.service';
 
 interface Resumen {
   proyectosActivos: number;
@@ -35,7 +38,7 @@ interface Resumen {
   styleUrls: ['./informes.component.css'],
 })
 export class InformesComponent implements OnInit {
-  // Propiedades
+  // Propiedades existentes
   informes: Informe[] = [];
   filtroTipo: string = 'todos';
   cargando: boolean = false;
@@ -47,12 +50,20 @@ export class InformesComponent implements OnInit {
     gastoCombustible: '$0',
   };
 
+  // Nuevas propiedades para proyectos
+  proyectos: Project[] = [];
+  proyectosCargando: boolean = false;
+  paginaActual: number = 0;
+  elementosPorPagina: number = 15;
+  totalProyectos: number = 0;
+  
   // Propiedades para el modal
   mostrarModal = false;
   informeForm: FormGroup;
 
   constructor(
     private informesService: InformesService,
+    private proyectosService: ProjectService, // Inyectar el nuevo servicio
     private fb: FormBuilder
   ) {
     this.informeForm = this.fb.group({
@@ -61,7 +72,7 @@ export class InformesComponent implements OnInit {
       fechaInicio: ['', Validators.required],
       fechaFin: ['', Validators.required],
       descripcion: [''],
-      valor: [0, [Validators.required, Validators.min(0)]], // Nuevo campo para el valor
+      valor: [0, [Validators.required, Validators.min(0)]],
     });
 
     // Inicializar con algunos informes de ejemplo
@@ -89,9 +100,120 @@ export class InformesComponent implements OnInit {
   ngOnInit(): void {
     this.cargarInformes();
     this.cargarDatosResumen();
+    this.cargarProyectosPaginados(); // Cargar proyectos paginados
+    this.cargarCantidadProyectosActivos(); // Cargar cantidad de proyectos activos
+    this.cargarHorasMesActual
     this.aplicarFiltros();
   }
 
+  /**
+   * Cargar la cantidad de proyectos activos desde el backend
+   */
+  cargarCantidadProyectosActivos(): void {
+    this.proyectosService.getCantidadProyectosActivos().subscribe({
+      next: (response) => {
+        // Actualizar el resumen con la cantidad real de proyectos activos
+        this.resumen.proyectosActivos = response.cantidad_activos;
+        console.log('Cantidad de proyectos activos:', response.cantidad_activos);
+      },
+      error: (error) => {
+        console.error('Error al cargar cantidad de proyectos activos:', error);
+        // Mantener el valor por defecto o mostrar un mensaje de error
+        alert('Error al cargar la cantidad de proyectos activos.');
+      }
+    });
+  }
+
+   // Agrega este nuevo método
+   cargarHorasMesActual(): void {
+    this.informesService.getHorasMesActual().subscribe({
+      next: (response) => {
+        this.resumen.horasTotales = response.total_horas_mes_actual;
+        console.log('Horas del mes actual:', response.total_horas_mes_actual);
+      },
+      error: (error) => {
+        console.error('Error al cargar horas del mes actual:', error);
+        // Mantener el valor por defecto o mostrar mensaje de error
+        alert('Error al cargar las horas trabajadas este mes.');
+      }
+    });
+  }
+
+
+  /**
+   * Cargar proyectos de forma paginada
+   */
+  cargarProyectosPaginados(pagina: number = 0): void {
+    this.proyectosCargando = true;
+    const skip = pagina * this.elementosPorPagina;
+
+    this.proyectosService.getProyectosPaginados(skip, this.elementosPorPagina).subscribe({
+      next: (response: ProyectosPaginadosResponse) => {
+        this.proyectos = response.proyectos;
+        this.totalProyectos = response.total;
+        this.paginaActual = pagina;
+        this.proyectosCargando = false;
+        console.log('Proyectos cargados:', response);
+      },
+      error: (error) => {
+        console.error('Error al cargar proyectos paginados:', error);
+        this.proyectosCargando = false;
+        alert('Error al cargar los proyectos. Por favor, intente nuevamente.');
+      }
+    });
+  }
+
+  /**
+   * Ir a la siguiente página de proyectos
+   */
+  siguientePagina(): void {
+    const totalPaginas = Math.ceil(this.totalProyectos / this.elementosPorPagina);
+    if (this.paginaActual < totalPaginas - 1) {
+      this.cargarProyectosPaginados(this.paginaActual + 1);
+    }
+  }
+
+  /**
+   * Ir a la página anterior de proyectos
+   */
+  paginaAnterior(): void {
+    if (this.paginaActual > 0) {
+      this.cargarProyectosPaginados(this.paginaActual - 1);
+    }
+  }
+
+  /**
+   * Ir a una página específica
+   */
+  irAPagina(pagina: number): void {
+    const totalPaginas = Math.ceil(this.totalProyectos / this.elementosPorPagina);
+    if (pagina >= 0 && pagina < totalPaginas) {
+      this.cargarProyectosPaginados(pagina);
+    }
+  }
+
+  /**
+   * Obtener el número total de páginas
+   */
+  get totalPaginas(): number {
+    return Math.ceil(this.totalProyectos / this.elementosPorPagina);
+  }
+
+  /**
+   * Verificar si hay página siguiente
+   */
+  get tienePaginaSiguiente(): boolean {
+    return this.paginaActual < this.totalPaginas - 1;
+  }
+
+  /**
+   * Verificar si hay página anterior
+   */
+  get tienePaginaAnterior(): boolean {
+    return this.paginaActual > 0;
+  }
+
+  // Resto de métodos existentes...
   generarInformePersonalizado(formulario: any): void {
     const parametros = {
       tipo: formulario.tipo,
@@ -104,7 +226,6 @@ export class InformesComponent implements OnInit {
     this.informesService.generarInformePersonalizado(parametros).subscribe({
       next: (informe) => {
         alert(`Informe "${informe.titulo}" generado correctamente.`);
-        // Navegar a la lista de informes o previsualizar el informe
       },
       error: (error) => {
         console.error('Error:', error);
@@ -112,13 +233,13 @@ export class InformesComponent implements OnInit {
       },
     });
   }
-  // Método para cargar informes desde el servicio
+
   cargarInformes(): void {
     this.cargando = true;
     this.informesService.getInformes().subscribe({
       next: (data) => {
         this.informes = data.informes;
-        this.resumen = data.resumen;
+        // No sobrescribir el resumen aquí, ya que se actualiza desde otros métodos
         this.cargando = false;
       },
       error: (error) => {
@@ -129,18 +250,15 @@ export class InformesComponent implements OnInit {
     });
   }
 
-  // Método para filtrar informes
   get informesFiltrados(): Informe[] {
     return this.filtroTipo === 'todos'
       ? this.informes
       : this.informes.filter((informe) => informe.tipo === this.filtroTipo);
   }
 
-  // Método para manejar la descarga (usando el servicio)
   descargarInforme(id: number): void {
     this.informesService.descargarInforme(id).subscribe({
       next: (blob) => {
-        // Crear un enlace de descarga
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -157,7 +275,6 @@ export class InformesComponent implements OnInit {
     });
   }
 
-  // Método para obtener el color según el estatus
   getColorEstatus(estatus: string): string {
     switch (estatus) {
       case 'completado':
@@ -171,7 +288,6 @@ export class InformesComponent implements OnInit {
     }
   }
 
-  // Método para obtener el nombre del estatus
   getNombreEstatus(estatus: string): string {
     switch (estatus) {
       case 'completado':
@@ -185,12 +301,10 @@ export class InformesComponent implements OnInit {
     }
   }
 
-  // Método para obtener la clase del icono según tipo
   getClaseIcono(tipo: string): string {
     return tipo === 'estadisticas' ? 'icono-estadistica' : 'icono-reporte';
   }
 
-  // Método para generar un nuevo informe
   generarNuevoInforme(): void {
     this.mostrarModal = true;
     this.informeForm.reset();
@@ -222,19 +336,14 @@ export class InformesComponent implements OnInit {
 
     this.informesService.crearInforme(nuevoInforme).subscribe({
       next: (informeCreado) => {
-        // Agregar el nuevo informe al inicio de la lista
         this.informes.unshift(informeCreado);
 
-        // Actualizar el resumen según el tipo de informe
         if (informeCreado.valor !== undefined) {
           this.actualizarResumen(informeCreado.tipo, informeCreado.valor);
         }
 
-        // Cerrar el modal y mostrar mensaje de éxito
         this.cerrarModal(null as any);
-        alert(
-          `El informe "${informeCreado.titulo}" ha sido creado exitosamente.`
-        );
+        alert(`El informe "${informeCreado.titulo}" ha sido creado exitosamente.`);
       },
       error: (error) => {
         console.error('Error al crear el informe:', error);
@@ -247,13 +356,11 @@ export class InformesComponent implements OnInit {
   }
 
   private cargarDatosResumen(): void {
-    // Aquí cargarías los datos desde el servicio
-    this.resumen = {
-      proyectosActivos: 12,
-      horasTotales: 456,
-      materialesEntregados: '1,234 m³',
-      gastoCombustible: '$5,678',
-    };
+    // Los proyectos activos ahora se cargan desde el endpoint
+    // Solo inicializar los otros valores aquí
+    this.resumen.horasTotales = 456;
+    this.resumen.materialesEntregados = '1,234 m³';
+    this.resumen.gastoCombustible = '$5,678';
   }
 
   actualizarResumen(tipo: string, valor: number): void {
@@ -276,6 +383,7 @@ export class InformesComponent implements OnInit {
         break;
     }
   }
+
   aplicarFiltros(): void {
     // Filtering is handled by the informesFiltrados getter
   }

@@ -18,6 +18,7 @@ export interface Informe {
 export interface ResumenDatos {
   proyectosActivos: number;
   horasTotales: number;
+  horasMesActual: number;
   materialesEntregados: string;
   gastoCombustible: string;
 }
@@ -106,6 +107,7 @@ export class InformesService {
   private resumenDatosSimulado: ResumenDatos = {
     proyectosActivos: 4,
     horasTotales: 842,
+    horasMesActual: 120,
     materialesEntregados: '1,240 toneladas',
     gastoCombustible: '$1,875,000',
   };
@@ -161,12 +163,31 @@ export class InformesService {
       );
     }
 
+
+  
+  
     // Usar datos simulados
     const informe = this.informesSimulados.find((inf) => inf.id === id);
     if (!informe) {
       return throwError(() => new Error('Informe no encontrado'));
     }
     return of(informe).pipe(delay(300));
+  }
+
+  getHorasMesActual(): Observable<{ total_horas_mes_actual: number }> {
+    if (!environment.useSimulatedData) {
+      return this.http.get<{ total_horas_mes_actual: number }>(`${this.apiUrl}/horas-mes-actual`).pipe(
+        catchError((error) => {
+          console.error('Error al obtener horas del mes actual:', error);
+          return throwError(
+            () => new Error('Error al cargar las horas del mes actual. Por favor, inténtelo de nuevo.')
+          );
+        })
+      );
+    }
+  
+    // Datos simulados para desarrollo
+    return of({ total_horas_mes_actual: this.resumenDatosSimulado.horasMesActual }).pipe(delay(300));
   }
 
   private actualizarResumen(tipo: string, valor?: number): void {
