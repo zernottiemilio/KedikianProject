@@ -99,8 +99,7 @@ export class InformesComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarInformes();
-    this.cargarDatosResumen();
-    this.cargarProyectosPaginados(); // Cargar proyectos paginados
+    this.cargarDatosResumen(); // Cargar proyectos paginados
     this.cargarCantidadProyectosActivos(); // Cargar cantidad de proyectos activos
     this.cargarHorasMesActual
     this.aplicarFiltros();
@@ -137,80 +136,6 @@ export class InformesComponent implements OnInit {
         alert('Error al cargar las horas trabajadas este mes.');
       }
     });
-  }
-
-
-  /**
-   * Cargar proyectos de forma paginada
-   */
-  cargarProyectosPaginados(pagina: number = 0): void {
-    this.proyectosCargando = true;
-    const skip = pagina * this.elementosPorPagina;
-
-    this.proyectosService.getProyectosPaginados(skip, this.elementosPorPagina).subscribe({
-      next: (response: ProyectosPaginadosResponse) => {
-        this.proyectos = response.proyectos;
-        this.totalProyectos = response.total;
-        this.paginaActual = pagina;
-        this.proyectosCargando = false;
-        console.log('Proyectos cargados:', response);
-      },
-      error: (error) => {
-        console.error('Error al cargar proyectos paginados:', error);
-        this.proyectosCargando = false;
-        alert('Error al cargar los proyectos. Por favor, intente nuevamente.');
-      }
-    });
-  }
-
-  /**
-   * Ir a la siguiente página de proyectos
-   */
-  siguientePagina(): void {
-    const totalPaginas = Math.ceil(this.totalProyectos / this.elementosPorPagina);
-    if (this.paginaActual < totalPaginas - 1) {
-      this.cargarProyectosPaginados(this.paginaActual + 1);
-    }
-  }
-
-  /**
-   * Ir a la página anterior de proyectos
-   */
-  paginaAnterior(): void {
-    if (this.paginaActual > 0) {
-      this.cargarProyectosPaginados(this.paginaActual - 1);
-    }
-  }
-
-  /**
-   * Ir a una página específica
-   */
-  irAPagina(pagina: number): void {
-    const totalPaginas = Math.ceil(this.totalProyectos / this.elementosPorPagina);
-    if (pagina >= 0 && pagina < totalPaginas) {
-      this.cargarProyectosPaginados(pagina);
-    }
-  }
-
-  /**
-   * Obtener el número total de páginas
-   */
-  get totalPaginas(): number {
-    return Math.ceil(this.totalProyectos / this.elementosPorPagina);
-  }
-
-  /**
-   * Verificar si hay página siguiente
-   */
-  get tienePaginaSiguiente(): boolean {
-    return this.paginaActual < this.totalPaginas - 1;
-  }
-
-  /**
-   * Verificar si hay página anterior
-   */
-  get tienePaginaAnterior(): boolean {
-    return this.paginaActual > 0;
   }
 
   // Resto de métodos existentes...
