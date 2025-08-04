@@ -156,7 +156,7 @@ export class InformesComponent implements OnInit {
         console.error('Error:', error);
         alert('Error al generar el informe. Por favor, inténtelo de nuevo.');
       },
-    });
+    }); 
   }
 
   cargarInformes(): void {
