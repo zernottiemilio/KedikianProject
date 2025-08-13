@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "serve-prod": "npx serve dist/kedikian-project -s -l 80"
   },
   "private": true,
   "dependencies": {

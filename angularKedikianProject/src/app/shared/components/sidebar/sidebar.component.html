@@ -10,8 +10,11 @@
   </div>
   <!-- Elementos de navegación principal -->
   <ng-container *ngIf="useAngularRouting; else staticNavigation">
-    <a *ngFor="let item of navItems; let i = index" [routerLink]="item.route" [class.active]="item.active"
-      class="nav-item" (click)="navigateTo(item.route)">
+    <a *ngFor="let item of getFilteredNavItems(); let i = index" 
+       [routerLink]="item.route" 
+       [class.active]="item.active"
+       class="nav-item" 
+       (click)="navigateTo(item.route)">
       <i [class]="item.icon"></i> {{item.title}}
     </a>
 

@@ -99,18 +99,18 @@ export class BalanceService {
     const params = new HttpParams()
       .set('fechaInicio', fechaInicio.toISOString())
       .set('fechaFin', fechaFin.toISOString());
-    return this.http.get<any>(`${environment.apiUrl}/gastos`, { params });
+    return this.http.get<any>(`${this.apiUrl}/gastos`, { params });
   }
 
   getGasto(id: number): Observable<any> {
-    return this.http.get<any>(`${environment.apiUrl}/gastos/${id}`);
+    return this.http.get<any>(`${this.apiUrl}/gastos/${id}`);
   }
 
   crearGasto(gasto: any): Observable<any> {
     if (gasto instanceof FormData) {
-      return this.http.post<any>(`${environment.apiUrl}/gastos`, gasto);
+      return this.http.post<any>(`${this.apiUrl}/gastos`, gasto);
     } else {
-      return this.http.post<any>(`${environment.apiUrl}/gastos`, gasto, {
+      return this.http.post<any>(`${this.apiUrl}/gastos`, gasto, {
         headers: { 'Content-Type': 'application/json' }
       });
     }
@@ -118,16 +118,16 @@ export class BalanceService {
 
   actualizarGasto(id: number, gasto: any): Observable<any> {
     if (gasto instanceof FormData) {
-      return this.http.put<any>(`${environment.apiUrl}/gastos/${id}`, gasto);
+      return this.http.put<any>(`${this.apiUrl}/gastos/${id}`, gasto);
     } else {
-      return this.http.put<any>(`${environment.apiUrl}/gastos/${id}`, gasto, {
+      return this.http.put<any>(`${this.apiUrl}/gastos/${id}`, gasto, {
         headers: { 'Content-Type': 'application/json' }
       });
     }
   }
 
   eliminarGasto(id: number): Observable<any> {
-    return this.http.delete<any>(`${environment.apiUrl}/gastos/${id}`);
+    return this.http.delete<any>(`${this.apiUrl}/gastos/${id}`);
   }
 
   // Pagos (Ingresos)
@@ -135,40 +135,40 @@ export class BalanceService {
     const params = new HttpParams()
       .set('fechaInicio', fechaInicio.toISOString())
       .set('fechaFin', fechaFin.toISOString());
-    return this.http.get<any>(`${environment.apiUrl}/pagos`, { params });
+    return this.http.get<any>(`${this.apiUrl}/pagos`, { params });
   }
 
   getPago(id: number): Observable<any> {
-    return this.http.get<any>(`${environment.apiUrl}/pagos/${id}`);
+    return this.http.get<any>(`${this.apiUrl}/pagos/${id}`);
   }
 
   crearPago(pago: any): Observable<any> {
-    return this.http.post<any>(`${environment.apiUrl}/pagos`, pago);
+    return this.http.post<any>(`${this.apiUrl}/pagos`, pago);
   }
 
   actualizarPago(id: number, pago: any): Observable<any> {
-    return this.http.put<any>(`${environment.apiUrl}/pagos/${id}`, pago);
+    return this.http.put<any>(`${this.apiUrl}/pagos/${id}`, pago);
   }
 
   eliminarPago(id: number): Observable<any> {
-    return this.http.delete<any>(`${environment.apiUrl}/pagos/${id}`);
+    return this.http.delete<any>(`${this.apiUrl}/pagos/${id}`);
   }
 
   // Datos Relacionados
   getUsuarios(): Observable<any> {
-    return this.http.get<any>(`${environment.apiUrl}/usuarios`);
+    return this.http.get<any>(`${this.apiUrl}/usuarios`);
   }
 
   getMaquinas(): Observable<any> {
-    return this.http.get<any>(`${environment.apiUrl}/maquinas`);
+    return this.http.get<any>(`${this.apiUrl}/maquinas`);
   }
 
   getProyectos(): Observable<any> {
-    return this.http.get<any>(`${environment.apiUrl}/proyectos`);
+    return this.http.get<any>(`${this.apiUrl}/proyectos`);
   }
 
   getProductos(): Observable<any> {
-    return this.http.get<any>(`${environment.apiUrl}/productos`);
+    return this.http.get<any>(`${this.apiUrl}/productos`);
   }
 
   // Resumen o Estadísticas

@@ -170,13 +170,24 @@ export class AuthService {
   }
 
   private obtenerInformacionUsuario(): Observable<Usuario> {
-    // Por ahora, devolver un usuario por defecto ya que el backend no tiene este endpoint
-    // En el futuro, esto debería hacer una petición a /api/v1/users/me o similar
-    return of({
-      id: '1',
-      nombreUsuario: 'admin@kedikian.com',
-      rol: 'administrador',
-      token: this.obtenerTokenAuth() || ''
+    // Intentar obtener información del usuario desde el backend
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.obtenerTokenAuth()}`
     });
+    
+    return this.http.get<Usuario>(`${apiUrl}/auth/me`, { headers }).pipe(
+      catchError((error) => {
+        console.warn('⚠️ No se pudo obtener información del usuario desde /auth/me:', error);
+        
+        // Si no se puede obtener la información del usuario, usar datos por defecto
+        // En producción, esto debería manejarse de manera diferente
+        return of({
+          id: '1',
+          nombreUsuario: 'admin@kedikian.com',
+          rol: 'administrador' as const, // Por defecto, pero debería venir del backend
+          token: this.obtenerTokenAuth() || ''
+        });
+      })
+    );
   }
 }

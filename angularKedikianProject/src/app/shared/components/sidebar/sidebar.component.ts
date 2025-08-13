@@ -2,6 +2,8 @@ import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { AuthService } from '../../../core/services/auth.service';
+import { NavigationService } from '../../../core/services/navigation.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -24,42 +26,56 @@ export class SidebarComponent implements OnInit {
       route: '/dashboard',
       active: true,
       imageUrl: 'public/assets/retro.png',
+      roles: ['administrador', 'operario'], // Accesible para todos
     },
     {
       title: 'Gestión de Proyectos',
       icon: 'fas fa-truck-monster',
-      route: '/proyectos',
+      route: '/gestion-proyectos',
       active: false,
+      roles: ['administrador'], // Solo administradores
     },
     {
       title: 'Gestión de Áridos',
       icon: 'fas fa-cubes',
       route: '/aridos',
       active: false,
+      roles: ['administrador'], // Solo administradores
     },
     {
       title: 'Gestión de Maquinas',
       icon: 'fas fa-file-invoice-dollar',
-      route: '/maquinas',
+      route: '/gestion-machines',
       active: false,
+      roles: ['administrador'], // Solo administradores
     },
     {
       title: 'Gestión de Operarios',
       icon: 'fas fa-project-diagram',
-      route: '/operarios',
+      route: '/gestion-operarios',
       active: false,
+      roles: ['administrador'], // Solo administradores
     },
     {
-      title: 'Gestion de Pagos y Deudas',
-      icon: 'fas fa-users',
-      route: '/pagos',
+      title: 'Balance',
+      icon: 'fas fa-chart-pie',
+      route: '/balance',
       active: false,
+      roles: ['administrador'], // Solo administradores
     },
     {
       title: 'Informes y Reportes',
       icon: 'fas fa-chart-line',
       route: '/informes',
       active: false,
+      roles: ['administrador'], // Solo administradores
+    },
+    {
+      title: 'Importar Excel',
+      icon: 'fas fa-file-excel',
+      route: '/excel-import',
+      active: false,
+      roles: ['administrador'], // Solo administradores
     },
   ];
 
@@ -90,7 +106,11 @@ export class SidebarComponent implements OnInit {
     },
   ];
 
-  constructor(private router: Router) {
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private navigationService: NavigationService
+  ) {
     this.screenWidth = window.innerWidth;
     this.checkScreenSize();
   }
@@ -169,14 +189,30 @@ export class SidebarComponent implements OnInit {
     }, 0);
   }
 
+  /**
+   * Obtiene los elementos de navegación filtrados según el rol del usuario
+   */
+  getFilteredNavItems() {
+    const user = this.authService.obtenerUsuarioActual();
+    if (!user) return [];
+
+    return this.navItems.filter(item => 
+      item.roles.includes(user.rol)
+    );
+  }
+
+  /**
+   * Verifica si el usuario puede acceder a un elemento de navegación
+   */
+  canAccessNavItem(item: any): boolean {
+    const user = this.authService.obtenerUsuarioActual();
+    if (!user) return false;
+
+    return item.roles.includes(user.rol);
+  }
+
   // Método para cerrar sesión
   logout(): void {
-    // Aquí implementarías tu lógica de cierre de sesión
-    // Por ejemplo:
-    // this.authService.logout().subscribe(() => {
-    //   this.router.navigate(['/login']);
-    // });
-
-    this.router.navigate(['/login']);
+    this.authService.cerrarSesion();
   }
 }

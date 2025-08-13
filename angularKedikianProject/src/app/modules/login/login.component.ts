@@ -235,10 +235,16 @@ export class LoginComponent {
       .subscribe({
         next: (user: User) => {
           this.loading = false;
-          console.log('🎯 Login exitoso, redirigiendo a dashboard');
+          console.log('🎯 Login exitoso, usuario:', user);
           
-          // Redireccionar al dashboard (ruta correcta según app.routes.ts)
-          this.router.navigate(['/dashboard']);
+          // Validar que el usuario tenga un rol válido
+          if (user.rol === 'administrador' || user.rol === 'operario') {
+            console.log('✅ Rol válido, redirigiendo a dashboard');
+            this.router.navigate(['/dashboard']);
+          } else {
+            console.error('❌ Rol inválido:', user.rol);
+            this.error = 'Usuario sin rol válido. Contacte al administrador.';
+          }
         },
         error: (error: unknown) => {
           this.loading = false;
