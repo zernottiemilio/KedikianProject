@@ -191,24 +191,50 @@ export class SidebarComponent implements OnInit {
 
   /**
    * Obtiene los elementos de navegación filtrados según el rol del usuario
+   * CORRECCIÓN: Usar roles (array) en lugar de rol (string)
    */
   getFilteredNavItems() {
     const user = this.authService.obtenerUsuarioActual();
     if (!user) return [];
 
     return this.navItems.filter(item => 
-      item.roles.includes(user.rol)
+      // Verificar si algún rol del usuario coincide con los roles permitidos del item
+      user.roles.some(userRole => item.roles.includes(userRole))
     );
   }
 
   /**
    * Verifica si el usuario puede acceder a un elemento de navegación
+   * CORRECCIÓN: Usar roles (array) en lugar de rol (string)
    */
   canAccessNavItem(item: any): boolean {
     const user = this.authService.obtenerUsuarioActual();
     if (!user) return false;
 
-    return item.roles.includes(user.rol);
+    // Verificar si algún rol del usuario coincide con los roles permitidos del item
+    return user.roles.some(userRole => item.roles.includes(userRole));
+  }
+
+  /**
+   * Método auxiliar para verificar si el usuario tiene un rol específico
+   */
+  hasRole(role: string): boolean {
+    const user = this.authService.obtenerUsuarioActual();
+    return user ? user.roles.includes(role) : false;
+  }
+
+  /**
+   * Método auxiliar para verificar si el usuario es administrador
+   */
+  isAdmin(): boolean {
+    return this.hasRole('administrador');
+  }
+
+  /**
+   * Método auxiliar para verificar si el usuario es operario
+   */
+  isOperario(): boolean {
+    return this.hasRole('operario');
   }
 
   // Método para cerrar sesión

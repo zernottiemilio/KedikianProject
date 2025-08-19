@@ -1,7 +1,7 @@
 // src/app/services/project.service.ts
 import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { catchError, tap } from 'rxjs/operators';
 
@@ -52,6 +52,15 @@ export class ProjectService {
 
   constructor(private http: HttpClient) {}
 
+  // Método para obtener headers con token
+  private getAuthHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token') || '';
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+  }
+
   getProjects(): Observable<Project[]> {
     return this.http.get<Project[]>(this.apiUrl);
   }
@@ -68,8 +77,7 @@ export class ProjectService {
       observer.complete();
     });
     
-    // Cuando el backend esté listo, descomentar esta línea:
-    // return this.http.get<Project[]>(`${this.apiUrl}/maquinas/${id}`);
+    return this.http.get<Project[]>(`${this.apiUrl}/maquinas/${id}`);
   }
 
   getActiveProjects(): Observable<Project[]> {

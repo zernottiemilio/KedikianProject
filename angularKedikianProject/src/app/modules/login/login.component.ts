@@ -1,17 +1,14 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-interface User {
-  rol: string;
-}
 import {
   FormBuilder,
   FormGroup,
   Validators,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { AuthService } from '../../core/services/auth.service';
-import { HttpClientModule } from '@angular/common/http';
+import { AuthService, Usuario } from '../../core/services/auth.service'; // Importar Usuario del servicio
+import { HttpClientModule, HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-login',
@@ -233,34 +230,32 @@ export class LoginComponent {
     this.authService
       .login(this.f['username'].value, this.f['password'].value)
       .subscribe({
-        next: (user: User) => {
+        next: (usuario: Usuario) => {
           this.loading = false;
-          console.log('🎯 Login exitoso, usuario:', user);
+          console.log('🎯 Login exitoso, usuario:', usuario);
           
-          // Validar que el usuario tenga un rol válido
-          if (user.rol === 'administrador' || user.rol === 'operario') {
+          // CORRECCIÓN: Usar la propiedad roles (array) de la interfaz Usuario
+          if (usuario.roles.includes('administrador') || usuario.roles.includes('operario')) {
             console.log('✅ Rol válido, redirigiendo a dashboard');
             this.router.navigate(['/dashboard']);
           } else {
-            console.error('❌ Rol inválido:', user.rol);
+            console.error('❌ Rol inválido:', usuario.roles);
             this.error = 'Usuario sin rol válido. Contacte al administrador.';
           }
         },
-        error: (error: unknown) => {
+        error: (error: HttpErrorResponse) => {
           this.loading = false;
           console.error('Error de login:', error);
           
-          // Manejar diferentes tipos de errores
-          if (error && typeof error === 'object' && 'status' in error) {
-            if (error.status === 401) {
-              this.error = 'Usuario o contraseña incorrectos';
-            } else if (error.status === 0) {
-              this.error = 'Error de conexión. Verifique su conexión a internet.';
-            } else {
-              this.error = 'Error en el servidor. Intente nuevamente.';
-            }
-          } else {
+          // CORRECCIÓN: Mejor manejo de tipos de error
+          if (error.status === 401) {
             this.error = 'Usuario o contraseña incorrectos';
+          } else if (error.status === 0) {
+            this.error = 'Error de conexión. Verifique su conexión a internet.';
+          } else if (error.status >= 500) {
+            this.error = 'Error en el servidor. Intente nuevamente.';
+          } else {
+            this.error = error.error?.message || 'Usuario o contraseña incorrectos';
           }
         },
       });

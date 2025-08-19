@@ -43,8 +43,8 @@ export interface Operario {
   id: number;
   nombre: string;
   email: string;
-  estado: boolean;
-  roles: string;
+  estado: boolean | number | string; // Más flexible para manejar diferentes formatos del backend
+  roles: string | string[] | any; // Más flexible para diferentes formatos de roles
   fecha_creacion: Date;
 }
 
@@ -93,14 +93,17 @@ export class AridosComponent implements OnInit {
   }
 
   cargarDatosReales(): void {
+    // Primero cargar proyectos y áridos
     forkJoin({
       proyectos: this.aridosService.getProyectos(),
-      aridos: this.aridosService.getAridos(),
-      usuarios: this.userService.getUsers()
+      aridos: this.aridosService.getAridos()
     }).subscribe({
-      next: ({ proyectos, aridos, usuarios }) => {
+      next: ({ proyectos, aridos }) => {
+        console.log('=== CARGA INICIAL EXITOSA ===');
+        
         // Proyectos
         this.proyectos = proyectos;
+        console.log('✅ Proyectos cargados:', this.proyectos.length);
 
         // Áridos (agrega los por defecto si faltan)
         const aridosPorDefecto: Arido[] = [
@@ -114,33 +117,181 @@ export class AridosComponent implements OnInit {
           }
         });
         this.aridos = aridos;
+        console.log('✅ Áridos cargados:', this.aridos.length);
 
-        // Operarios
-        this.operarios = usuarios.filter(usuario => {
-          let role = '';
-          if (Array.isArray(usuario.roles)) {
-            role = usuario.roles[0] || '';
-          } else {
-            role = String(usuario.roles || '');
-          }
-          role = (role || '').replace(/[{}\s]/g, '').toUpperCase();
-          return Boolean(usuario.estado) && role === 'OPERARIO';
-        });
-
-        // Ahora sí, carga los registros
-        this.aridosService.getRegistrosAridos().subscribe({
-          next: (registrosBackend) => {
-            this.registros = this.mapearRegistros(registrosBackend);
-            this.actualizarRegistrosFiltrados();
+        // Ahora cargar usuarios por separado (como los proyectos)
+        console.log('🔄 Cargando usuarios...');
+        this.userService.getUsers().subscribe({
+          next: (usuarios) => {
+            console.log('=== USUARIOS RECIBIDOS ===');
+            console.log('✅ Respuesta del backend usuarios:', usuarios);
+            console.log('📊 Total usuarios recibidos:', usuarios.length);
+            
+            // Procesar usuarios igual que antes
+            this.procesarUsuarios(usuarios);
+            
+            // Ahora cargar registros
+            this.cargarRegistros();
           },
           error: (error) => {
-            this.mostrarMensaje('Error al cargar registros');
+            console.error('❌ ERROR al cargar usuarios:', error);
+            console.error('📄 Detalles del error:', {
+              status: error.status,
+              statusText: error.statusText,
+              message: error.message,
+              url: error.url
+            });
+            this.mostrarMensaje('Error al cargar usuarios del servidor');
           }
         });
       },
       error: (error) => {
+        console.error('❌ Error al cargar datos iniciales:', error);
         this.mostrarMensaje('Error al cargar datos iniciales');
       }
+    });
+  }
+
+  private procesarUsuarios(usuarios: any[]): void {
+    console.log('=== PROCESANDO USUARIOS ===');
+    console.log('📊 Total usuarios recibidos:', usuarios.length);
+    
+    // Mostrar estructura de datos para referencia
+    if (usuarios.length > 0) {
+      console.log('📋 Estructura del primer usuario:', usuarios[0]);
+      console.log('🔑 Campos disponibles:', Object.keys(usuarios[0]));
+    }
+    
+    // Filtro corregido basado en la estructura real
+    this.operarios = usuarios.filter(usuario => {
+      console.log(`\n🔍 PROCESANDO: ${usuario.nombre}`);
+      
+      // Verificar estado - adaptado a la estructura real de tu backend
+      let estadoValido = false;
+      
+      // Buscar el campo de estado real (puede ser estado, status, active, etc.)
+      const estado = usuario.estado ?? usuario.status ?? usuario.active ?? usuario.activo;
+      
+      if (typeof estado === 'boolean') {
+        estadoValido = estado;
+      } else if (typeof estado === 'number') {
+        estadoValido = estado === 1;
+      } else if (typeof estado === 'string') {
+        const estadoStr = estado as string;
+        estadoValido = estadoStr === '1' || estadoStr.toLowerCase() === 'true';
+      } else {
+        estadoValido = Boolean(estado);
+      }
+      
+      console.log(`  📊 Estado: ${estado} (${typeof estado}) → ${estadoValido}`);
+
+      if (!estadoValido) {
+        console.log(`  ❌ EXCLUIDO por estado inválido`);
+        return false;
+      }
+
+      // Verificar roles - adaptado a la estructura real
+      const roles = usuario.roles ?? usuario.role ?? usuario.tipo ?? usuario.cargo;
+      let role = '';
+      
+      if (Array.isArray(roles)) {
+        role = roles[0] || '';
+      } else if (typeof roles === 'string') {
+        role = roles;
+      } else if (typeof roles === 'object' && roles !== null) {
+        const rolesValues = Object.values(roles);
+        role = rolesValues[0] as string || '';
+      } else {
+        role = String(roles || '');
+      }
+
+      // Limpieza del rol
+      const roleLimpio = (role || '')
+        .replace(/[{}\[\]"'\s]/g, '')
+        .toUpperCase()
+        .trim();
+
+      console.log(`  🎭 Rol: "${role}" → "${roleLimpio}"`);
+
+      // Verificar si es operario (más permisivo)
+      const esOperario = roleLimpio === 'OPERARIO' || 
+                        roleLimpio.includes('OPERARIO') ||
+                        roleLimpio === 'OPERATOR' ||
+                        roleLimpio === 'WORKER' ||
+                        roleLimpio === 'EMPLEADO' ||
+                        roleLimpio === 'TRABAJADOR';
+
+      console.log(`  👷 ¿Es operario? ${esOperario}`);
+
+      const incluir = estadoValido && esOperario;
+      console.log(`  📝 RESULTADO: ${incluir ? '✅ INCLUIR' : '❌ EXCLUIR'}`);
+
+      return incluir;
+    });
+
+    console.log('=== RESULTADO FINAL ===');
+    console.log('✅ Operarios filtrados:', this.operarios);
+    console.log('📊 Cantidad de operarios:', this.operarios.length);
+
+    // Si no hay operarios después del filtro, mostrar información para ajustar
+    if (this.operarios.length === 0) {
+      console.warn('⚠️ NO SE ENCONTRARON OPERARIOS DESPUÉS DEL FILTRO');
+      console.log('🔍 Usuarios disponibles con sus roles:');
+      usuarios.forEach(u => {
+        const roles = u.roles ?? u.role ?? u.tipo ?? u.cargo;
+        const estado = u.estado ?? u.status ?? u.active ?? u.activo;
+        console.log(`  - ${u.nombre}: estado=${estado}, roles=${JSON.stringify(roles)}`);
+      });
+      
+      // TEMPORAL: Si no encuentra operarios, usar todos los usuarios activos
+      console.log('🚨 FALLBACK: Usando todos los usuarios activos como operarios');
+      this.operarios = usuarios.filter(u => {
+        const estado = u.estado ?? u.status ?? u.active ?? u.activo;
+        return Boolean(estado) || estado === 1 || estado === '1';
+      }).map(usuario => ({
+        ...usuario,
+        id: usuario.id,
+        nombre: usuario.nombre || usuario.name || 'Usuario sin nombre',
+        email: usuario.email || 'sin-email@ejemplo.com',
+        estado: true,
+        roles: usuario.roles || 'OPERARIO',
+        fecha_creacion: usuario.fecha_creacion || usuario.created_at || new Date()
+      }));
+      
+      console.log('✅ Operarios asignados (fallback):', this.operarios.length);
+    }
+  }
+
+  private cargarRegistros(): void {
+    console.log('🔄 Cargando registros...');
+    this.aridosService.getRegistrosAridos().subscribe({
+      next: (registrosBackend) => {
+        console.log('✅ Registros del backend:', registrosBackend);
+        this.registros = this.mapearRegistros(registrosBackend);
+        this.actualizarRegistrosFiltrados();
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar registros:', error);
+        this.mostrarMensaje('Error al cargar registros');
+      }
+    });
+  }
+
+  // Método auxiliar para debug manual (puedes llamarlo desde la consola)
+  debugOperarios(): void {
+    this.userService.getUsers().subscribe(usuarios => {
+      console.log('=== DEBUG MANUAL OPERARIOS ===');
+      usuarios.forEach((usuario, index) => {
+        console.log(`${index + 1}. ${usuario.nombre}`, {
+          id: usuario.id,
+          email: usuario.email,
+          estado: usuario.estado,
+          tipo_estado: typeof usuario.estado,
+          roles: usuario.roles,
+          tipo_roles: typeof usuario.roles,
+          roles_string: JSON.stringify(usuario.roles)
+        });
+      });
     });
   }
 

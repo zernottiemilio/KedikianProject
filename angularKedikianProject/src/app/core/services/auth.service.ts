@@ -4,11 +4,14 @@ import { tap, switchMap, catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+
 export interface Usuario {
   id: string;
   nombreUsuario: string;
-  rol: 'administrador' | 'operario';
+  roles: string[];
   token?: string;
+  // 🚀 AGREGADO: Para mantener compatibilidad con el interceptor
+  access_token?: string;
 }
 
 // Interfaz para la respuesta del login OAuth2
@@ -78,36 +81,70 @@ export class AuthService {
       switchMap((loginResponse: LoginResponse) => {
         console.log('✅ Respuesta del login OAuth2:', loginResponse);
         
-        // Crear un usuario temporal con el token
-        const usuarioTemporal: Usuario = {
-          id: 'temp',
-          nombreUsuario: username,
-          rol: 'administrador', // Por defecto, se actualizará después
-          token: loginResponse.access_token
+        // 🚀 SOLUCIÓN: Guardar inmediatamente el token para el interceptor
+        const tokenData = {
+          access_token: loginResponse.access_token,
+          token_type: loginResponse.token_type,
+          token: loginResponse.access_token // Para compatibilidad
         };
         
-        // Guardar temporalmente para que el interceptor pueda usar el token
-        localStorage.setItem('usuarioActual', JSON.stringify(usuarioTemporal));
-        this.usuarioActualSubject.next(usuarioTemporal);
+        // Guardar solo los datos del token primero
+        localStorage.setItem('usuarioActual', JSON.stringify(tokenData));
         
         // Intentar obtener información del usuario desde el backend
-        return this.obtenerInformacionUsuario().pipe(
+        return this.obtenerInformacionUsuario(loginResponse.access_token).pipe(
+          // 🚀 MEJORADO: Combinar token con datos del usuario
+          tap((usuarioInfo: any) => {
+            console.log('✅ Información del usuario obtenida:', usuarioInfo);
+            
+            // 🚀 SOLUCIÓN: Crear usuario completo manteniendo el token
+            const usuarioCompleto: Usuario = {
+              id: usuarioInfo.id || 'temp',
+              nombreUsuario: usuarioInfo.email || usuarioInfo.nombreUsuario || username,
+              roles: usuarioInfo.roles || ['administrador'],
+              // 🔑 CRÍTICO: Mantener ambas formas del token
+              token: loginResponse.access_token,
+              access_token: loginResponse.access_token,
+              // Agregar cualquier otra propiedad del usuario
+              ...usuarioInfo
+            };
+            
+            console.log('✅ Usuario completo creado:', usuarioCompleto);
+            
+            // Guardar el usuario completo
+            localStorage.setItem('usuarioActual', JSON.stringify(usuarioCompleto));
+            console.log('💾 Usuario completo guardado en localStorage');
+            
+            // Actualizar el BehaviorSubject
+            this.usuarioActualSubject.next(usuarioCompleto);
+            console.log('🔄 BehaviorSubject actualizado');
+            
+            return usuarioCompleto;
+          }),
           catchError((error) => {
             console.warn('⚠️ No se pudo obtener información del usuario, usando datos por defecto:', error);
-            // Si no se puede obtener la información del usuario, usar los datos por defecto
-            return of(usuarioTemporal);
+            
+            // 🚀 SOLUCIÓN: Usuario por defecto con token
+            const usuarioPorDefecto: Usuario = {
+              id: 'temp',
+              nombreUsuario: username,
+              roles: ['administrador'],
+              token: loginResponse.access_token,
+              access_token: loginResponse.access_token
+            };
+            
+            // Guardar usuario por defecto
+            localStorage.setItem('usuarioActual', JSON.stringify(usuarioPorDefecto));
+            this.usuarioActualSubject.next(usuarioPorDefecto);
+            
+            return of(usuarioPorDefecto);
           })
         );
       }),
       // Manejar la respuesta final
       tap((usuario: Usuario) => {
-        console.log('✅ Usuario final:', usuario);
-        // Guardar el usuario en localStorage
-        localStorage.setItem('usuarioActual', JSON.stringify(usuario));
-        console.log('💾 Usuario guardado en localStorage');
-        // Actualizar el BehaviorSubject
-        this.usuarioActualSubject.next(usuario);
-        console.log('🔄 BehaviorSubject actualizado');
+        console.log('🎯 Login exitoso, usuario:', usuario);
+        console.log('🔍 Token en usuario final:', usuario.access_token ? 'SÍ' : 'NO');
         console.log('🔍 Usuario actual después del login:', this.usuarioActualSubject.value);
       })
     );
@@ -144,23 +181,24 @@ export class AuthService {
 
   esAdministrador(): boolean {
     const usuario = this.usuarioActualSubject.value;
-    return !!usuario && usuario.rol === 'administrador';
+    return !!usuario && usuario.roles.includes('administrador');
   }
 
   esOperario(): boolean {
     const usuario = this.usuarioActualSubject.value;
-    return !!usuario && usuario.rol === 'operario';
+    return !!usuario && usuario.roles.includes('operario');
   }
 
   // Método para verificar el rol (alias)
   hasRole(role: string): boolean {
     const usuario = this.usuarioActualSubject.value;
-    return !!usuario && usuario.rol === role;
+    return !!usuario && usuario.roles.includes(role);
   }
 
+  // 🚀 MEJORADO: Obtener token de múltiples fuentes
   obtenerTokenAuth(): string | null {
     const usuario = this.usuarioActualSubject.value;
-    return usuario?.token || null;
+    return usuario?.access_token || usuario?.token || null;
   }
 
   refrescarToken(): Observable<Usuario> {
@@ -169,24 +207,20 @@ export class AuthService {
     );
   }
 
-  private obtenerInformacionUsuario(): Observable<Usuario> {
-    // Intentar obtener información del usuario desde el backend
+  // 🚀 MEJORADO: Pasar token como parámetro para evitar referencias circulares
+  private obtenerInformacionUsuario(token: string): Observable<any> {
+    // Obtener información del usuario desde el backend
     const headers = new HttpHeaders({
-      'Authorization': `Bearer ${this.obtenerTokenAuth()}`
+      'Authorization': `Bearer ${token}`
     });
     
-    return this.http.get<Usuario>(`${apiUrl}/auth/me`, { headers }).pipe(
+    return this.http.get<any>(`${apiUrl}/auth/me`, { headers }).pipe(
+      tap((userInfo) => {
+        console.log('✅ Usuario obtenido de /auth/me:', userInfo);
+      }),
       catchError((error) => {
-        console.warn('⚠️ No se pudo obtener información del usuario desde /auth/me:', error);
-        
-        // Si no se puede obtener la información del usuario, usar datos por defecto
-        // En producción, esto debería manejarse de manera diferente
-        return of({
-          id: '1',
-          nombreUsuario: 'admin@kedikian.com',
-          rol: 'administrador' as const, // Por defecto, pero debería venir del backend
-          token: this.obtenerTokenAuth() || ''
-        });
+        console.warn('⚠️ Error al obtener información del usuario desde /auth/me:', error);
+        throw error; // Re-lanzar el error para que sea manejado en el switchMap
       })
     );
   }

@@ -1,5 +1,5 @@
 export const environment = {
-  production: false,
+  production: true,
   useSimulatedData: false,
   apiUrl: 'http://168.197.50.82/api/v1',
   firebaseConfig: {
