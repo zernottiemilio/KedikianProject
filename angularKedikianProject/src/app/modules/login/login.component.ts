@@ -7,7 +7,7 @@ import {
   Validators,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { AuthService, Usuario } from '../../core/services/auth.service'; // Importar Usuario del servicio
+import { AuthService, Usuario } from '../../core/services/auth.service';
 import { HttpClientModule, HttpErrorResponse } from '@angular/common/http';
 
 @Component({
@@ -17,7 +17,7 @@ import { HttpClientModule, HttpErrorResponse } from '@angular/common/http';
   template: `
     <div class="login-container">
       <div class="login-card">
-        <h2 class="login-title">Sistema de Retroexcavadoras y Áridos</h2>
+        <h2 class="login-title">Sistema Movimiento de Suelo</h2>
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
           <div class="form-group">
@@ -211,7 +211,6 @@ export class LoginComponent {
     });
   }
 
-  // Getter para acceder más fácilmente a los campos del formulario
   get f() {
     return this.loginForm.controls;
   }
@@ -219,45 +218,58 @@ export class LoginComponent {
   onSubmit() {
     this.submitted = true;
 
-    // Detener si el formulario es inválido
     if (this.loginForm.invalid) {
       return;
     }
 
     this.loading = true;
-    this.error = ''; // Limpiar errores anteriores
+    this.error = '';
 
-    this.authService
-      .login(this.f['username'].value, this.f['password'].value)
-      .subscribe({
-        next: (usuario: Usuario) => {
-          this.loading = false;
-          console.log('🎯 Login exitoso, usuario:', usuario);
-          
-          // CORRECCIÓN: Usar la propiedad roles (array) de la interfaz Usuario
-          if (usuario.roles.includes('administrador') || usuario.roles.includes('operario')) {
-            console.log('✅ Rol válido, redirigiendo a dashboard');
-            this.router.navigate(['/dashboard']);
-          } else {
-            console.error('❌ Rol inválido:', usuario.roles);
-            this.error = 'Usuario sin rol válido. Contacte al administrador.';
-          }
-        },
-        error: (error: HttpErrorResponse) => {
-          this.loading = false;
-          console.error('Error de login:', error);
-          
-          // CORRECCIÓN: Mejor manejo de tipos de error
-          if (error.status === 401) {
-            this.error = 'Usuario o contraseña incorrectos';
-          } else if (error.status === 0) {
-            this.error = 'Error de conexión. Verifique su conexión a internet.';
-          } else if (error.status >= 500) {
-            this.error = 'Error en el servidor. Intente nuevamente.';
-          } else {
-            this.error = error.error?.message || 'Usuario o contraseña incorrectos';
-          }
-        },
-      });
+    const usernameFromForm = this.f['username'].value;
+    const passwordFromForm = this.f['password'].value;
+
+    this.authService.login(usernameFromForm, passwordFromForm).subscribe({
+      next: (usuario: Usuario) => {
+        this.loading = false;
+        console.log('✅ Login exitoso');
+        console.log('👤 Usuario:', usuario.nombreUsuario);
+        console.log('🎯 Roles desde backend:', usuario.roles);
+
+        // 🔹 Mapear roles del backend a los de Angular
+        const mappedRoles = usuario.roles.map((rol) => {
+          if (rol.toLowerCase() === 'user') return 'operario';
+          if (rol.toLowerCase() === 'admin') return 'administrador';
+          return rol.toLowerCase();
+        });
+
+        console.log('🎯 Roles mapeados:', mappedRoles);
+
+        if (mappedRoles.includes('administrador')) {
+          console.log('✅ Administrador detectado, redirigiendo...');
+          window.location.href =
+            'http://168.197.50.82/administrador/dashboard';
+        } else if (mappedRoles.includes('operario')) {
+          console.log('✅ Operario detectado, redirigiendo...');
+          window.location.href = 'http://168.197.50.82/operario/dashboard';
+        } else {
+          console.error('❌ Rol no reconocido:', mappedRoles);
+          this.error = 'Usuario sin rol válido.';
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        this.loading = false;
+        console.error('❌ Error en login - Status:', error.status);
+
+        if (error.status === 401) {
+          this.error = 'Usuario o contraseña incorrectos';
+        } else if (error.status === 0) {
+          this.error = 'Error de conexión. Verifique su conexión a internet.';
+        } else if (error.status >= 500) {
+          this.error = 'Error en el servidor. Intente nuevamente.';
+        } else {
+          this.error = 'Error de autenticación. Intente nuevamente.';
+        }
+      },
+    });
   }
 }

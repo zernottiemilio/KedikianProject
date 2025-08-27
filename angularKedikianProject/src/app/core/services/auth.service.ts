@@ -56,75 +56,78 @@ export class AuthService {
   }
 
   login(username: string, password: string): Observable<Usuario> {
-    // Codificar en base64
+    // 🔒 LOGS SEGUROS - Sin exponer credenciales
+    console.log('🚀 Iniciando autenticación...');
+    console.log('📧 Username length:', username?.length || 0);
+    console.log('🔒 Password length:', password?.length || 0);
+    console.log('🌐 Endpoint:', `${apiUrl}/auth/login`);
+  
+    // Codificar en base64 (sin mostrar en logs)
     const usernameBase64 = btoa(username);
     const passwordBase64 = btoa(password);
-
-    // Enviar el body como formulario x-www-form-urlencoded
+  
     const body = new HttpParams()
       .set('username', usernameBase64)
       .set('password', passwordBase64);
+      
     const headers = new HttpHeaders({
       'Content-Type': 'application/x-www-form-urlencoded'
     });
     
     const loginUrl = `${apiUrl}/auth/login`;
-    console.log('🚀 Intentando login en:', loginUrl);
-    console.log('📦 Datos enviados:', body.toString());
+    
+    // 🔒 LOG SEGURO - Solo confirmar que se está enviando
+    console.log('📤 Enviando petición de autenticación...');
     
     return this.http.post<LoginResponse>(
       loginUrl,
       body.toString(),
       { headers }
     ).pipe(
-      // Después del login exitoso, obtener información del usuario
       switchMap((loginResponse: LoginResponse) => {
-        console.log('✅ Respuesta del login OAuth2:', loginResponse);
+        // 🔒 LOG SEGURO - No mostrar token completo
+        console.log('✅ Respuesta de autenticación recibida');
+        console.log('🎫 Token type:', loginResponse.token_type);
+        console.log('🎫 Token recibido:', loginResponse.access_token ? 'SÍ' : 'NO');
         
-        // 🚀 SOLUCIÓN: Guardar inmediatamente el token para el interceptor
         const tokenData = {
           access_token: loginResponse.access_token,
           token_type: loginResponse.token_type,
-          token: loginResponse.access_token // Para compatibilidad
+          token: loginResponse.access_token
         };
         
-        // Guardar solo los datos del token primero
         localStorage.setItem('usuarioActual', JSON.stringify(tokenData));
         
-        // Intentar obtener información del usuario desde el backend
         return this.obtenerInformacionUsuario(loginResponse.access_token).pipe(
-          // 🚀 MEJORADO: Combinar token con datos del usuario
           tap((usuarioInfo: any) => {
-            console.log('✅ Información del usuario obtenida:', usuarioInfo);
+            // 🔒 LOG SEGURO - Solo información no sensible
+            console.log('✅ Información del usuario obtenida');
+            console.log('👤 Usuario ID:', usuarioInfo.id);
+            console.log('📧 Email:', usuarioInfo.email);
+            console.log('🏷️ Nombre:', usuarioInfo.nombre);
+            console.log('🎯 Roles:', usuarioInfo.roles);
+            console.log('✅ Estado activo:', usuarioInfo.estado);
             
-            // 🚀 SOLUCIÓN: Crear usuario completo manteniendo el token
             const usuarioCompleto: Usuario = {
               id: usuarioInfo.id || 'temp',
               nombreUsuario: usuarioInfo.email || usuarioInfo.nombreUsuario || username,
               roles: usuarioInfo.roles || ['administrador'],
-              // 🔑 CRÍTICO: Mantener ambas formas del token
               token: loginResponse.access_token,
               access_token: loginResponse.access_token,
-              // Agregar cualquier otra propiedad del usuario
               ...usuarioInfo
             };
             
-            console.log('✅ Usuario completo creado:', usuarioCompleto);
-            
-            // Guardar el usuario completo
             localStorage.setItem('usuarioActual', JSON.stringify(usuarioCompleto));
-            console.log('💾 Usuario completo guardado en localStorage');
-            
-            // Actualizar el BehaviorSubject
             this.usuarioActualSubject.next(usuarioCompleto);
-            console.log('🔄 BehaviorSubject actualizado');
+            
+            console.log('✅ Usuario autenticado y guardado correctamente');
             
             return usuarioCompleto;
           }),
           catchError((error) => {
-            console.warn('⚠️ No se pudo obtener información del usuario, usando datos por defecto:', error);
+            console.warn('⚠️ No se pudo obtener información detallada del usuario');
+            console.warn('⚠️ Error status:', error.status);
             
-            // 🚀 SOLUCIÓN: Usuario por defecto con token
             const usuarioPorDefecto: Usuario = {
               id: 'temp',
               nombreUsuario: username,
@@ -133,22 +136,37 @@ export class AuthService {
               access_token: loginResponse.access_token
             };
             
-            // Guardar usuario por defecto
             localStorage.setItem('usuarioActual', JSON.stringify(usuarioPorDefecto));
             this.usuarioActualSubject.next(usuarioPorDefecto);
+            
+            console.log('✅ Usuario creado con datos por defecto');
             
             return of(usuarioPorDefecto);
           })
         );
       }),
-      // Manejar la respuesta final
       tap((usuario: Usuario) => {
-        console.log('🎯 Login exitoso, usuario:', usuario);
-        console.log('🔍 Token en usuario final:', usuario.access_token ? 'SÍ' : 'NO');
-        console.log('🔍 Usuario actual después del login:', this.usuarioActualSubject.value);
+        console.log('🎯 Login completado exitosamente');
+        console.log('👤 Usuario final - ID:', usuario.id);
+        console.log('🎯 Roles asignados:', usuario.roles);
+        console.log('🔐 Token presente:', !!usuario.access_token);
+      }),
+      catchError((error) => {
+        // 🔒 LOG SEGURO DE ERRORES - Sin exponer información sensible
+        console.error('❌ Error en autenticación');
+        console.error('📊 Status:', error.status);
+        console.error('📊 StatusText:', error.statusText);
+        
+        // Solo en desarrollo (puedes controlar esto con environment)
+        if (!environment.production) {
+          console.error('🔧 [DEV] Error URL:', error.url);
+          console.error('🔧 [DEV] Error details:', error.error);
+        }
+        
+        return throwError(() => error);
       })
     );
-  }
+  }  
 
   cerrarSesion(): void {
     localStorage.removeItem('usuarioActual');

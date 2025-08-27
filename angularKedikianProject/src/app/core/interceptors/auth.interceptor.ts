@@ -1,3 +1,4 @@
+// auth.interceptor.ts
 import {
   HttpRequest,
   HttpHandlerFn,
@@ -5,7 +6,7 @@ import {
   HttpErrorResponse
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, delay } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 
@@ -14,161 +15,60 @@ export function AuthInterceptor(
   next: HttpHandlerFn
 ): Observable<HttpEvent<unknown>> {
   const router = inject(Router);
-  
-  // Verificar si es una ruta de autenticación
+
+  // Rutas que no requieren token
   const authRoutes = ['/auth/login', '/auth/register', '/auth/refresh'];
   const isAuthRoute = authRoutes.some(route => request.url.includes(route));
-  
-  // Si es una ruta de auth, pasar sin modificar
+
   if (isAuthRoute) {
-    console.log('🔓 Ruta de auth detectada, pasando sin token:', request.url);
+    // Dejo pasar sin token
     return next(request).pipe(
-      catchError((error: HttpErrorResponse) => {
-        console.error('🔥 Error HTTP en ruta de auth:', error.status, error.statusText, 'URL:', error.url);
-        return throwError(() => error);
-      })
+      catchError((error: HttpErrorResponse) => handleHttpError(error, router))
     );
   }
-  
-  // 🚀 SOLUCIÓN: Función para obtener token con reintentos y debug detallado
-  const getTokenWithRetry = (maxRetries = 3, currentRetry = 0): string | null => {
-    const usuarioActual = localStorage.getItem('usuarioActual');
-    
-    if (!usuarioActual) {
-      if (currentRetry < maxRetries) {
-        console.log(`🔄 Intento ${currentRetry + 1}/${maxRetries} - Usuario no encontrado, reintentando...`);
-        return null;
-      }
-      console.log('⚠️ No hay usuario en localStorage después de todos los intentos');
-      return null;
-    }
 
+  // Buscar token en localStorage
+  const usuarioActual = localStorage.getItem('usuarioActual');
+  let token: string | null = null;
+
+  if (usuarioActual) {
     try {
       const usuario = JSON.parse(usuarioActual);
-      
-      // 🔍 DEBUG: Mostrar estructura completa del objeto
-      console.log('📋 Estructura del usuario en localStorage:', {
-        keys: Object.keys(usuario),
-        hasAccessToken: 'access_token' in usuario,
-        hasToken: 'token' in usuario,
-        usuario: usuario
-      });
-      
-      // 🚀 CORREGIDO: Buscar token en todas las posibles ubicaciones
-      const token = usuario.access_token || 
-                    usuario.token || 
-                    (usuario.auth && usuario.auth.access_token) ||
-                    (usuario.loginResponse && usuario.loginResponse.access_token);
-      
-      if (!token && currentRetry < maxRetries) {
-        console.log(`🔄 Intento ${currentRetry + 1}/${maxRetries} - Token no encontrado en estructura:`, Object.keys(usuario));
-        return null;
-      }
-      
-      if (token) {
-        console.log('✅ Token encontrado en ubicación:', 
-          usuario.access_token ? 'access_token directo' :
-          usuario.token ? 'token directo' :
-          (usuario.auth && usuario.auth.access_token) ? 'auth.access_token' :
-          (usuario.loginResponse && usuario.loginResponse.access_token) ? 'loginResponse.access_token' :
-          'ubicación desconocida'
-        );
-      }
-      
-      return token;
-    } catch (error) {
-      console.error('❌ Error parsing usuario from localStorage:', error);
+      token = usuario.access_token || usuario.token || null;
+    } catch {
       localStorage.removeItem('usuarioActual');
-      return null;
     }
-  };
-
-  // Obtener el token con reintentos
-  let token = getTokenWithRetry();
-  
-  // 🚀 SOLUCIÓN: Si no hay token, crear un Observable con delay para reintentar
-  if (!token) {
-    console.log('⏱️ Token no disponible inmediatamente, aplicando delay para timing...');
-    
-    return new Observable(observer => {
-      // Esperar un poco para que se complete el guardado en localStorage
-      setTimeout(() => {
-        const retryToken = getTokenWithRetry(2, 0);
-        
-        if (retryToken) {
-          console.log('✅ Token encontrado después del delay');
-          console.log('🔍 Primeros caracteres del token:', retryToken.substring(0, 20) + '...');
-          
-          // Crear nueva petición con el token
-          const authenticatedRequest = request.clone({
-            setHeaders: {
-              Authorization: `Bearer ${retryToken}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          console.log('🚀 Petición con token a:', authenticatedRequest.url);
-          
-          // Continuar con la petición autenticada
-          next(authenticatedRequest).pipe(
-            catchError((error: HttpErrorResponse) => handleHttpError(error, router))
-          ).subscribe(observer);
-          
-        } else {
-          console.log('⚠️ Petición sin token a:', request.url);
-          
-          // Continuar sin token
-          const requestWithoutToken = request.clone({
-            setHeaders: {
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          next(requestWithoutToken).pipe(
-            catchError((error: HttpErrorResponse) => handleHttpError(error, router))
-          ).subscribe(observer);
-        }
-      }, 100); // 100ms de delay - ajusta según necesites
-    });
   }
 
-  // Si hay token inmediatamente disponible
-  console.log('🔑 Token encontrado inmediatamente: Sí');
-  console.log('🔍 Primeros caracteres del token:', token.substring(0, 20) + '...');
-  
-  const authenticatedRequest = request.clone({
+  // Clonar request con headers
+  let secureRequest = request.clone({
     setHeaders: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
     }
   });
-  
-  console.log('🚀 Petición con token a:', authenticatedRequest.url);
 
-  return next(authenticatedRequest).pipe(
+  return next(secureRequest).pipe(
     catchError((error: HttpErrorResponse) => handleHttpError(error, router))
   );
 }
 
-// 🚀 SOLUCIÓN: Función auxiliar para manejo de errores HTTP
+// Manejo seguro de errores
 function handleHttpError(error: HttpErrorResponse, router: Router): Observable<never> {
-  console.error('🔥 Error HTTP:', error.status, error.statusText, 'URL:', error.url);
-  
+  // 🚫 No mostramos datos sensibles
   switch (error.status) {
     case 401:
-      console.log('🔒 Error 401 - Token inválido o expirado, redirigiendo al login');
       localStorage.removeItem('usuarioActual');
       router.navigate(['/login']);
       break;
-      
     case 403:
-      console.log('🚫 Error 403 - Acceso prohibido');
+      // opcional: redirigir a página de "no autorizado"
       break;
-      
     case 0:
-      console.log('🌐 Error de conexión - Verificar servidor');
+      console.error('Error de conexión con el servidor');
       break;
+    default:
+      console.error(`Error HTTP ${error.status}: ${error.statusText}`);
   }
-  
   return throwError(() => error);
 }

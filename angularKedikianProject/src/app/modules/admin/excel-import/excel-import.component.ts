@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import * as XLSX from 'xlsx';
 import { UserService } from '../../../core/services/user.service';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment'; // <-- Importar environment
 
 interface Operario {
   nombre: string;
@@ -55,25 +56,26 @@ export class ExcelImportComponent implements OnInit {
     multiplicadorExtra: 1.5
   };
 
+  // URL base del backend desde environment
+  private apiBaseUrl = environment.apiUrl;
+
   constructor(private userService: UserService, private http: HttpClient) {}
 
   ngOnInit() {
     this.calcularPrecioHoraExtra();
-    this.cargarResumenes(); // Ahora se cargan automáticamente los resúmenes del mes actual
-    // this.cargarOperariosDesdeBackend(); // Comentado para no cargar operarios automáticamente
+    this.cargarResumenes();
   }
 
   cargarOperariosDesdeBackend() {
     this.isLoading = true;
     this.userService.getUsers().subscribe({
       next: (users) => {
-        // Filtrar solo operarios activos
         this.operarios = users
           .filter(user => Array.isArray(user.roles) ? user.roles.includes('operario') : user.roles === 'operario')
           .filter(user => user.estado)
           .map(user => ({
             nombre: user.nombre,
-            dni: user.id ? user.id.toString() : '', // Ajustar si hay campo dni real
+            dni: user.id ? user.id.toString() : '',
             horasNormales: 0,
             horasFeriado: 0,
             horasExtras: 0,
@@ -91,7 +93,7 @@ export class ExcelImportComponent implements OnInit {
         this.recalcularTodos();
         this.isLoading = false;
       },
-      error: (err) => {
+      error: () => {
         this.errorMessage = 'Error al cargar operarios desde el backend.';
         this.isLoading = false;
       }
@@ -158,16 +160,13 @@ export class ExcelImportComponent implements OnInit {
 
     this.errorMessage = '';
 
-    // Calcular las sumas totales de horas de todos los operarios
-    let totalHorasNormales = this.operarios.reduce((sum, op) => sum + op.horasNormales, 0);
-    let totalHorasFeriado = this.operarios.reduce((sum, op) => sum + op.horasFeriado, 0);
-    let totalHorasExtras = this.operarios.reduce((sum, op) => sum + op.horasExtras, 0);
+    const totalHorasNormales = this.operarios.reduce((sum, op) => sum + op.horasNormales, 0);
+    const totalHorasFeriado = this.operarios.reduce((sum, op) => sum + op.horasFeriado, 0);
+    const totalHorasExtras = this.operarios.reduce((sum, op) => sum + op.horasExtras, 0);
 
-    // Calcular los valores remunerativos basados en el formato de la imagen
     const basicValue = this.configuracion.horaNormal;
     const basicRemunerativo = totalHorasNormales * basicValue;
 
-    // Calcular el 20% del valor total de las horas comunes
     const perfectAttendancePercentage = 0.20;
     const perfectAttendanceRemunerativo = basicRemunerativo * perfectAttendancePercentage;
 
@@ -177,17 +176,14 @@ export class ExcelImportComponent implements OnInit {
     const extraHoursValue = this.configuracion.horaNormal * this.configuracion.multiplicadorExtra;
     const extraHoursRemunerativo = totalHorasExtras * extraHoursValue;
 
-    // Calcular el total remunerativo final sumando todos los componentes
     const totalRemunerativoFinal = basicRemunerativo + perfectAttendanceRemunerativo + holidayHoursRemunerativo + extraHoursRemunerativo;
 
-    // Helper para formatear moneda para la exportación a Excel
     const formatCurrencyForExcel = (value: number) => {
       return `$ ${value.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
     };
 
-
     const excelData = [
-      ['', '', '', 'Vijande mayo 2025', ''], // Fila de título, se fusionará sobre D y E
+      ['', '', '', 'Vijande mayo 2025', ''],
       ['Concepto', 'Unidades', 'Valor', 'Remunerativo', 'Adelantos'],
       ['Basico', totalHorasNormales, formatCurrencyForExcel(basicValue), formatCurrencyForExcel(basicRemunerativo), ''],
       ['Asistencia perfecta (20%)', `${perfectAttendancePercentage * 100}%`, formatCurrencyForExcel(basicRemunerativo), formatCurrencyForExcel(perfectAttendanceRemunerativo), ''],
@@ -199,17 +195,15 @@ export class ExcelImportComponent implements OnInit {
 
     const ws = XLSX.utils.aoa_to_sheet(excelData);
 
-    // Fusionar celdas para el título "Vijande mayo 2025" (D1:E1)
     if (!ws['!merges']) ws['!merges'] = [];
     ws['!merges'].push(XLSX.utils.decode_range('D1:E1'));
 
-    // Establecer anchos de columna para un mejor formato
     ws['!cols'] = [
-      { wch: 20 }, // Concepto
-      { wch: 15 }, // Unidades
-      { wch: 15 }, // Valor
-      { wch: 20 }, // Remunerativo
-      { wch: 20 }  // Adelantos
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 20 },
+      { wch: 20 }
     ];
 
     const wb = XLSX.utils.book_new();
@@ -222,45 +216,17 @@ export class ExcelImportComponent implements OnInit {
     this.errorMessage = '';
   }
 
-  // Método para guardar los resultados calculados en la base de datos real
   guardarResultados() {
-    // Calcular el periodo actual en formato YYYY-MM
     const now = new Date();
     const periodo = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 
-    // Enviar cada operario individualmente como objeto
-    /*
-    this.operarios.forEach(op => {
-      const payload = {
-        nombre: op.nombre,
-        dni: op.dni,
-        email: op.email || '',
-        estado: op.estado !== undefined ? op.estado : true,
-        roles: op.roles || ['operario'],
-        hash_contrasena: op.hash_contrasena || '',
-        periodo: periodo,
-        horas_normales: op.horasNormales,
-        horas_feriado: op.horasFeriado,
-        horas_extras: op.horasExtras
-      };
-      this.http.post('http://localhost:8000/api/v1/excel/operarios', payload).subscribe({
-        next: (response) => {
-          // Puedes mostrar un mensaje de éxito por cada operario o manejarlo como prefieras
-        },
-        error: (err) => {
-          this.errorMessage = 'Error al guardar el sueldo de un operario en la base de datos.';
-        }
-      });
-    });
-    */
+    // Aquí podrías usar this.apiBaseUrl si decides enviar operarios individualmente
   }
 
-  // Método para guardar el resumen de sueldos en la base de datos
   guardarResumenSueldo() {
     const now = new Date();
     const periodo = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 
-    // Calcular totales
     const total_horas_normales = this.operarios.reduce((sum, op) => sum + op.horasNormales, 0);
     const total_horas_feriado = this.operarios.reduce((sum, op) => sum + op.horasFeriado, 0);
     const total_horas_extras = this.operarios.reduce((sum, op) => sum + op.horasExtras, 0);
@@ -273,7 +239,7 @@ export class ExcelImportComponent implements OnInit {
     const total_remunerativo = basico_remunerativo + asistencia_perfecta_remunerativo + feriado_remunerativo + extras_remunerativo;
 
     const resumen = {
-      periodo: periodo,
+      periodo,
       total_horas_normales,
       total_horas_feriado,
       total_horas_extras,
@@ -282,78 +248,64 @@ export class ExcelImportComponent implements OnInit {
       feriado_remunerativo,
       extras_remunerativo,
       total_remunerativo,
-      observaciones: this.observaciones && this.observaciones.trim() !== ''
-        ? this.observaciones
-        : `Sueldo correspondiente a ${now.toLocaleString('es-AR', { month: 'long', year: 'numeric' })}`,
-      nombre: this.operarios.length > 0 ? this.operarios[0].nombre : '',
-      dni: this.operarios.length > 0 ? this.operarios[0].dni : ''
+      observaciones: this.observaciones?.trim() || `Sueldo correspondiente a ${now.toLocaleString('es-AR', { month: 'long', year: 'numeric' })}`,
+      nombre: this.operarios[0]?.nombre || '',
+      dni: this.operarios[0]?.dni || ''
     };
 
     console.log('Payload enviado:', resumen);
 
-    this.http.post('http://localhost:8000/api/v1/excel/resumen-sueldo', resumen).subscribe({
-      next: (response) => {
+    this.http.post(`${this.apiBaseUrl}/excel/resumen-sueldo`, resumen).subscribe({
+      next: () => {
         this.errorMessage = '';
         alert('¡Resumen de sueldos guardado exitosamente!');
       },
-      error: (err) => {
+      error: () => {
         this.errorMessage = 'Error al guardar el resumen de sueldos en la base de datos.';
       }
     });
   }
 
-  // Método para cargar los resúmenes de sueldo guardados desde el backend
   cargarResumenes() {
-    this.http.get<any[]>('http://localhost:8000/api/v1/excel/resumen-sueldo').subscribe({
+    this.http.get<any[]>(`${this.apiBaseUrl}/excel/resumen-sueldo`).subscribe({
       next: (data) => {
-        // Filtrar para mostrar solo los resúmenes del mes actual
         const now = new Date();
         const periodoActual = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
         this.resumenes = data.filter(res => res.periodo === periodoActual);
       },
-      error: (err) => {
+      error: () => {
         this.errorMessage = 'Error al cargar los resúmenes de sueldo desde el backend.';
       }
     });
   }
 
-  // Eliminar un resumen de sueldo
   eliminarResumen(resumen: any) {
     if (confirm('¿Estás seguro de que deseas eliminar este registro?')) {
-      this.http.delete(`http://localhost:8000/api/v1/excel/resumen-sueldo/${resumen.id}`).subscribe({
-        next: () => {
-          this.cargarResumenes();
-        },
-        error: () => {
-          this.errorMessage = 'Error al eliminar el registro de resumen de sueldo.';
-        }
+      this.http.delete(`${this.apiBaseUrl}/excel/resumen-sueldo/${resumen.id}`).subscribe({
+        next: () => this.cargarResumenes(),
+        error: () => this.errorMessage = 'Error al eliminar el registro de resumen de sueldo.'
       });
     }
   }
 
-  // Abrir el modal de edición
   editarResumen(resumen: any) {
     this.resumenEditando = { ...resumen };
     this.modalEditarResumenAbierto = true;
   }
 
-  // Cerrar el modal de edición
   cerrarModalEditarResumen() {
     this.modalEditarResumenAbierto = false;
     this.resumenEditando = null;
   }
 
-  // Guardar los cambios del resumen editado
   guardarEdicionResumen() {
-    if (!this.resumenEditando || !this.resumenEditando.id) return;
-    this.http.put(`http://localhost:8000/api/v1/excel/resumen-sueldo/${this.resumenEditando.id}`, this.resumenEditando).subscribe({
+    if (!this.resumenEditando?.id) return;
+    this.http.put(`${this.apiBaseUrl}/excel/resumen-sueldo/${this.resumenEditando.id}`, this.resumenEditando).subscribe({
       next: () => {
         this.cargarResumenes();
         this.cerrarModalEditarResumen();
       },
-      error: () => {
-        this.errorMessage = 'Error al guardar los cambios del resumen.';
-      }
+      error: () => this.errorMessage = 'Error al guardar los cambios del resumen.'
     });
   }
 }

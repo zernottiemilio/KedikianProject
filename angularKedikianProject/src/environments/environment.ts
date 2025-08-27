@@ -1,7 +1,7 @@
 export const environment = {
   production: true,
   useSimulatedData: false,
-  apiUrl: 'http://168.197.50.82/api/v1',
+  apiUrl: 'http://kedikian.site/api/v1',
   firebaseConfig: {
     apiKey: 'your-api-key', 
     authDomain: 'your-auth-domain',
