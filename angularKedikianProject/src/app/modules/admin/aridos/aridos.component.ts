@@ -43,8 +43,8 @@ export interface Operario {
   id: number;
   nombre: string;
   email: string;
-  estado: boolean | number | string; // Más flexible para manejar diferentes formatos del backend
-  roles: string | string[] | any; // Más flexible para diferentes formatos de roles
+  estado: boolean | number | string;
+  roles: string | string[] | any;
   fecha_creacion: Date;
 }
 
@@ -93,23 +93,25 @@ export class AridosComponent implements OnInit {
   }
 
   cargarDatosReales(): void {
-    // Primero cargar proyectos y áridos
     forkJoin({
       proyectos: this.aridosService.getProyectos(),
       aridos: this.aridosService.getAridos()
     }).subscribe({
       next: ({ proyectos, aridos }) => {
-        console.log('=== CARGA INICIAL EXITOSA ===');
-        
         // Proyectos
         this.proyectos = proyectos;
-        console.log('✅ Proyectos cargados:', this.proyectos.length);
 
         // Áridos (agrega los por defecto si faltan)
         const aridosPorDefecto: Arido[] = [
           { id: -1, nombre: 'Arena Fina', tipo: 'árido', unidadMedida: 'm3' },
           { id: -2, nombre: 'Granza', tipo: 'árido', unidadMedida: 'm3' },
-          { id: -3, nombre: 'Arena Comun', tipo: 'árido', unidadMedida: 'm3' }
+          { id: -3, nombre: 'Arena Comun', tipo: 'árido', unidadMedida: 'm3' },
+          { id: -4, nombre: 'Relleno', tipo: 'árido', unidadMedida: 'm3' },
+          { id: -5, nombre: 'Tierra Negra', tipo: 'árido', unidadMedida: 'm3' },
+          { id: -6, nombre: 'Piedra', tipo: 'árido', unidadMedida: 'm3' },
+          { id: -7, nombre: '0.20', tipo: 'árido', unidadMedida: 'm3' },
+          { id: -8, nombre: 'blinder', tipo: 'árido', unidadMedida: 'm3' },
+          { id: -9, nombre: 'Arena Lavada', tipo: 'árido', unidadMedida: 'm3' },
         ];
         aridosPorDefecto.forEach(defecto => {
           if (!aridos.some(a => a.nombre === defecto.nombre)) {
@@ -117,59 +119,30 @@ export class AridosComponent implements OnInit {
           }
         });
         this.aridos = aridos;
-        console.log('✅ Áridos cargados:', this.aridos.length);
 
-        // Ahora cargar usuarios por separado (como los proyectos)
-        console.log('🔄 Cargando usuarios...');
+        // Cargar usuarios por separado
         this.userService.getUsers().subscribe({
           next: (usuarios) => {
-            console.log('=== USUARIOS RECIBIDOS ===');
-            console.log('✅ Respuesta del backend usuarios:', usuarios);
-            console.log('📊 Total usuarios recibidos:', usuarios.length);
-            
-            // Procesar usuarios igual que antes
             this.procesarUsuarios(usuarios);
-            
-            // Ahora cargar registros
             this.cargarRegistros();
           },
           error: (error) => {
-            console.error('❌ ERROR al cargar usuarios:', error);
-            console.error('📄 Detalles del error:', {
-              status: error.status,
-              statusText: error.statusText,
-              message: error.message,
-              url: error.url
-            });
             this.mostrarMensaje('Error al cargar usuarios del servidor');
           }
         });
       },
       error: (error) => {
-        console.error('❌ Error al cargar datos iniciales:', error);
         this.mostrarMensaje('Error al cargar datos iniciales');
       }
     });
   }
 
   private procesarUsuarios(usuarios: any[]): void {
-    console.log('=== PROCESANDO USUARIOS ===');
-    console.log('📊 Total usuarios recibidos:', usuarios.length);
-    
-    // Mostrar estructura de datos para referencia
-    if (usuarios.length > 0) {
-      console.log('📋 Estructura del primer usuario:', usuarios[0]);
-      console.log('🔑 Campos disponibles:', Object.keys(usuarios[0]));
-    }
-    
-    // Filtro corregido basado en la estructura real
+    // Filtro basado en la estructura real
     this.operarios = usuarios.filter(usuario => {
-      console.log(`\n🔍 PROCESANDO: ${usuario.nombre}`);
-      
-      // Verificar estado - adaptado a la estructura real de tu backend
+      // Verificar estado - adaptado a la estructura real del backend
       let estadoValido = false;
       
-      // Buscar el campo de estado real (puede ser estado, status, active, etc.)
       const estado = usuario.estado ?? usuario.status ?? usuario.active ?? usuario.activo;
       
       if (typeof estado === 'boolean') {
@@ -182,11 +155,8 @@ export class AridosComponent implements OnInit {
       } else {
         estadoValido = Boolean(estado);
       }
-      
-      console.log(`  📊 Estado: ${estado} (${typeof estado}) → ${estadoValido}`);
 
       if (!estadoValido) {
-        console.log(`  ❌ EXCLUIDO por estado inválido`);
         return false;
       }
 
@@ -211,8 +181,6 @@ export class AridosComponent implements OnInit {
         .toUpperCase()
         .trim();
 
-      console.log(`  🎭 Rol: "${role}" → "${roleLimpio}"`);
-
       // Verificar si es operario (más permisivo)
       const esOperario = roleLimpio === 'OPERARIO' || 
                         roleLimpio.includes('OPERARIO') ||
@@ -221,30 +189,11 @@ export class AridosComponent implements OnInit {
                         roleLimpio === 'EMPLEADO' ||
                         roleLimpio === 'TRABAJADOR';
 
-      console.log(`  👷 ¿Es operario? ${esOperario}`);
-
-      const incluir = estadoValido && esOperario;
-      console.log(`  📝 RESULTADO: ${incluir ? '✅ INCLUIR' : '❌ EXCLUIR'}`);
-
-      return incluir;
+      return estadoValido && esOperario;
     });
 
-    console.log('=== RESULTADO FINAL ===');
-    console.log('✅ Operarios filtrados:', this.operarios);
-    console.log('📊 Cantidad de operarios:', this.operarios.length);
-
-    // Si no hay operarios después del filtro, mostrar información para ajustar
+    // Si no hay operarios después del filtro, usar todos los usuarios activos como fallback
     if (this.operarios.length === 0) {
-      console.warn('⚠️ NO SE ENCONTRARON OPERARIOS DESPUÉS DEL FILTRO');
-      console.log('🔍 Usuarios disponibles con sus roles:');
-      usuarios.forEach(u => {
-        const roles = u.roles ?? u.role ?? u.tipo ?? u.cargo;
-        const estado = u.estado ?? u.status ?? u.active ?? u.activo;
-        console.log(`  - ${u.nombre}: estado=${estado}, roles=${JSON.stringify(roles)}`);
-      });
-      
-      // TEMPORAL: Si no encuentra operarios, usar todos los usuarios activos
-      console.log('🚨 FALLBACK: Usando todos los usuarios activos como operarios');
       this.operarios = usuarios.filter(u => {
         const estado = u.estado ?? u.status ?? u.active ?? u.activo;
         return Boolean(estado) || estado === 1 || estado === '1';
@@ -257,41 +206,25 @@ export class AridosComponent implements OnInit {
         roles: usuario.roles || 'OPERARIO',
         fecha_creacion: usuario.fecha_creacion || usuario.created_at || new Date()
       }));
-      
-      console.log('✅ Operarios asignados (fallback):', this.operarios.length);
     }
   }
 
   private cargarRegistros(): void {
-    console.log('🔄 Cargando registros...');
     this.aridosService.getRegistrosAridos().subscribe({
       next: (registrosBackend) => {
-        console.log('✅ Registros del backend:', registrosBackend);
         this.registros = this.mapearRegistros(registrosBackend);
         this.actualizarRegistrosFiltrados();
       },
       error: (error) => {
-        console.error('❌ Error al cargar registros:', error);
         this.mostrarMensaje('Error al cargar registros');
       }
     });
   }
 
-  // Método auxiliar para debug manual (puedes llamarlo desde la consola)
+  // Método auxiliar para debug manual (puedes llamarlo desde la consola si es necesario)
   debugOperarios(): void {
     this.userService.getUsers().subscribe(usuarios => {
-      console.log('=== DEBUG MANUAL OPERARIOS ===');
-      usuarios.forEach((usuario, index) => {
-        console.log(`${index + 1}. ${usuario.nombre}`, {
-          id: usuario.id,
-          email: usuario.email,
-          estado: usuario.estado,
-          tipo_estado: typeof usuario.estado,
-          roles: usuario.roles,
-          tipo_roles: typeof usuario.roles,
-          roles_string: JSON.stringify(usuario.roles)
-        });
-      });
+      // Método disponible para debug manual si es necesario
     });
   }
 
@@ -377,7 +310,6 @@ export class AridosComponent implements OnInit {
           this.registroAEliminar = null;
         },
         error: (error) => {
-          console.error('Error al eliminar registro:', error);
           this.mostrarMensaje('Error al eliminar el registro');
           this.mostrarModalConfirmacion = false;
           this.registroAEliminar = null;
@@ -428,15 +360,6 @@ export class AridosComponent implements OnInit {
         observaciones: formData.observaciones || '',
       };
 
-      console.log('=== DATOS DEL FORMULARIO ===');
-      console.log('Datos del formulario:', formData);
-      console.log('Proyecto encontrado:', proyecto);
-      console.log('Árido encontrado:', arido);
-      console.log('=== OBJETOS CREADOS ===');
-      console.log('Registro completo:', nuevoRegistro);
-      console.log('Datos para backend:', datosParaBackend);
-      console.log('JSON para backend:', JSON.stringify(datosParaBackend, null, 2));
-
       if (this.modoEdicion && this.registroEditandoId) {
         // Actualizar registro existente
         const registroActualizado: RegistroArido = {
@@ -451,7 +374,6 @@ export class AridosComponent implements OnInit {
             this.cerrarModal();
           },
           error: (error) => {
-            console.error('Error al actualizar registro:', error);
             this.mostrarMensaje('Error al actualizar el registro');
           }
         });
@@ -464,7 +386,6 @@ export class AridosComponent implements OnInit {
             this.cerrarModal();
           },
           error: (error) => {
-            console.error('Error al crear registro:', error);
             let mensajeError = 'Error al crear el registro';
             if (error.status === 422 && error.error) {
               mensajeError = `Error de validación: ${JSON.stringify(error.error)}`;

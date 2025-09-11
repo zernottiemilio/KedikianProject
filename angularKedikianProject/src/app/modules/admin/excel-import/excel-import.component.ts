@@ -167,7 +167,7 @@ export class ExcelImportComponent implements OnInit {
     const basicValue = this.configuracion.horaNormal;
     const basicRemunerativo = totalHorasNormales * basicValue;
 
-    const perfectAttendancePercentage = 0.20;
+    const perfectAttendancePercentage = 1.20;
     const perfectAttendanceRemunerativo = basicRemunerativo * perfectAttendancePercentage;
 
     const holidayHoursValue = this.configuracion.horaFeriado;
@@ -232,7 +232,7 @@ export class ExcelImportComponent implements OnInit {
     const total_horas_extras = this.operarios.reduce((sum, op) => sum + op.horasExtras, 0);
 
     const basico_remunerativo = total_horas_normales * this.configuracion.horaNormal;
-    const asistencia_perfecta_remunerativo = basico_remunerativo * 0.20;
+    const asistencia_perfecta_remunerativo = basico_remunerativo * 1.20;
     const feriado_remunerativo = total_horas_feriado * this.configuracion.horaFeriado;
     const extras_remunerativo = total_horas_extras * (this.configuracion.horaNormal * this.configuracion.multiplicadorExtra);
 

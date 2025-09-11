@@ -422,6 +422,97 @@ tr:hover {
   background-color: rgba(244, 67, 54, 0.1);
 }
 
+/* Mantenimiento */
+.badge-mant {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.mant-green { background: #e8f5e9; color: #2e7d32; }
+.mant-yellow { background: #fff8e1; color: #b28704; }
+.mant-red { background: #ffebee; color: #c62828; }
+
+.mant-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-mant {
+  background: #f5f5f5;
+  border: none;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-mant-registrar {
+  color: #2e7d32;
+  background-color: rgba(46, 125, 50, 0.1);
+}
+.btn-mant-registrar:hover {
+  background-color: rgba(46, 125, 50, 0.2);
+}
+
+.btn-mant-historial {
+  color: #5c6bc0;
+  background-color: rgba(92, 107, 192, 0.1);
+}
+.btn-mant-historial:hover {
+  background-color: rgba(92, 107, 192, 0.2);
+}
+
+.btn-eliminar-mant {
+  background: #f5f5f5;
+  border: none;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f44336;
+  background-color: rgba(244, 67, 54, 0.1);
+  transition: background-color 0.2s;
+}
+
+.btn-eliminar-mant:hover {
+  background-color: rgba(244, 67, 54, 0.2);
+}
+
+/* Estilos específicos para la tabla del modal de historial */
+.modal table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.modal th,
+.modal td {
+  padding: 8px 12px;
+  text-align: left;
+  word-wrap: break-word;
+}
+
+.modal th:nth-child(1),
+.modal td:nth-child(1) { width: 15%; } /* Fecha */
+.modal th:nth-child(2),
+.modal td:nth-child(2) { width: 15%; } /* Horas máquina */
+.modal th:nth-child(3),
+.modal td:nth-child(3) { width: 20%; } /* Tipo */
+.modal th:nth-child(4),
+.modal td:nth-child(4) { width: 35%; } /* Descripción */
+.modal th:nth-child(5),
+.modal td:nth-child(5) { width: 15%; text-align: center; } /* Acciones */
+
 .btn-eliminar:hover {
   background-color: rgba(244, 67, 54, 0.2);
 }
@@ -445,7 +536,7 @@ tr:hover {
   border-radius: 8px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   width: 100%;
-  max-width: 500px;
+  max-width: 800px;
   animation: fadeIn 0.3s;
   margin: 0 20px;
 }
