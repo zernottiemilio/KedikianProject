@@ -287,7 +287,7 @@
   </div>
 </div>
 
-<!-- Modal Historial de Horas (SIMPLE) -->
+<!-- Modal Historial de Horas - CORREGIDO -->
 <div class="modal" *ngIf="modalHistorialHorasVisible">
   <div class="modal-content">
     <div class="modal-header">
@@ -298,26 +298,39 @@
       <!-- Información de la máquina -->
       <div *ngIf="maquinaSeleccionada as maq">
         <div class="hist-resumen">
-          <strong>Máquina:</strong> {{ maq.nombre }}
+          <strong>Máquina:</strong> {{ maq.nombre }} (Código: {{ maq.codigo }})
+          <br>
+          <strong>Total horas registradas:</strong> {{ totalHorasHistorial }} hs
         </div>
       </div>
 
-      <!-- Modal Historial de Horas (SIMPLE) -->
-<div class="modal" *ngIf="modalHistorialHorasVisible">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>Historial de Horas Trabajadas</h3>
-      <button class="btn-cerrar" (click)="cerrarModalHistorialHoras()">×</button>
-    </div>
-    <div class="modal-body">
-      <div *ngIf="maquinaSeleccionada as maq">
-        <div class="hist-resumen">
-          <strong>Máquina:</strong> {{ maq.nombre }}
+      <!-- Filtros (opcional) -->
+      <div class="filtros-historial" *ngIf="proyectosFiltroHistorial.length > 0">
+        <div class="form-group">
+          <label for="filtroProyecto">Filtrar por proyecto:</label>
+          <select id="filtroProyecto" [(ngModel)]="filtroProyectoHistorial" (change)="aplicarFiltrosHistorial()">
+            <option [ngValue]="null">Todos los proyectos</option>
+            <option *ngFor="let proyecto of proyectosFiltroHistorial" [ngValue]="proyecto.id">
+              {{ proyecto.nombre }}
+            </option>
+          </select>
         </div>
+
+        <div class="form-group">
+          <label for="fechaInicio">Desde:</label>
+          <input id="fechaInicio" type="date" [(ngModel)]="fechaInicioFiltro" (change)="aplicarFiltrosHistorial()">
+        </div>
+
+        <div class="form-group">
+          <label for="fechaFin">Hasta:</label>
+          <input id="fechaFin" type="date" [(ngModel)]="fechaFinFiltro" (change)="aplicarFiltrosHistorial()">
+        </div>
+
+        <button class="btn-limpiar" (click)="limpiarFiltrosHistorial()">Limpiar filtros</button>
       </div>
 
-      <!-- Tabla -->
-      <div *ngIf="historialHoras.length > 0; else noHoras">
+      <!-- Tabla con datos filtrados -->
+      <div *ngIf="historialHorasFiltrado.length > 0; else noHoras">
         <table>
           <thead>
             <tr>
@@ -327,18 +340,25 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let registro of historialHoras">
+            <tr *ngFor="let registro of historialHorasFiltrado">
               <td>{{ formatearFecha(registro.fecha) }}</td>
-              <td>{{ registro.nombre_proyecto }}</td>
+              <td>{{ registro.nombre_proyecto || getNombreProyecto(registro.proyecto_id) }}</td>
               <td>{{ registro.horas_trabajadas }} hs</td>
             </tr>
           </tbody>
         </table>
+
+        <!-- Opción de exportar (opcional) -->
+        <div class="export-section">
+          <button class="btn-export" (click)="exportarHistorialCSV()">
+            <i class="fas fa-download"></i> Exportar CSV
+          </button>
+        </div>
       </div>
 
       <ng-template #noHoras>
         <div class="no-data">
-          <p>Sin registros de horas trabajadas.</p>
+          <p>Sin registros de horas trabajadas para esta máquina.</p>
         </div>
       </ng-template>
     </div>

@@ -27,7 +27,7 @@ export interface RegistroHoras {
   maquina_id: number;
   proyecto_id: number;
   horas_trabajadas: number;
-  fecha: string; // YYYY-MM-DD
+  fecha: string; // YYYY-MM-DDTHH:mm:ss
 }
 
 /**
