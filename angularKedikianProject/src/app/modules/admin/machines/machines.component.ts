@@ -1,10 +1,12 @@
-// maquinaria.component.ts - ACTUALIZADO
+// machines.component.ts - CÓDIGO COMPLETO CORREGIDO
 import { CommonModule, NgClass } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ProjectService, Project } from '../../../core/services/project.service';
 import {
   MachinesService,
   Maquina,
+  HistorialHoras,
+  RegistroHoras,
 } from '../../../core/services/machines.service';
 import {
   FormBuilder,
@@ -15,27 +17,6 @@ import {
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { MantenimientosService, Mantenimiento } from '../../../core/services/mantenimientos.service';
-
-// Interface para el historial de horas
-interface HistorialHoras {
-  id: number;
-  maquina_id: number;
-  proyecto_id: number;
-  horas_trabajadas: number;
-  fecha: string;
-  created_at?: string;
-  // Campos calculados para mostrar
-  nombre_proyecto?: string;
-  codigo_maquina?: string;
-}
-
-// Interface para registrar horas en proyecto
-interface RegistroHoras {
-  maquina_id: number;
-  proyecto_id: number;
-  horas_trabajadas: number;
-  fecha: string;
-}
 
 @Component({
   selector: 'app-maquinaria',
@@ -62,7 +43,7 @@ export class MaquinariaComponent implements OnInit {
   modalConfirmacionVisible: boolean = false;
   maquinaAEliminar: number | null = null;
 
-  // Formulario
+  // Formularios
   maquinaForm: FormGroup;
   mantenimientoForm: FormGroup;
   horasForm: FormGroup;
@@ -77,6 +58,13 @@ export class MaquinariaComponent implements OnInit {
   filtroProyectoHistorial: number | null = null;
   fechaInicioFiltro: string = '';
   fechaFinFiltro: string = '';
+
+  // Variables para mantenimiento
+  ultimaHoraMantenimientoPorMaquina: Record<number, number> = {};
+  historialPorMaquina: Record<number, Mantenimiento[]> = {};
+  modalMantVisible: boolean = false;
+  modalHistorialVisible: boolean = false;
+  maquinaSeleccionada: Maquina | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -124,38 +112,8 @@ export class MaquinariaComponent implements OnInit {
     });
   }
 
-  // Procesar el historial de mantenimientos para calcular el último mantenimiento de cada máquina
-  procesarHistorialMantenimientos(mantenimientos: Mantenimiento[]): void {
-    // Limpiar datos anteriores
-    this.ultimaHoraMantenimientoPorMaquina = {};
-    this.historialPorMaquina = {};
-    
-    // Agrupar mantenimientos por máquina
-    mantenimientos.forEach(mantenimiento => {
-      const maquinaId = mantenimiento.maquina_id;
-      
-      if (!this.historialPorMaquina[maquinaId]) {
-        this.historialPorMaquina[maquinaId] = [];
-      }
-      
-      this.historialPorMaquina[maquinaId].push(mantenimiento);
-    });
-    
-    // Calcular el último mantenimiento para cada máquina
-    Object.keys(this.historialPorMaquina).forEach(maquinaIdStr => {
-      const maquinaId = Number(maquinaIdStr);
-      const historial = this.historialPorMaquina[maquinaId];
-      
-      if (historial && historial.length > 0) {
-        const ultimoMantenimiento = this.obtenerUltimoMantenimiento(maquinaId, historial);
-        if (ultimoMantenimiento && typeof ultimoMantenimiento.horas_maquina === 'number') {
-          this.ultimaHoraMantenimientoPorMaquina[maquinaId] = ultimoMantenimiento.horas_maquina;
-        }
-      }
-    });
-  }
-
-  // Filtrar máquinas según búsqueda y estado
+  // ========== MÉTODOS DE FILTRADO ==========
+  
   filtrarMaquinas(): void {
     let resultado = [...this.maquinas];
 
@@ -177,7 +135,8 @@ export class MaquinariaComponent implements OnInit {
     this.maquinasFiltradas = resultado;
   }
 
-  // Abrir modal para agregar nueva máquina
+  // ========== MÉTODOS DE MÁQUINAS ==========
+  
   abrirModalAgregar(): void {
     this.modoEdicion = false;
     this.maquinaEditando = null;
@@ -190,7 +149,6 @@ export class MaquinariaComponent implements OnInit {
     this.modalVisible = true;
   }
 
-  // Abrir modal para editar máquina existente
   abrirModalEditar(maquina: Maquina): void {
     this.modoEdicion = true;
     this.maquinaEditando = maquina;
@@ -203,12 +161,10 @@ export class MaquinariaComponent implements OnInit {
     this.modalVisible = true;
   }
 
-  // Cerrar modal
   cerrarModal(): void {
     this.modalVisible = false;
   }
 
-  // Guardar máquina (crear nueva o actualizar existente)
   guardarMaquina(): void {
     if (this.maquinaForm.invalid) {
       this.maquinaForm.markAllAsTouched();
@@ -256,20 +212,17 @@ export class MaquinariaComponent implements OnInit {
     }
   }
 
-  // Generar un nuevo código para la máquina
   generarNuevoCodigo(): number {
     return this.maquinas.length > 0
       ? Math.max(...this.maquinas.map((m) => Number(m.codigo))) + 1
       : 1;
   }
 
-  // Mostrar confirmación antes de eliminar máquina
   eliminarMaquina(id: number): void {
     this.maquinaAEliminar = id;
     this.modalConfirmacionVisible = true;
   }
 
-  // Confirmar eliminación de máquina
   confirmarEliminarMaquina(): void {
     if (this.maquinaAEliminar !== null) {
       this.machinesService.eliminarMaquina(this.maquinaAEliminar).subscribe({
@@ -286,60 +239,58 @@ export class MaquinariaComponent implements OnInit {
     }
   }
 
-  // Cancelar eliminación de máquina
   cancelarEliminarMaquina(): void {
     this.modalConfirmacionVisible = false;
     this.maquinaAEliminar = null;
   }
 
-  // Mostrar mensaje al usuario
-  mostrarMensaje(mensaje: string): void {
-    // Implementación simple de notificación sin dependencias externas
-    const notificacion = document.createElement('div');
-    notificacion.textContent = mensaje;
-    notificacion.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #333;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 4px;
-      z-index: 1000;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    `;
-    document.body.appendChild(notificacion);
+  // ========== MÉTODOS DE PROYECTOS ==========
 
-    // Eliminar después de 3 segundos
-    setTimeout(() => {
-      document.body.removeChild(notificacion);
-    }, 3000);
-  }
-
-  // En la tabla, para mostrar el nombre del proyecto, puedes usar una función auxiliar:
   getNombreProyecto(proyecto_id: number | null): string {
     if (!proyecto_id) return 'Sin proyecto asignado';
     const proyecto = this.proyectos.find(p => Number(p.id) === Number(proyecto_id));
     return proyecto ? proyecto.nombre : 'Proyecto no encontrado';
   }
 
-  // ---------- Mantenimiento ----------
-  ultimaHoraMantenimientoPorMaquina: Record<number, number> = {};
-  historialPorMaquina: Record<number, Mantenimiento[]> = {};
-  modalMantVisible: boolean = false;
-  modalHistorialVisible: boolean = false;
-  maquinaSeleccionada: Maquina | null = null;
+  // ========== MÉTODOS DE MANTENIMIENTO ==========
+  
+  procesarHistorialMantenimientos(mantenimientos: Mantenimiento[]): void {
+    // Limpiar datos anteriores
+    this.ultimaHoraMantenimientoPorMaquina = {};
+    this.historialPorMaquina = {};
+    
+    // Agrupar mantenimientos por máquina
+    mantenimientos.forEach(mantenimiento => {
+      const maquinaId = mantenimiento.maquina_id;
+      
+      if (!this.historialPorMaquina[maquinaId]) {
+        this.historialPorMaquina[maquinaId] = [];
+      }
+      
+      this.historialPorMaquina[maquinaId].push(mantenimiento);
+    });
+    
+    // Calcular el último mantenimiento para cada máquina
+    Object.keys(this.historialPorMaquina).forEach(maquinaIdStr => {
+      const maquinaId = Number(maquinaIdStr);
+      const historial = this.historialPorMaquina[maquinaId];
+      
+      if (historial && historial.length > 0) {
+        const ultimoMantenimiento = this.obtenerUltimoMantenimiento(maquinaId, historial);
+        if (ultimoMantenimiento && typeof ultimoMantenimiento.horas_maquina === 'number') {
+          this.ultimaHoraMantenimientoPorMaquina[maquinaId] = ultimoMantenimiento.horas_maquina;
+        }
+      }
+    });
+  }
 
   private obtenerUltimoMantenimiento(maquinaId: number, registros: Mantenimiento[]): Mantenimiento | null {
     if (!registros || registros.length === 0) return null;
     
-    // Filtrar registros que tengan horas_maquina válidas
     const registrosConHoras = registros.filter(r => r.horas_maquina !== null && r.horas_maquina !== undefined);
     
     if (registrosConHoras.length === 0) return null;
     
-    // Ordenar por horas de máquina (de mayor a menor) para obtener el más reciente
     const ordenados = [...registrosConHoras].sort((a, b) => (b.horas_maquina || 0) - (a.horas_maquina || 0));
     return ordenados[0];
   }
@@ -365,24 +316,6 @@ export class MaquinariaComponent implements OnInit {
     }
     
     return `${horasDesde} hs desde mant. (${restante} restantes)${labelUltimo}`;
-  }
-
-  formatearFecha(fechaISO: string): string {
-    if (!fechaISO) return '-';
-    
-    try {
-      const fecha = new Date(fechaISO);
-      const opciones: Intl.DateTimeFormatOptions = {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      };
-      
-      return fecha.toLocaleDateString('es-AR', opciones);
-    } catch (error) {
-      console.error('Error al formatear fecha:', error);
-      return fechaISO;
-    }
   }
 
   abrirModalRegistrarMantenimiento(maquina: Maquina): void {
@@ -427,7 +360,7 @@ export class MaquinariaComponent implements OnInit {
         this.loadData();
       },
       error: (error) => {
-        console.error('❌ Error al registrar mantenimiento:', error);
+        console.error('Error al registrar mantenimiento:', error);
         this.mostrarMensaje('Error al registrar mantenimiento');
       },
     });
@@ -472,80 +405,77 @@ export class MaquinariaComponent implements OnInit {
 
   // ========== MÉTODOS PARA HISTORIAL DE HORAS ==========
   
-  // Abrir modal para ver historial de horas de una máquina
-abrirModalHistorialHoras(maquina: Maquina) {
-  this.maquinaSeleccionada = maquina;
-  this.machinesService.obtenerHistorialHoras(maquina.id).subscribe({
-    next: (data) => {
-      console.log('Datos recibidos del servicio:', data); // Para debugging
-      
-      // Procesar los datos del historial
-      this.historialHoras = this.procesarHistorialHoras(data);
-      this.historialHorasFiltrado = [...this.historialHoras];
-      
-      // Obtener proyectos únicos para filtros
-      this.obtenerProyectosDelHistorial();
-      
-      // Calcular total de horas
-      this.calcularTotalHoras();
-      
-      // Mostrar el modal
-      this.modalHistorialHorasVisible = true;
-    },
-    error: (err) => {
-      console.error("Error cargando historial de horas:", err);
-      this.historialHoras = [];
-      this.historialHorasFiltrado = [];
-      this.modalHistorialHorasVisible = true;
-    }
-  });
-}
-
-
-  // Cargar historial de horas desde el servicio
-  cargarHistorialHoras(maquinaId: number): void {
-    // Aquí deberías llamar a tu servicio para obtener el historial
-    this.machinesService.obtenerHistorialHoras(maquinaId).subscribe({
-      next: (historial: HistorialHoras[]) => {
-        this.historialHoras = this.procesarHistorialHoras(historial);
+  abrirModalHistorialHoras(maquina: Maquina) {
+    this.maquinaSeleccionada = maquina;
+    console.log('🔍 Abriendo historial para máquina:', maquina.id);
+    
+    this.machinesService.obtenerHistorialHoras(maquina.id).subscribe({
+      next: (data: HistorialHoras[]) => {
+        console.log('✅ Datos recibidos del servicio:', data);
+        
+        // Los datos ya vienen como array de HistorialHoras desde el servicio
+        this.historialHoras = this.procesarHistorialHoras(data);
         this.historialHorasFiltrado = [...this.historialHoras];
+        
+        console.log('📊 Historial procesado:', this.historialHoras);
+        
+        // Obtener proyectos únicos para filtros
         this.obtenerProyectosDelHistorial();
+        
+        // Calcular total de horas
         this.calcularTotalHoras();
+        
+        // Mostrar el modal
+        this.modalHistorialHorasVisible = true;
       },
-      error: (error) => {
-        console.error('Error al cargar historial:', error);
+      error: (err) => {
+        console.error("❌ Error cargando historial de horas:", err);
         this.mostrarMensaje('Error al cargar el historial de horas');
+        // Mostrar modal vacío para debugging
+        this.historialHoras = [];
+        this.historialHorasFiltrado = [];
+        this.totalHorasHistorial = 0;
+        this.modalHistorialHorasVisible = true;
       }
     });
   }
 
-  // Procesar el historial para agregar información adicional
   procesarHistorialHoras(historial: HistorialHoras[]): HistorialHoras[] {
-  return historial.map(registro => ({
-    ...registro,
-    nombre_proyecto: this.getNombreProyecto(registro.proyecto_id),
-    codigo_maquina: this.maquinaSeleccionada?.codigo || 'N/A'
-  }));
-}
+    console.log('🔄 Procesando historial:', historial);
+    
+    if (!Array.isArray(historial)) {
+      console.warn('⚠️ El historial no es un array:', historial);
+      return [];
+    }
 
-  // Aplicar filtros al historial
+    return historial.map(registro => {
+      const procesado: HistorialHoras = {
+        id: registro.id,
+        maquina_id: registro.maquina_id,
+        proyecto_id: registro.proyecto_id,
+        horas_trabajadas: Number(registro.horas_trabajadas),
+        fecha: registro.fecha,
+        created_at: registro.created_at,
+        updated_at: registro.updated_at,
+        // Campos calculados para mostrar en la UI
+        nombre_proyecto: this.getNombreProyecto(registro.proyecto_id),
+        codigo_maquina: this.maquinaSeleccionada?.codigo || 'N/A'
+      };
+      
+      console.log('✅ Registro procesado:', procesado);
+      return procesado;
+    });
+  }
+
   aplicarFiltrosHistorial(): void {
+    // Si hay filtros de fecha o proyecto, usar el endpoint filtrado del servicio
+    if (this.fechaInicioFiltro || this.fechaFinFiltro || this.filtroProyectoHistorial) {
+      this.cargarHistorialConFiltros();
+      return;
+    }
+
+    // Aplicar filtros locales si no hay filtros de servidor
     let resultado = [...this.historialHoras];
-
-    // Filtro por proyecto
-    if (this.filtroProyectoHistorial) {
-      resultado = resultado.filter(h => h.proyecto_id === this.filtroProyectoHistorial);
-    }
-
-    // Filtro por fecha de inicio
-    if (this.fechaInicioFiltro) {
-      resultado = resultado.filter(h => h.fecha >= this.fechaInicioFiltro);
-    }
-
-    // Filtro por fecha de fin
-    if (this.fechaFinFiltro) {
-      resultado = resultado.filter(h => h.fecha <= this.fechaFinFiltro);
-    }
 
     // Ordenar por fecha descendente (más reciente primero)
     resultado.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
@@ -554,26 +484,55 @@ abrirModalHistorialHoras(maquina: Maquina) {
     this.calcularTotalHoras();
   }
 
-  // Calcular total de horas del historial filtrado
+  cargarHistorialConFiltros(): void {
+    if (!this.maquinaSeleccionada) return;
+    
+    this.machinesService.obtenerHistorialHorasFiltrado(
+      this.maquinaSeleccionada.id,
+      this.fechaInicioFiltro || undefined,
+      this.fechaFinFiltro || undefined,
+      this.filtroProyectoHistorial || undefined
+    ).subscribe({
+      next: (data: HistorialHoras[]) => {
+        this.historialHoras = this.procesarHistorialHoras(data);
+        this.historialHorasFiltrado = [...this.historialHoras];
+        this.calcularTotalHoras();
+      },
+      error: (error) => {
+        console.error('Error al cargar historial filtrado:', error);
+        this.mostrarMensaje('Error al aplicar filtros');
+      }
+    });
+  }
+
   calcularTotalHoras(): void {
     this.totalHorasHistorial = this.historialHorasFiltrado.reduce(
       (total, registro) => total + registro.horas_trabajadas, 
       0
     );
+    console.log(`📊 Total horas calculadas: ${this.totalHorasHistorial}`);
   }
 
-  // Obtener lista única de proyectos del historial
   obtenerProyectosDelHistorial(): void {
-    const proyectosUnicos = new Set(this.historialHoras.map(h => h.proyecto_id));
+    const proyectosUnicos = new Set(
+      this.historialHoras
+        .map(h => h.proyecto_id)
+        .filter(id => id !== null && id !== undefined)
+    );
+    
     this.proyectosFiltroHistorial = Array.from(proyectosUnicos)
-      .map(id => ({
-        id,
-        nombre: this.getNombreProyecto(id)
-      }))
-      .filter(p => p.nombre !== 'Proyecto no encontrado');
+      .map(id => {
+        const proyecto = this.proyectos.find(p => Number(p.id) === Number(id));
+        return {
+          id: Number(id),
+          nombre: proyecto ? proyecto.nombre : `Proyecto ${id}`
+        };
+      })
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+      
+    console.log('📋 Proyectos únicos para filtro:', this.proyectosFiltroHistorial);
   }
 
-  // Limpiar filtros del historial
   limpiarFiltrosHistorial(): void {
     this.filtroProyectoHistorial = null;
     this.fechaInicioFiltro = '';
@@ -581,7 +540,6 @@ abrirModalHistorialHoras(maquina: Maquina) {
     this.aplicarFiltrosHistorial();
   }
 
-  // Cerrar modal de historial de horas
   cerrarModalHistorialHoras(): void {
     this.modalHistorialHorasVisible = false;
     this.maquinaSeleccionada = null;
@@ -590,7 +548,6 @@ abrirModalHistorialHoras(maquina: Maquina) {
     this.limpiarFiltrosHistorial();
   }
 
-  // Exportar historial a CSV (opcional)
   exportarHistorialCSV(): void {
     if (this.historialHorasFiltrado.length === 0) {
       this.mostrarMensaje('No hay datos para exportar');
@@ -616,7 +573,8 @@ abrirModalHistorialHoras(maquina: Maquina) {
     document.body.removeChild(link);
   }
 
-  // Métodos existentes para el manejo de horas en proyectos
+  // ========== MÉTODOS PARA AGREGAR HORAS ==========
+
   abrirModalAgregarHoras(maquina: Maquina): void {
     this.maquinaSeleccionada = maquina;
     this.horasForm.reset({
@@ -649,18 +607,17 @@ abrirModalHistorialHoras(maquina: Maquina) {
     };
 
     // Validaciones
-    if (isNaN(horasData.maquina_id) || isNaN(horasData.proyecto_id) || isNaN(horasData.horas_trabajadas)) {
+    if (!this.machinesService.validarRegistroHoras(horasData)) {
       this.mostrarMensaje('Error: Datos inválidos');
       return;
     }
 
-    if (horasData.horas_trabajadas <= 0) {
-      this.mostrarMensaje('Las horas trabajadas deben ser mayores a 0');
-      return;
-    }
+    console.log('📝 Enviando datos de horas:', horasData);
 
     this.machinesService.registrarHorasEnProyecto(horasData).subscribe({
-      next: () => {
+      next: (response) => {
+        console.log('✅ Respuesta del servidor:', response);
+        
         // Actualizar las horas totales de la máquina
         if (this.maquinaSeleccionada) {
           this.maquinaSeleccionada.horas_uso = (this.maquinaSeleccionada.horas_uso || 0) + horasData.horas_trabajadas;
@@ -669,29 +626,91 @@ abrirModalHistorialHoras(maquina: Maquina) {
             this.maquinas[index] = { ...this.maquinaSeleccionada };
             this.filtrarMaquinas();
           }
+          
+          // Si el modal de historial está abierto, recargarlo
           if (this.modalHistorialHorasVisible) {
-            this.cargarHistorialHoras(this.maquinaSeleccionada.id);
+            console.log('🔄 Recargando historial de horas...');
+            setTimeout(() => {
+              this.abrirModalHistorialHoras(this.maquinaSeleccionada!);
+            }, 1000);
           }
         }
+        
         this.mostrarMensaje('Horas registradas correctamente');
         this.cerrarModalHoras();
         this.loadData();
       },
       error: (error: any) => {
-        console.error('Error al registrar horas:', error);
+        console.error('❌ Error al registrar horas:', error);
         let mensajeError = 'Error al registrar las horas';
         if (error.status) {
           mensajeError += ` (${error.status})`;
         }
-        if (error.error) {
-          if (typeof error.error === 'object') {
-            mensajeError += ': ' + JSON.stringify(error.error);
-          } else {
-            mensajeError += ': ' + error.error;
-          }
+        if (error.error && typeof error.error === 'string') {
+          mensajeError += ': ' + error.error;
         }
         this.mostrarMensaje(mensajeError);
       }
+    });
+  }
+
+  // ========== UTILIDADES ==========
+
+  formatearFecha(fechaISO: string): string {
+    if (!fechaISO) return '-';
+    
+    try {
+      const fecha = new Date(fechaISO);
+      const opciones: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      };
+      
+      return fecha.toLocaleDateString('es-AR', opciones);
+    } catch (error) {
+      console.error('Error al formatear fecha:', error);
+      return fechaISO;
+    }
+  }
+
+  mostrarMensaje(mensaje: string): void {
+    const notificacion = document.createElement('div');
+    notificacion.textContent = mensaje;
+    notificacion.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 4px;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    `;
+    document.body.appendChild(notificacion);
+
+    setTimeout(() => {
+      if (document.body.contains(notificacion)) {
+        document.body.removeChild(notificacion);
+      }
+    }, 3000);
+  }
+
+  // ========== MÉTODO DE DEBUG TEMPORAL ==========
+  
+  debugHistorial(): void {
+    console.log('=== 🐛 DEBUG HISTORIAL ===');
+    console.log('Máquina seleccionada:', this.maquinaSeleccionada);
+    console.log('Historial raw:', this.historialHoras);
+    console.log('Historial filtrado:', this.historialHorasFiltrado);
+    console.log('Total horas:', this.totalHorasHistorial);
+    console.log('Proyectos filtro:', this.proyectosFiltroHistorial);
+    console.log('Filtros aplicados:', {
+      proyecto: this.filtroProyectoHistorial,
+      fechaInicio: this.fechaInicioFiltro,
+      fechaFin: this.fechaFinFiltro
     });
   }
 }

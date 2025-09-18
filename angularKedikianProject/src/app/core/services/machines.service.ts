@@ -1,7 +1,7 @@
-// machines.service.ts - CORREGIDO
+// machines.service.ts - CÓDIGO COMPLETO CORREGIDO
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
@@ -27,7 +27,7 @@ export interface RegistroHoras {
   maquina_id: number;
   proyecto_id: number;
   horas_trabajadas: number;
-  fecha: string; // YYYY-MM-DDTHH:mm:ss
+  fecha: string; // YYYY-MM-DD
 }
 
 /**
@@ -41,6 +41,9 @@ export interface HistorialHoras {
   fecha: string;
   created_at?: string;
   updated_at?: string;
+  // Campos calculados para mostrar en la UI
+  nombre_proyecto?: string;
+  codigo_maquina?: string;
 }
 
 /**
@@ -95,15 +98,15 @@ export class MachinesService {
 
     const url = `${this.apiUrl}/${registro.maquina_id}/proyectos/${registro.proyecto_id}/horas`;
     console.log('URL del endpoint:', url);
-    console.log('Body:', body);
+    console.log('Body enviado:', body);
 
     return this.http.post<any>(url, body).pipe(
       tap((response: any) => {
-        console.log('Respuesta del servidor:', response);
+        console.log('✅ Respuesta del servidor al registrar horas:', response);
       }),
       catchError((error: any) => {
-        console.error('Error detallado:', error);
-        throw error;
+        console.error('❌ Error detallado al registrar horas:', error);
+        return throwError(() => error);
       })
     );
   }
@@ -113,14 +116,17 @@ export class MachinesService {
    */
   obtenerHistorialHoras(maquinaId: number): Observable<HistorialHoras[]> {
     const url = `${this.apiUrl}/${maquinaId}/historial-proyectos`;
+    console.log('🔍 Obteniendo historial desde:', url);
     
     return this.http.get<HistorialHoras[]>(url).pipe(
       tap((response) => {
-        console.log(`Historial de proyectos para máquina ${maquinaId}:`, response);
+        console.log(`✅ Historial de proyectos para máquina ${maquinaId}:`, response);
+        console.log(`📊 Total de registros encontrados: ${Array.isArray(response) ? response.length : 0}`);
       }),
       catchError((error: any) => {
-        console.error('Error al obtener historial de proyectos:', error);
-        throw error;
+        console.error('❌ Error al obtener historial de proyectos:', error);
+        console.error('URL que falló:', url);
+        return throwError(() => error);
       })
     );
   }
@@ -141,21 +147,21 @@ export class MachinesService {
     if (proyectoId) params = params.set('proyecto_id', proyectoId.toString());
 
     const url = `${this.apiUrl}/${maquinaId}/historial-proyectos`;
+    console.log('🔍 Obteniendo historial filtrado desde:', url, 'con parámetros:', params.toString());
     
     return this.http.get<HistorialHoras[]>(url, { params }).pipe(
       tap((response) => {
-        console.log(`Historial filtrado para máquina ${maquinaId}:`, response);
+        console.log(`✅ Historial filtrado para máquina ${maquinaId}:`, response);
       }),
       catchError((error: any) => {
-        console.error('Error al obtener historial filtrado:', error);
-        throw error;
+        console.error('❌ Error al obtener historial filtrado:', error);
+        return throwError(() => error);
       })
     );
   }
 
   /**
    * Horas de una máquina en un proyecto específico
-   * (usa historial-proyectos filtrado por proyecto_id)
    */
   obtenerHorasEnProyecto(maquinaId: number, proyectoId: number): Observable<HistorialHoras[]> {
     const url = `${this.apiUrl}/${maquinaId}/historial-proyectos`;
@@ -163,11 +169,11 @@ export class MachinesService {
     
     return this.http.get<HistorialHoras[]>(url, { params }).pipe(
       tap((response) => {
-        console.log(`Horas en proyecto ${proyectoId} para máquina ${maquinaId}:`, response);
+        console.log(`✅ Horas en proyecto ${proyectoId} para máquina ${maquinaId}:`, response);
       }),
       catchError((error: any) => {
-        console.error('Error al obtener horas del proyecto:', error);
-        throw error;
+        console.error('❌ Error al obtener horas del proyecto:', error);
+        return throwError(() => error);
       })
     );
   }
@@ -187,11 +193,11 @@ export class MachinesService {
     
     return this.http.get<EstadisticasHoras>(url, { params }).pipe(
       tap((response) => {
-        console.log(`Estadísticas para máquina ${maquinaId}:`, response);
+        console.log(`📊 Estadísticas para máquina ${maquinaId}:`, response);
       }),
       catchError((error: any) => {
-        console.error('Error al obtener estadísticas:', error);
-        throw error;
+        console.error('❌ Error al obtener estadísticas:', error);
+        return throwError(() => error);
       })
     );
   }
@@ -201,11 +207,11 @@ export class MachinesService {
     
     return this.http.get<any[]>(url).pipe(
       tap((response) => {
-        console.log(`Resumen por proyectos para máquina ${maquinaId}:`, response);
+        console.log(`📋 Resumen por proyectos para máquina ${maquinaId}:`, response);
       }),
       catchError((error: any) => {
-        console.error('Error al obtener resumen por proyectos:', error);
-        throw error;
+        console.error('❌ Error al obtener resumen por proyectos:', error);
+        return throwError(() => error);
       })
     );
   }
@@ -213,13 +219,19 @@ export class MachinesService {
   // ========== UTILIDADES ==========
 
   validarRegistroHoras(registro: RegistroHoras): boolean {
-    return (
+    const esValido = (
       registro.maquina_id > 0 &&
       registro.proyecto_id > 0 &&
       registro.horas_trabajadas > 0 &&
       registro.fecha !== '' &&
       !isNaN(Date.parse(registro.fecha))
     );
+    
+    if (!esValido) {
+      console.warn('❌ Registro de horas inválido:', registro);
+    }
+    
+    return esValido;
   }
 
   formatearHoras(horas: number): string {

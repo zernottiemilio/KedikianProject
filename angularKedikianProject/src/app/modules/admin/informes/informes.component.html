@@ -1,180 +1,245 @@
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<div class="container-informes">
+<div class="informes-container">
+
+  <!-- HEADER -->
   <div class="header-section">
-    <h1 class="titulo-principal">Informes y Reportes</h1>
-  </div>
-
-  <!-- Panel de resumen -->
-  <div class="panel-resumen">
-    <div class="tarjeta-resumen">
-      <a [routerLink]="['/gestion-proyectos']" routerLinkActive="active" class="btn btn-sm">
-      <h3 class="tarjeta-titulo">Proyectos Activos</h3>
-      <p class="tarjeta-valor">{{resumen.proyectosActivos}}</p>
-      </a>
-    </div>
-    <div class="tarjeta-resumen">
-      <a [routerLink]="['/gestion-operarios']" routerLinkActive="active" class="btn btn-sm">
-      <h3 class="tarjeta-titulo">Horas Registradas</h3>
-      <p class="tarjeta-valor">{{resumen.horasTotales}}</p>
-      </a>
-    </div>
-    <div class="tarjeta-resumen">
-      <a [routerLink]="['/aridos']" routerLinkActive="active" class="btn btn-sm">
-      <h3 class="tarjeta-titulo">Material Entregado</h3>
-      <p class="tarjeta-valor">{{resumen.materialesEntregados}}</p>
-      </a>
-    </div>
-    <div class="tarjeta-resumen">
-      <h3 class="tarjeta-titulo">Gasto en Combustible</h3>
-      <p class="tarjeta-valor">{{resumen.gastoCombustible}}</p>
+    <h1>Informes y Reportes</h1>
+    <div class="action-buttons">
+      <button class="btn btn-success" (click)="abrirModal()">
+        + Agregar Registro
+      </button>
     </div>
   </div>
 
-  <!-- Filtros de informes -->
-  <div class="panel-filtros">
-    <div class="filtros-cabecera">
-      <h2 class="filtros-titulo">Listado de Informes</h2>
-      <div class="filtros-controles">
-        <span class="filtros-etiqueta">Filtrar por:</span>
-        <div class="filtros-selector">
-          <select class="selector" [(ngModel)]="filtroTipo">
-            <option value="todos">Todos los tipos</option>
-            <option value="estadisticas">Estadísticas</option>
-            <option value="reporte">Reportes</option>
-          </select>
-          <span class="material-icons icono-desplegable"><i class="fas fa-chevron-down"></i></span>
-        </div>
-      </div>
+  <!-- FILTROS -->
+  <div class="filtros">
+    <div class="filter-group">
+      <label for="busqueda">Buscar máquina...</label>
+      <input 
+        id="busqueda"
+        type="text" 
+        placeholder="Buscar máquina..." 
+        [(ngModel)]="filtroBusqueda"
+        (input)="cargarReportes()">
+    </div>
+
+    <div class="filter-group">
+      <label for="filtro-maquina">Máquina</label>
+      <select id="filtro-maquina" [(ngModel)]="filtroMaquina" (change)="cargarReportes()">
+        <option value="">Todas las máquinas</option>
+        <option *ngFor="let maquina of maquinas" [value]="maquina.id">
+          {{ maquina.nombre }}
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filtro-proyecto">Proyecto</label>
+      <select id="filtro-proyecto" [(ngModel)]="filtroProyecto" (change)="cargarReportes()">
+        <option value="">Todos los proyectos</option>
+        <option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+          {{ proyecto.nombre }}
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filtro-usuario">Usuario</label>
+      <select id="filtro-usuario" [(ngModel)]="filtroUsuario" (change)="cargarReportes()">
+        <option value="">Todos los usuarios</option>
+        <option *ngFor="let usuario of usuarios" [value]="usuario.id">
+          {{ usuario.nombre }}
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="fecha-desde">Fecha desde</label>
+      <input 
+        id="fecha-desde"
+        type="date" 
+        [(ngModel)]="filtroFechaDesde"
+        (change)="cargarReportes()">
+    </div>
+
+    <div class="filter-group">
+      <label for="fecha-hasta">Fecha hasta</label>
+      <input 
+        id="fecha-hasta"
+        type="date" 
+        [(ngModel)]="filtroFechaHasta"
+        (change)="cargarReportes()">
     </div>
   </div>
 
-  <!-- Lista de informes -->
-  <div class="panel-informes">
-    <div *ngIf="cargando" class="cargando">
-      <div class="spinner"></div>
-      <span class="mensaje-cargando">Cargando informes...</span>
+  <!-- OPCIONES ADICIONALES -->
+  <div class="results-info">
+    <span>
+      Mostrando {{ reportesPaginados.length }} de {{ reportes.length }} registros
+    </span>
+    <div class="checkbox-container">
+      <input type="checkbox" id="solo-activos" checked>
+      <label for="solo-activos">Solo activos</label>
     </div>
+  </div>
 
-    <div *ngIf="!cargando && informesFiltrados.length === 0" class="sin-resultados">
-      <span class="material-icons" style="font-size: 48px; color: #dee2e6; margin-bottom: 1rem;">search_off</span>
-      <p>No se encontraron informes con los filtros seleccionados.</p>
-    </div>
-
-    <ul *ngIf="!cargando && informesFiltrados.length > 0" class="lista-informes">
-      <li *ngFor="let informe of informesFiltrados" class="item-informe">
-        <div class="informe-contenido">
-          <div class="informe-encabezado">
-            <div class="informe-titulo-container">
-              <div class="icono-tipo" [ngClass]="getClaseIcono(informe.tipo)">
-                <span class="material-icons">
-                  {{informe.tipo === 'gastos' ? 'pie_chart' : 'description'}}
-                </span>
-              </div>
-              <div>
-                <h3 class="informe-titulo">{{informe.titulo}}</h3>
-                <div class="informe-descripcion">
-                  <p>{{informe.descripcion}}</p>
-                </div>
-              </div>
+  <!-- TABLA SIMPLIFICADA -->
+  <div class="tabla-container">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 25%;">Máquina</th>
+          <th style="width: 25%;">Proyecto</th>
+          <th style="width: 20%;">Usuario</th>
+          <th style="width: 15%;">Horas</th>
+          <th style="width: 15%;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Mensaje cuando no hay datos -->
+        <tr *ngIf="reportes.length === 0">
+          <td colspan="5" class="empty-state">
+            <i>📊</i>
+            <h3>No hay registros</h3>
+            <p>No se encontraron informes con los filtros aplicados</p>
+            <button class="btn btn-success" (click)="abrirModal()">
+              + Crear primer registro
+            </button>
+          </td>
+        </tr>
+        
+        <!-- Filas de datos -->
+        <tr *ngFor="let reporte of reportesPaginados; trackBy: trackByReporte">
+          <td>
+            <strong>{{ getNombreMaquina(reporte.maquina_id) }}</strong>
+          </td>
+          <td>
+            <span [title]="getNombreProyecto(reporte.proyecto_id)">
+              {{ getNombreProyecto(reporte.proyecto_id) }}
+            </span>
+          </td>
+          <td>
+            <strong>{{ getNombreUsuario(reporte.usuario_id) }}</strong>
+          </td>
+          <td>
+            <strong>{{ reporte.horas_turno || 0 }} horas</strong>
+          </td>
+          <td>
+            <div class="action-buttons-group">
+              <button class="btn-icon btn-edit" (click)="editarReporte(reporte)" title="Editar">✏️</button>
+              <button class="btn-icon btn-delete" (click)="eliminarReporte(reporte.id)" title="Eliminar">🗑️</button>
             </div>
-            <div class="informe-acciones">
-              <span class="etiqueta-estatus" [ngClass]="getColorEstatus(informe.estatus)">
-                {{getNombreEstatus(informe.estatus)}}
-              </span>
-              <button class="boton-descarga" (click)="descargarInforme(informe.id)" title="Descargar informe">
-                <span class="fa-solid fa-download"></span>
-              </button>
-            </div>
-          </div>
-          <div class="informe-meta">
-            <div class="informe-fecha">
-              <span class="material-icons icono-fecha">fecha</span>
-              {{informe.fecha}}
-            </div>
-          </div>
-        </div>
-      </li>
-    </ul>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
-  <!-- Botón para generar nuevo informe -->
-  <div class="contenedor-boton-nuevo">
-    <button class="boton-nuevo-informe" (click)="generarNuevoInforme()">
-      <span class="material-icons"></span>
-      Generar Nuevo Informe
+  <!-- PAGINACIÓN -->
+  <div class="paginacion" *ngIf="reportes.length > 0">
+    <button 
+      (click)="paginaActual = 1" 
+      [disabled]="paginaActual === 1"
+      title="Primera página">
+      ⟪
+    </button>
+    <button 
+      (click)="paginaAnterior()" 
+      [disabled]="paginaActual === 1"
+      title="Anterior">
+      ⟨
+    </button>
+    
+    <span class="page-info">
+      Página {{ paginaActual }}
+    </span>
+    
+    <button 
+      (click)="paginaSiguiente()" 
+      [disabled]="paginaActual === totalPaginas"
+      title="Siguiente">
+      ⟩
+    </button>
+    <button 
+      (click)="paginaActual = totalPaginas" 
+      [disabled]="paginaActual === totalPaginas"
+      title="Última">
+      ⟫
     </button>
   </div>
 
-  <!-- Modal para nuevo informe -->
-  <div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal($event)">
-    <div class="modal-contenido" (click)="$event.stopPropagation()">
+  <!-- MODAL -->
+  <div class="modal" *ngIf="modalAbierto" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Generar Nuevo Informe</h2>
-        <button class="btn-cerrar" (click)="cerrarModal($event)">
-          <i class="fas fa-times"></i>
-        </button>
+        <h2>{{ reporteEditando ? 'Editar Registro' : 'Nuevo Registro' }}</h2>
+        <button class="close-btn" (click)="cerrarModal()">&times;</button>
       </div>
+      
       <div class="modal-body">
-        <form [formGroup]="informeForm" (ngSubmit)="guardarInforme()">
-          <div class="form-group">
-            <label for="titulo">Título del Informe</label>
-            <input type="text" id="titulo" formControlName="titulo" class="form-control">
-            <div class="error-message" *ngIf="informeForm.get('titulo')?.touched && informeForm.get('titulo')?.invalid">
-              El título es requerido
-            </div>
-          </div>
+        <div class="form-group">
+          <label for="modal-maquina">Máquina *</label>
+          <select id="modal-maquina" [(ngModel)]="formulario.maquina_id" required>
+            <option value="">Seleccione una máquina</option>
+            <option *ngFor="let maquina of maquinas" [value]="maquina.id">
+              {{ maquina.nombre }}
+            </option>
+          </select>
+        </div>
 
-          <div class="form-group">
-            <label for="tipo">Tipo de Informe</label>
-            <select id="tipo" formControlName="tipo" class="form-control">
-              <option value="">Seleccione un tipo</option>
-              <option value="gastos">Informe de Gastos</option>
-              <option value="proyectos">Informe de Proyectos</option>
-              <option value="horas">Informe de Horas Registradas</option>
-              <option value="combustible">Informe de Gasto en Combustible</option>
-            </select>
-            <div class="error-message" *ngIf="informeForm.get('tipo')?.touched && informeForm.get('tipo')?.invalid">
-              Seleccione un tipo de informe
-            </div>
-          </div>
+        <div class="form-group">
+          <label for="modal-proyecto">Proyecto *</label>
+          <select id="modal-proyecto" [(ngModel)]="formulario.proyecto_id" required>
+            <option value="">Seleccione un proyecto</option>
+            <option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+              {{ proyecto.nombre }}
+            </option>
+          </select>
+        </div>
 
-          <div class="form-group">
-            <label for="fechaInicio">Fecha Inicio</label>
-            <input type="date" id="fechaInicio" formControlName="fechaInicio" class="form-control">
-          </div>
+        <div class="form-group">
+          <label for="modal-usuario">Usuario *</label>
+          <select id="modal-usuario" [(ngModel)]="formulario.usuario_id" required>
+            <option value="">Seleccione un usuario</option>
+            <option *ngFor="let usuario of usuarios" [value]="usuario.id">
+              {{ usuario.nombre }}
+            </option>
+          </select>
+        </div>
 
-          <div class="form-group">
-            <label for="fechaFin">Fecha Fin</label>
-            <input type="date" id="fechaFin" formControlName="fechaFin" class="form-control">
-          </div>          <div class="form-group">
-            <label for="valor">Valor</label>
-            <div class="input-group">
-              <input type="number" id="valor" formControlName="valor" class="form-control" min="0" step="0.01">
-              <div class="unidad-valor">
-                {{informeForm.get('tipo')?.value === 'materiales' ? 'm³' :
-                  informeForm.get('tipo')?.value === 'horas' ? 'hrs' :
-                  informeForm.get('tipo')?.value === 'combustible' ? '$' : ''}}
-              </div>
-            </div>
-            <div class="error-message" *ngIf="informeForm.get('valor')?.touched && informeForm.get('valor')?.invalid">
-              El valor debe ser mayor a 0
-            </div>
-          </div>
+        <div class="form-group">
+          <label for="modal-fecha">Fecha de asignación *</label>
+          <input 
+            id="modal-fecha"
+            type="date" 
+            [(ngModel)]="formulario.fecha_asignacion" 
+            required>
+        </div>
 
-          <div class="form-group">
-            <label for="descripcion">Descripción</label>
-            <textarea id="descripcion" formControlName="descripcion" class="form-control" rows="3"
-              placeholder="Agregue detalles adicionales del informe..."></textarea>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secundario" (click)="cerrarModal($event)">Cancelar</button>            <button type="submit" class="btn btn-primario" [disabled]="informeForm.invalid || guardando">
-              <i class="fas" [class.fa-file-export]="!guardando" [class.fa-spinner]="guardando" [class.fa-spin]="guardando"></i>
-              {{guardando ? 'Generando...' : 'Generar Informe'}}
-            </button>
-          </div>
-        </form>
+        <div class="form-group">
+          <label for="modal-horas">Horas trabajadas *</label>
+          <input 
+            id="modal-horas"
+            type="number" 
+            placeholder="Ej: 8.5" 
+            [(ngModel)]="formulario.horas_turno" 
+            min="0.1" 
+            step="0.1"
+            required>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" (click)="cerrarModal()">
+          Cancelar
+        </button>
+        <button 
+          class="btn btn-success" 
+          (click)="guardarReporte()"
+          [disabled]="!formulario.maquina_id || !formulario.proyecto_id || !formulario.usuario_id">
+          {{ reporteEditando ? 'Actualizar' : 'Crear' }}
+        </button>
       </div>
     </div>
   </div>
+
 </div>

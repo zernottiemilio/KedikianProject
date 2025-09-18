@@ -1,315 +1,335 @@
-import { CommonModule, NgClass } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import {
-  FormsModule,
-  ReactiveFormsModule,
-  FormBuilder,
-  FormGroup,
-  Validators,
-} from '@angular/forms';
-import { RouterModule } from '@angular/router';
-import {
-  InformesService,
-  Informe,
-  ResumenDatos,
-} from '../../../core/services/informes.service';
-// Importar el nuevo servicio de proyectos
-import {Project, ProyectosPaginadosResponse} from '../../../core/services/project.service';
-import { ProjectService} from '../../../core/services/project.service';
-
-interface Resumen {
-  proyectosActivos: number;
-  horasTotales: number;
-  materialesEntregados: string;
-  gastoCombustible: string;
-}
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
+import { ReportesLaboralesService, ReporteLaboral } from '../../../core/services/informes.service';
+import { MachinesService } from '../../../core/services/machines.service';
+import { ProjectService, Project } from '../../../core/services/project.service';
+import { UserService } from '../../../core/services/user.service';
 
 @Component({
   selector: 'app-informes',
-  standalone: true,
-  imports: [
-    CommonModule,
-    NgClass,
-    FormsModule,
-    ReactiveFormsModule,
-    RouterModule,
-  ],
   templateUrl: './informes.component.html',
   styleUrls: ['./informes.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule],
 })
 export class InformesComponent implements OnInit {
-  // Propiedades existentes
-  informes: Informe[] = [];
-  filtroTipo: string = 'todos';
-  cargando: boolean = false;
-  guardando: boolean = false;
-  resumen: Resumen = {
-    proyectosActivos: 0,
-    horasTotales: 0,
-    materialesEntregados: '0 m³',
-    gastoCombustible: '$0',
-  };
-
-  // Nuevas propiedades para proyectos
+  reportes: ReporteLaboral[] = [];
+  maquinas: any[] = [];
   proyectos: Project[] = [];
-  proyectosCargando: boolean = false;
-  paginaActual: number = 0;
-  elementosPorPagina: number = 15;
-  totalProyectos: number = 0;
-  
-  // Propiedades para el modal
-  mostrarModal = false;
-  informeForm: FormGroup;
+  usuarios: any[] = [];
+
+  filtroBusqueda: string = '';
+  filtroMaquina: string = '';
+  filtroProyecto: string = '';
+  filtroUsuario: string = '';
+  filtroFechaDesde: string = '';
+  filtroFechaHasta: string = '';
+
+  paginaActual: number = 1;
+  itemsPorPagina: number = 10;
+
+  modalAbierto: boolean = false;
+  reporteEditando: boolean = false;
+
+  formulario: Partial<ReporteLaboral> = {};
+
+  // Estado de carga
+  cargandoDatos: boolean = true;
 
   constructor(
-    private informesService: InformesService,
-    private proyectosService: ProjectService, // Inyectar el nuevo servicio
-    private fb: FormBuilder
-  ) {
-    this.informeForm = this.fb.group({
-      titulo: ['', Validators.required],
-      tipo: ['', Validators.required],
-      fechaInicio: ['', Validators.required],
-      fechaFin: ['', Validators.required],
-      descripcion: [''],
-      valor: [0, [Validators.required, Validators.min(0)]],
-    });
-
-    // Inicializar con algunos informes de ejemplo
-    this.informes = [
-      {
-        id: 1,
-        titulo: 'Informe de Gastos Q1',
-        tipo: 'gastos',
-        descripcion: 'Resumen de gastos del primer trimestre',
-        fecha: '2025-03-31',
-        estatus: 'completado',
-      },
-      {
-        id: 2,
-        titulo: 'Registro de Horas Abril',
-        tipo: 'horas',
-        descripcion: 'Horas registradas por operarios',
-        fecha: '2025-04-30',
-        estatus: 'pendiente',
-      },
-    ];
-    this.aplicarFiltros();
-  }
+    private reportesService: ReportesLaboralesService,
+    private machinesService: MachinesService,
+    private projectService: ProjectService,
+    private userService: UserService
+  ) {}
 
   ngOnInit(): void {
-    this.cargarInformes();
-    this.cargarDatosResumen(); // Cargar proyectos paginados
-    this.cargarCantidadProyectosActivos(); // Cargar cantidad de proyectos activos
-    this.cargarHorasMesActual
-    this.aplicarFiltros();
+    this.cargarDatosIniciales();
   }
 
-  /**
-   * Cargar la cantidad de proyectos activos desde el backend
-   */
-  cargarCantidadProyectosActivos(): void {
-    this.proyectosService.getCantidadProyectosActivos().subscribe({
-      next: (response) => {
-        // Actualizar el resumen con la cantidad real de proyectos activos
-        this.resumen.proyectosActivos = response.cantidad_activos;
-        console.log('Cantidad de proyectos activos:', response.cantidad_activos);
+  cargarDatosIniciales(): void {
+    this.cargandoDatos = true;
+    
+    forkJoin({
+      maquinas: this.machinesService.obtenerMaquinas(),
+      proyectos: this.projectService.getProjects(),
+      usuarios: this.userService.getUsers()
+    }).subscribe({
+      next: ({ maquinas, proyectos, usuarios }) => {
+        this.maquinas = maquinas;
+        this.proyectos = proyectos;
+        this.usuarios = usuarios;
+        
+        console.log('Datos cargados:');
+        console.log('Máquinas:', this.maquinas);
+        console.log('Proyectos:', this.proyectos);
+        console.log('Usuarios:', this.usuarios);
+        
+        // Cargar reportes DESPUÉS de tener los datos de referencia
+        this.cargarReportes();
       },
       error: (error) => {
-        console.error('Error al cargar cantidad de proyectos activos:', error);
-        // Mantener el valor por defecto o mostrar un mensaje de error
-        alert('Error al cargar la cantidad de proyectos activos.');
+        console.error('Error cargando datos iniciales:', error);
+        this.cargandoDatos = false;
       }
     });
   }
 
-   // Agrega este nuevo método
-   cargarHorasMesActual(): void {
-    this.informesService.getHorasMesActual().subscribe({
-      next: (response) => {
-        this.resumen.horasTotales = response.total_horas_mes_actual;
-        console.log('Horas del mes actual:', response.total_horas_mes_actual);
-      },
-      error: (error) => {
-        console.error('Error al cargar horas del mes actual:', error);
-        // Mantener el valor por defecto o mostrar mensaje de error
-        alert('Error al cargar las horas trabajadas este mes.');
-      }
-    });
-  }
-
-  // Resto de métodos existentes...
-  generarInformePersonalizado(formulario: any): void {
-    const parametros = {
-      tipo: formulario.tipo,
-      fechaInicio: formulario.fechaInicio,
-      fechaFin: formulario.fechaFin,
-      proyectoId: formulario.proyecto ? formulario.proyecto.id : undefined,
-      incluirGraficos: formulario.incluirGraficos,
+  cargarReportes(): void {
+    const filtros = {
+      busqueda: this.filtroBusqueda,
+      maquina_id: this.filtroMaquina,
+      proyecto_id: this.filtroProyecto,
+      usuario_id: this.filtroUsuario,
+      fecha_desde: this.filtroFechaDesde,
+      fecha_hasta: this.filtroFechaHasta,
     };
 
-    this.informesService.generarInformePersonalizado(parametros).subscribe({
-      next: (informe) => {
-        alert(`Informe "${informe.titulo}" generado correctamente.`);
-      },
-      error: (error) => {
-        console.error('Error:', error);
-        alert('Error al generar el informe. Por favor, inténtelo de nuevo.');
-      },
-    }); 
-  }
-
-  cargarInformes(): void {
-    this.cargando = true;
-    this.informesService.getInformes().subscribe({
+    this.reportesService.getReportes(filtros).subscribe({
       next: (data) => {
-        this.informes = data.informes;
-        // No sobrescribir el resumen aquí, ya que se actualiza desde otros métodos
-        this.cargando = false;
+        console.log('🔍 Reportes recibidos desde backend:', data);
+
+        // 🔧 SOLUCIÓN: Normalizar los datos para asegurar que todos los campos siempre existan
+        const reportesNormalizados = data.map(reporte => ({
+          ...reporte,
+          // Asegurar que todos los campos críticos estén presentes, aunque sean null
+          proyecto_id: reporte.proyecto_id ?? null,
+          maquina_id: reporte.maquina_id ?? null,
+          usuario_id: reporte.usuario_id ?? null
+        }));
+
+        console.group("🔍 DEBUG: Análisis de reportes normalizados");
+        console.log("👉 Proyectos disponibles:", this.proyectos.map(p => ({ id: p.id, nombre: p.nombre })));
+        
+        reportesNormalizados.forEach((r, index) => {
+          const proyectoEncontrado = this.proyectos.find(p => String(p.id) === String(r.proyecto_id));
+          console.log(`📋 Reporte ${index + 1} (ID: ${r.id}):`, {
+            proyecto_id: r.proyecto_id,
+            tipo_proyecto_id: typeof r.proyecto_id,
+            tiene_proyecto_id: r.hasOwnProperty('proyecto_id'),
+            proyecto_encontrado: proyectoEncontrado ? proyectoEncontrado.nombre : '❌ NO ENCONTRADO',
+            todas_las_propiedades: Object.keys(r)
+          });
+        });
+        console.groupEnd();
+
+        // Mapear los nombres con mejor manejo de errores
+        this.reportes = reportesNormalizados.map(reporte => {
+          const reporteConNombres = {
+            ...reporte,
+            maquina_nombre: this.getNombreMaquina(reporte.maquina_id),
+            proyecto_nombre: this.getNombreProyecto(reporte.proyecto_id),
+            usuario_nombre: this.getNombreUsuario(reporte.usuario_id),
+          };
+
+          // Debug adicional para casos problemáticos
+          if (!reporte.proyecto_id && reporte.proyecto_id !== 0) {
+            console.warn(`⚠️  Reporte ID ${reporte.id} tiene proyecto_id: ${reporte.proyecto_id} (${typeof reporte.proyecto_id})`);
+          }
+
+          return reporteConNombres;
+        });
+
+        console.log('✅ Reportes finales con nombres mapeados:', this.reportes);
+
+        this.paginaActual = 1;
+        this.cargandoDatos = false;
       },
       error: (error) => {
-        console.error('Error al cargar informes:', error);
-        this.cargando = false;
-        alert('Error al cargar los informes. Por favor, intente nuevamente.');
-      },
+        console.error('❌ Error cargando reportes:', error);
+        this.cargandoDatos = false;
+      }
     });
   }
 
-  get informesFiltrados(): Informe[] {
-    return this.filtroTipo === 'todos'
-      ? this.informes
-      : this.informes.filter((informe) => informe.tipo === this.filtroTipo);
+  get reportesPaginados(): ReporteLaboral[] {
+    const start = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.reportes.slice(start, start + this.itemsPorPagina);
   }
 
-  descargarInforme(id: number): void {
-    this.informesService.descargarInforme(id).subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `informe-${id}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      },
-      error: (error) => {
-        console.error('Error al descargar:', error);
-        alert('Error al descargar el informe. Por favor, inténtelo de nuevo.');
-      },
-    });
+  paginaAnterior(): void {
+    if (this.paginaActual > 1) this.paginaActual--;
   }
 
-  getColorEstatus(estatus: string): string {
-    switch (estatus) {
-      case 'completado':
-        return 'estatus-completado';
-      case 'pendiente':
-        return 'estatus-pendiente';
-      case 'en-proceso':
-        return 'estatus-en-proceso';
-      default:
-        return 'estatus-default';
-    }
+  paginaSiguiente(): void {
+    if (this.paginaActual < this.totalPaginas) this.paginaActual++;
   }
 
-  getNombreEstatus(estatus: string): string {
-    switch (estatus) {
-      case 'completado':
-        return 'Completado';
-      case 'pendiente':
-        return 'Pendiente';
-      case 'en-proceso':
-        return 'En proceso';
-      default:
-        return 'Desconocido';
-    }
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.reportes.length / this.itemsPorPagina));
   }
 
-  getClaseIcono(tipo: string): string {
-    return tipo === 'estadisticas' ? 'icono-estadistica' : 'icono-reporte';
-  }
-
-  generarNuevoInforme(): void {
-    this.mostrarModal = true;
-    this.informeForm.reset();
-  }
-
-  cerrarModal(event: MouseEvent): void {
-    if (event) {
-      event.preventDefault();
-    }
-    this.mostrarModal = false;
-    this.informeForm.reset();
-  }
-
-  guardarInforme(): void {
-    if (this.informeForm.invalid) {
-      return;
-    }
-
-    this.guardando = true;
-    const formData = this.informeForm.value;
-    const nuevoInforme: Omit<Informe, 'id'> = {
-      titulo: formData.titulo,
-      tipo: formData.tipo,
-      descripcion: formData.descripcion || '',
-      fecha: new Date().toISOString().split('T')[0],
-      estatus: 'pendiente' as const,
-      valor: formData.valor,
+  abrirModal(): void {
+    this.modalAbierto = true;
+    this.reporteEditando = false;
+    this.formulario = {
+      fecha_asignacion: new Date().toISOString().split('T')[0] // Fecha actual por defecto
     };
+  }
 
-    this.informesService.crearInforme(nuevoInforme).subscribe({
-      next: (informeCreado) => {
-        this.informes.unshift(informeCreado);
+  cerrarModal(): void {
+    this.modalAbierto = false;
+    this.formulario = {};
+  }
 
-        if (informeCreado.valor !== undefined) {
-          this.actualizarResumen(informeCreado.tipo, informeCreado.valor);
+  editarReporte(reporte: ReporteLaboral): void {
+    this.modalAbierto = true;
+    this.reporteEditando = true;
+    this.formulario = { 
+      ...reporte,
+      fecha_asignacion: reporte.fecha_asignacion?.split('T')[0] || reporte.fecha_asignacion
+    };
+  }
+
+  guardarReporte(): void {
+    console.log('🔍 Guardando formulario con datos:', this.formulario);
+
+    if (this.reporteEditando && this.formulario.id) {
+      this.reportesService.updateReporte(this.formulario).subscribe({
+        next: (r) => {
+          console.log('✅ Reporte actualizado:', r);
+          
+          // 🔧 SOLUCIÓN: Normalizar la respuesta del servidor
+          const reporteNormalizado = {
+            ...r,
+            proyecto_id: r.proyecto_id ?? null,
+            maquina_id: r.maquina_id ?? null,
+            usuario_id: r.usuario_id ?? null
+          };
+
+          // Actualizar directamente el reporte en el array
+          const index = this.reportes.findIndex(rep => rep.id === r.id);
+          if (index > -1) {
+            this.reportes[index] = {
+              ...reporteNormalizado,
+              maquina_nombre: this.getNombreMaquina(reporteNormalizado.maquina_id),
+              proyecto_nombre: this.getNombreProyecto(reporteNormalizado.proyecto_id),
+              usuario_nombre: this.getNombreUsuario(reporteNormalizado.usuario_id),
+            };
+          }
+          this.cerrarModal();
+        },
+        error: (error) => {
+          console.error('❌ Error actualizando reporte:', error);
+          alert('Error al actualizar el reporte');
         }
+      });
+    } else {
+      this.reportesService.createReporte(this.formulario).subscribe({
+        next: (r) => {
+          console.log('✅ Reporte creado:', r);
+          
+          // 🔧 SOLUCIÓN: Normalizar la respuesta del servidor
+          const reporteNormalizado = {
+            ...r,
+            proyecto_id: r.proyecto_id ?? null,
+            maquina_id: r.maquina_id ?? null,
+            usuario_id: r.usuario_id ?? null
+          };
 
-        this.cerrarModal(null as any);
-        alert(`El informe "${informeCreado.titulo}" ha sido creado exitosamente.`);
-      },
-      error: (error) => {
-        console.error('Error al crear el informe:', error);
-        alert('Error al crear el informe. Por favor, inténtelo de nuevo.');
-      },
-      complete: () => {
-        this.guardando = false;
-      },
-    });
-  }
-
-  private cargarDatosResumen(): void {
-    // Los proyectos activos ahora se cargan desde el endpoint
-    // Solo inicializar los otros valores aquí
-    this.resumen.horasTotales = 456;
-    this.resumen.materialesEntregados = '1,234 m³';
-    this.resumen.gastoCombustible = '$5,678';
-  }
-
-  actualizarResumen(tipo: string, valor: number): void {
-    switch (tipo) {
-      case 'proyectos':
-        this.resumen.proyectosActivos += 1;
-        break;
-      case 'horas':
-        this.resumen.horasTotales += valor;
-        break;
-      case 'materiales':
-        const materialesActuales =
-          parseFloat(this.resumen.materialesEntregados) || 0;
-        this.resumen.materialesEntregados = `${materialesActuales + valor} m³`;
-        break;
-      case 'combustible':
-        const gastoActual =
-          parseFloat(this.resumen.gastoCombustible.replace('$', '')) || 0;
-        this.resumen.gastoCombustible = `$${gastoActual + valor}`;
-        break;
+          this.reportes.unshift({
+            ...reporteNormalizado,
+            maquina_nombre: this.getNombreMaquina(reporteNormalizado.maquina_id),
+            proyecto_nombre: this.getNombreProyecto(reporteNormalizado.proyecto_id),
+            usuario_nombre: this.getNombreUsuario(reporteNormalizado.usuario_id),
+          });
+          this.cerrarModal();
+        },
+        error: (error) => {
+          console.error('❌ Error creando reporte:', error);
+          alert('Error al crear el reporte');
+        }
+      });
     }
   }
 
-  aplicarFiltros(): void {
-    // Filtering is handled by the informesFiltrados getter
+  eliminarReporte(id: number | undefined): void {
+    if (!id) return;
+    
+    if (confirm('¿Estás seguro de eliminar este informe?')) {
+      this.reportesService.deleteReporte(id).subscribe({
+        next: () => {
+          this.reportes = this.reportes.filter(r => r.id !== id);
+        },
+        error: (error) => {
+          console.error('❌ Error eliminando reporte:', error);
+          alert('Error al eliminar el reporte');
+        }
+      });
+    }
+  }
+
+  // ===== Métodos mejorados para mostrar nombres desde los arrays de referencia =====
+  getNombreMaquina(id: number | string | undefined | null): string {
+    if (!id && id !== 0) {
+      console.log('🔍 Máquina ID es null/undefined:', id);
+      return '❌ Sin máquina asignada';
+    }
+    
+    const maquina = this.maquinas.find(m => String(m.id) === String(id));
+    if (!maquina) {
+      console.warn(`⚠️  Máquina no encontrada para ID: ${id}`, {
+        id_buscado: id,
+        tipo: typeof id,
+        maquinas_disponibles: this.maquinas.map(m => ({ id: m.id, nombre: m.nombre }))
+      });
+      return `❓ Máquina ID: ${id}`;
+    }
+    
+    return maquina.nombre || `Máquina ${id}`;
+  }
+
+  getNombreProyecto(id: number | string | undefined | null): string {
+    if (!id && id !== 0) {
+      console.log('🔍 Proyecto ID es null/undefined:', id);
+      return '❌ Sin proyecto asignado';
+    }
+    
+    const proyecto = this.proyectos.find(p => String(p.id) === String(id));
+    if (!proyecto) {
+      console.warn(`⚠️  Proyecto no encontrado para ID: ${id}`, {
+        id_buscado: id,
+        tipo: typeof id,
+        proyectos_disponibles: this.proyectos.map(p => ({ id: p.id, nombre: p.nombre }))
+      });
+      return `❓ Proyecto ID: ${id}`;
+    }
+    
+    return proyecto.nombre || `Proyecto ${id}`;
+  }
+
+  getNombreUsuario(id: number | string | undefined | null): string {
+    if (!id && id !== 0) {
+      console.log('🔍 Usuario ID es null/undefined:', id);
+      return '❌ Sin usuario asignado';
+    }
+    
+    const usuario = this.usuarios.find(u => String(u.id) === String(id));
+    if (!usuario) {
+      console.warn(`⚠️  Usuario no encontrado para ID: ${id}`, {
+        id_buscado: id,
+        tipo: typeof id,
+        usuarios_disponibles: this.usuarios.map(u => ({ id: u.id, nombre: u.nombre }))
+      });
+      return `❓ Usuario ID: ${id}`;
+    }
+    
+    return usuario.nombre || `Usuario ${id}`;
+  }
+
+  trackByReporte(index: number, reporte: ReporteLaboral): any {
+    return reporte.id || index;
+  }
+
+  limpiarFiltros(): void {
+    this.filtroBusqueda = '';
+    this.filtroMaquina = '';
+    this.filtroProyecto = '';
+    this.filtroUsuario = '';
+    this.filtroFechaDesde = '';
+    this.filtroFechaHasta = '';
+    this.cargarReportes();
   }
 }
