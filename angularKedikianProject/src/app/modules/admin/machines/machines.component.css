@@ -324,7 +324,7 @@ body {
 /* Table Styles */
 .table-container {
   overflow-x: auto;
-  margin-bottom: 20px;
+  margin: auto;
   -webkit-overflow-scrolling: touch;
   /* Para mejor scroll en iOS */
 }

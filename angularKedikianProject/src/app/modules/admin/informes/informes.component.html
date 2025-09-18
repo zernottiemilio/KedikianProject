@@ -87,17 +87,18 @@
     <table>
       <thead>
         <tr>
-          <th style="width: 25%;">Máquina</th>
-          <th style="width: 25%;">Proyecto</th>
-          <th style="width: 20%;">Usuario</th>
-          <th style="width: 15%;">Horas</th>
-          <th style="width: 15%;">Acciones</th>
+          <th style="width: 20%;">Máquina</th>
+          <th style="width: 20%;">Proyecto</th>
+          <th style="width: 15%;">Usuario</th>
+          <th style="width: 12%;">Horas</th>
+          <th style="width: 15%;">Fecha</th>
+          <th style="width: 18%;">Acciones</th>
         </tr>
       </thead>
       <tbody>
         <!-- Mensaje cuando no hay datos -->
         <tr *ngIf="reportes.length === 0">
-          <td colspan="5" class="empty-state">
+          <td colspan="6" class="empty-state">
             <i>📊</i>
             <h3>No hay registros</h3>
             <p>No se encontraron informes con los filtros aplicados</p>
@@ -122,6 +123,9 @@
           </td>
           <td>
             <strong>{{ reporte.horas_turno || 0 }} horas</strong>
+          </td>
+          <td>
+            <span>{{ reporte.fecha_asignacion | date:'dd/MM/yyyy' }}</span>
           </td>
           <td>
             <div class="action-buttons-group">
