@@ -239,6 +239,24 @@ table tbody tr:last-child td {
   border: 1px solid rgba(239, 68, 68, 0.22);
 }
 
+.badge-info {
+  background: rgba(59, 130, 246, 0.13);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.22);
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.13);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.22);
+}
+
+.badge-secondary {
+  background: rgba(100, 116, 139, 0.13);
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.22);
+}
+
 .actions {
   white-space: nowrap;
   text-align: center;
@@ -271,6 +289,18 @@ table tbody tr:last-child td {
   background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%);
   transform: translateY(-2px) scale(1.04);
   box-shadow: 0 3px 8px rgba(37, 99, 235, 0.13);
+}
+
+.actions button.btn-success {
+  background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+  color: #fff;
+  font-weight: 600;
+}
+
+.actions button.btn-success:hover {
+  background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 3px 8px rgba(34, 197, 94, 0.13);
 }
 
 .actions button.btn-danger {
@@ -394,6 +424,13 @@ table tbody tr:last-child td {
   transform: translateY(-20px);
   opacity: 0;
   transition: all 0.3s;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-card-large {
+  max-width: 900px;
+  width: 95%;
 }
 
 .modal-overlay.active .modal-card {
@@ -406,6 +443,8 @@ table tbody tr:last-child td {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.2rem;
+  border-bottom: 1px solid #e3e6ed;
+  padding-bottom: 1rem;
 }
 
 .modal-close {
@@ -427,6 +466,290 @@ table tbody tr:last-child td {
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 2rem;
+  border-top: 1px solid #e3e6ed;
+  padding-top: 1rem;
+}
+
+.modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* =========================
+   ESTILOS PARA JORNADAS LABORALES
+   ========================= */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+}
+
+.loading-spinner {
+  font-size: 2rem;
+  color: #2563eb;
+  margin-bottom: 1rem;
+}
+
+.loading-spinner i {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.jornadas-container {
+  padding: 1rem 0;
+}
+
+.jornadas-summary {
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.summary-card h4 {
+  margin: 0 0 1rem 0;
+  color: #222b45;
+  font-size: 1.2rem;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.stat-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.stat-value {
+  color: #222b45;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.jornadas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.jornada-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.jornada-card:hover {
+  box-shadow: 0 4px 12px rgba(44, 62, 80, 0.08);
+  transform: translateY(-2px);
+}
+
+.jornada-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.jornada-date {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #222b45;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.jornada-date i {
+  color: #2563eb;
+}
+
+.holiday-badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+}
+
+.jornada-status {
+  display: flex;
+  align-items: center;
+}
+
+.jornada-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.detail-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.detail-item i {
+  width: 16px;
+  text-align: center;
+}
+
+.detail-label {
+  color: #64748b;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.detail-value {
+  color: #222b45;
+  font-weight: 600;
+}
+
+.hours-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.hours-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.hours-item.regular {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border: 1px solid #0ea5e9;
+}
+
+.hours-item.extra {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+}
+
+.hours-item.holiday {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+  border: 1px solid #ec4899;
+}
+
+.hours-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.hours-item.regular .hours-icon {
+  color: #0ea5e9;
+}
+
+.hours-item.extra .hours-icon {
+  color: #f59e0b;
+}
+
+.hours-item.holiday .hours-icon {
+  color: #ec4899;
+}
+
+.hours-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.hours-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.hours-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #222b45;
+}
+
+.jornada-notes {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.note-item {
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.9rem;
+}
+
+.note-item strong {
+  color: #92400e;
+}
+
+/* Text utilities */
+.text-success {
+  color: #22c55e !important;
+}
+
+.text-danger {
+  color: #ef4444 !important;
+}
+
+.text-warning {
+  color: #f59e0b !important;
+}
+
+.text-primary {
+  color: #2563eb !important;
 }
 
 .form-group {
@@ -528,6 +851,11 @@ select.form-control {
   .container {
     padding: 18px 6px;
   }
+  
+  .modal-card-large {
+    max-width: 95%;
+    padding: 1.5rem;
+  }
 }
 
 @media (max-width: 900px) {
@@ -537,6 +865,18 @@ select.form-control {
   }
   .container {
     padding: 10px 2px;
+  }
+  
+  .detail-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .summary-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .hours-breakdown {
+    flex-direction: column;
   }
 }
 
@@ -550,6 +890,20 @@ select.form-control {
   .modal-card {
     padding: 1.2rem 0.5rem;
   }
+  
+  .modal-card-large {
+    padding: 1rem;
+  }
+  
+  .jornada-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .hours-item {
+    min-width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -559,6 +913,18 @@ select.form-control {
   }
   .container {
     padding: 4px 0;
+  }
+  
+  .modal-body {
+    max-height: 60vh;
+  }
+  
+  .jornada-card {
+    padding: 1rem;
+  }
+  
+  .summary-card {
+    padding: 1rem;
   }
 }
 
@@ -576,6 +942,60 @@ select.form-control {
   }
 }
 
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .filter-controls, .modal-card, .table-responsive {
   animation: fadeIn 0.3s ease;
+}
+
+.jornada-card {
+  animation: slideInUp 0.3s ease;
+}
+
+.jornada-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.jornada-card:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.jornada-card:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+/* =========================
+   UTILIDADES ADICIONALES
+   ========================= */
+.titlecase {
+  text-transform: capitalize;
+}
+
+
+/* Smooth scrolling para el modal */
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }

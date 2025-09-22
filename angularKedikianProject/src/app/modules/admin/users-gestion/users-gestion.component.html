@@ -85,6 +85,9 @@
             <button class="btn btn-sm btn-info" (click)="editUser(user)" title="Editar">
               <i class="fas fa-edit"></i>
             </button>
+            <button class="btn btn-sm btn-success" (click)="openJornadaModal(user)" title="Ver Jornadas Laborales">
+              <i class="fas fa-clock"></i>
+            </button>
             <button class="btn btn-sm btn-danger" (click)="deleteUser(user)" title="Eliminar">
               <i class="fas fa-trash"></i>
             </button>
@@ -170,6 +173,149 @@
     <div class="modal-footer">
       <button type="button" class="btn btn-secondary" (click)="closeModals()">Cancelar</button>
       <button type="button" class="btn btn-danger" (click)="confirmDelete()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Jornadas Laborales -->
+<div class="modal-overlay" [class.active]="isJornadaModalOpen">
+  <div class="modal-card modal-card-large">
+    <div class="modal-header">
+      <h2>Jornadas Laborales - {{ selectedUser?.nombre }}</h2>
+      <button class="modal-close" (click)="closeModals()">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <div *ngIf="loadingJornadas" class="loading-container">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <p>Cargando jornadas laborales...</p>
+      </div>
+
+      <div *ngIf="!loadingJornadas && jornadasLaborales.length === 0" class="no-results">
+        <p>No se encontraron jornadas laborales para este usuario.</p>
+      </div>
+
+      <div *ngIf="!loadingJornadas && jornadasLaborales.length > 0" class="jornadas-container">
+        <div class="jornadas-summary">
+          <div class="summary-card">
+            <h4>Resumen</h4>
+            <div class="summary-stats">
+              <div class="stat-item">
+                <span class="stat-label">Total Jornadas:</span>
+                <span class="stat-value">{{ jornadasLaborales.length }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Horas Regulares Total:</span>
+                <span class="stat-value">{{ getTotalHorasRegulares().toFixed(1) }}h</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Horas Extras Total:</span>
+                <span class="stat-value">{{ getTotalHorasExtras().toFixed(1) }}h</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Días Feriados:</span>
+                <span class="stat-value">{{ getTotalDiasFeriados() }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="jornadas-list">
+          <div class="jornada-card" *ngFor="let jornada of jornadasLaborales; trackBy: trackByJornadaId">
+            <div class="jornada-header">
+              <div class="jornada-date">
+                <i class="fas fa-calendar-alt"></i>
+                {{ formatFecha(jornada.fecha) }}
+                <span *ngIf="jornada.es_feriado" class="badge badge-warning holiday-badge">
+                  <i class="fas fa-star"></i> Feriado
+                </span>
+              </div>
+              <div class="jornada-status">
+                <span class="badge" [ngClass]="getEstadoBadgeClass(jornada.estado)">
+                  {{ jornada.estado | titlecase }}
+                </span>
+              </div>
+            </div>
+
+            <div class="jornada-details">
+              <div class="detail-row">
+                <div class="detail-group">
+                  <div class="detail-item">
+                    <i class="fas fa-play-circle text-success"></i>
+                    <span class="detail-label">Inicio:</span>
+                    <span class="detail-value">{{ jornada.hora_inicio | date:'HH:mm' }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <i class="fas fa-stop-circle text-danger"></i>
+                    <span class="detail-label">Fin:</span>
+                    <span class="detail-value">{{ jornada.hora_fin ? (jornada.hora_fin | date:'HH:mm') : 'En curso' }}</span>
+                  </div>
+                </div>
+                
+                <div class="detail-group">
+                  <div class="detail-item">
+                    <i class="fas fa-coffee text-warning"></i>
+                    <span class="detail-label">Descanso:</span>
+                    <span class="detail-value">{{ formatTiempoDescanso(jornada.tiempo_descanso) }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <i class="fas fa-clock text-primary"></i>
+                    <span class="detail-label">Total:</span>
+                    <span class="detail-value">{{ jornada.total_horas.toFixed(1) }}h</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hours-breakdown">
+                <div class="hours-item regular">
+                  <div class="hours-icon">
+                    <i class="fas fa-business-time"></i>
+                  </div>
+                  <div class="hours-info">
+                    <span class="hours-label">Horas Regulares</span>
+                    <span class="hours-value">{{ jornada.horas_regulares.toFixed(1) }}h</span>
+                  </div>
+                </div>
+
+                <div class="hours-item extra" *ngIf="jornada.horas_extras > 0">
+                  <div class="hours-icon">
+                    <i class="fas fa-clock"></i>
+                  </div>
+                  <div class="hours-info">
+                    <span class="hours-label">Horas Extras</span>
+                    <span class="hours-value">{{ jornada.horas_extras.toFixed(1) }}h</span>
+                  </div>
+                </div>
+
+                <div class="hours-item holiday" *ngIf="jornada.es_feriado">
+                  <div class="hours-icon">
+                    <i class="fas fa-star"></i>
+                  </div>
+                  <div class="hours-info">
+                    <span class="hours-label">Día Feriado</span>
+                    <span class="hours-value">Sí</span>
+                  </div>
+                </div>
+              </div>
+
+              <div *ngIf="jornada.notas_inicio || jornada.notas_fin" class="jornada-notes">
+                <div *ngIf="jornada.notas_inicio" class="note-item">
+                  <strong>Notas de inicio:</strong> {{ jornada.notas_inicio }}
+                </div>
+                <div *ngIf="jornada.notas_fin" class="note-item">
+                  <strong>Notas de fin:</strong> {{ jornada.notas_fin }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModals()">Cerrar</button>
     </div>
   </div>
 </div>

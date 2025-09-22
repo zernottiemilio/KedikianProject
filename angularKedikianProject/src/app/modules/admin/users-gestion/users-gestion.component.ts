@@ -10,7 +10,7 @@ import {
 import { Observable } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import Modal from 'bootstrap/js/dist/modal';
-import { UserService } from '../../../core/services/user.service';
+import { UserService, JornadaLaboral } from '../../../core/services/user.service';
 
 // Interfaz de Usuario
 interface User {
@@ -31,6 +31,8 @@ interface UserFilters {
   roles: string;
   estado: any;
 }
+
+
 
 @Component({
   selector: 'app-users-gestion',
@@ -73,10 +75,17 @@ export class UsersGestionComponent implements OnInit {
   // Modales
   private userModal: any;
   private deleteConfirmModal: any;
+  private jornadaModal: any;
   isEditModalOpen = false;
   isDeleteModalOpen = false;
+  isJornadaModalOpen = false;
   modalOverlayActive = false;
   private originalUser: User | null = null;
+
+  // Jornadas Laborales
+  jornadasLaborales: JornadaLaboral[] = [];
+  selectedUser: User | null = null;
+  loadingJornadas = false;
 
   // Función para mapear roles al formato del backend
   private mapRolesToBackend(roles: string[]): string[] {
@@ -124,6 +133,7 @@ export class UsersGestionComponent implements OnInit {
       try {
         const userModalEl = document.getElementById('userModal');
         const deleteModalEl = document.getElementById('deleteConfirmModal');
+        const jornadaModalEl = document.getElementById('jornadaModal');
 
         if (userModalEl) {
           this.userModal = new Modal(userModalEl);
@@ -131,6 +141,10 @@ export class UsersGestionComponent implements OnInit {
 
         if (deleteModalEl) {
           this.deleteConfirmModal = new Modal(deleteModalEl);
+        }
+
+        if (jornadaModalEl) {
+          this.jornadaModal = new Modal(jornadaModalEl);
         }
       } catch (error) {
         console.error('Error inicializando modales:', error);
@@ -158,6 +172,70 @@ export class UsersGestionComponent implements OnInit {
         console.error('Error al cargar usuarios:', err);
       },
     });
+  }
+
+  // Método para cargar jornadas laborales
+  private loadJornadasLaborales(usuarioId: number): void {
+    this.loadingJornadas = true;
+    this.jornadasLaborales = [];
+    
+    // Llamada real al servicio
+    this.userService.getJornadasLaborales(usuarioId).subscribe({
+      next: (jornadas) => {
+        this.jornadasLaborales = jornadas;
+        this.loadingJornadas = false;
+      },
+      error: (err) => {
+        console.error('Error al cargar jornadas laborales:', err);
+        this.jornadasLaborales = [];
+        this.loadingJornadas = false;
+        // Aquí podrías mostrar un mensaje de error al usuario
+      }
+    });
+  }
+
+  // Método para abrir el modal de jornadas laborales
+  openJornadaModal(user: User): void {
+    this.selectedUser = user;
+    this.isJornadaModalOpen = true;
+    this.modalOverlayActive = true;
+    this.loadJornadasLaborales(user.id);
+  }
+
+  // Método para formatear tiempo de descanso
+  formatTiempoDescanso(minutos: number): string {
+    const horas = Math.floor(minutos / 60);
+    const mins = minutos % 60;
+    if (horas > 0) {
+      return `${horas}h ${mins}m`;
+    }
+    return `${mins}m`;
+  }
+
+  // Método para formatear fecha
+  formatFecha(fechaStr: string): string {
+    const fecha = new Date(fechaStr);
+    return fecha.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  }
+
+  // Método para obtener el color del badge del estado
+  getEstadoBadgeClass(estado: string): string {
+    switch (estado.toLowerCase()) {
+      case 'activa':
+        return 'badge-success';
+      case 'completada':
+        return 'badge-info';
+      case 'pausada':
+        return 'badge-warning';
+      case 'cancelada':
+        return 'badge-danger';
+      default:
+        return 'badge-secondary';
+    }
   }
 
   // Métodos de filtrado
@@ -321,10 +399,13 @@ export class UsersGestionComponent implements OnInit {
   closeModals(): void {
     this.isEditModalOpen = false;
     this.isDeleteModalOpen = false;
+    this.isJornadaModalOpen = false;
     this.modalOverlayActive = false;
     this.userForm.reset();
     this.userToDelete = null;
     this.originalUser = null;
+    this.selectedUser = null;
+    this.jornadasLaborales = [];
   }
 
   saveUser(): void {
@@ -455,5 +536,23 @@ export class UsersGestionComponent implements OnInit {
       default:
         return role;
     }
+  }
+
+  // Métodos para obtener estadísticas de jornadas
+  getTotalHorasRegulares(): number {
+    return this.jornadasLaborales.reduce((sum, j) => sum + j.horas_regulares, 0);
+  }
+
+  getTotalHorasExtras(): number {
+    return this.jornadasLaborales.reduce((sum, j) => sum + j.horas_extras, 0);
+  }
+
+  getTotalDiasFeriados(): number {
+    return this.jornadasLaborales.filter(j => j.es_feriado).length;
+  }
+
+  // Método para optimizar el rendimiento del ngFor
+  trackByJornadaId(index: number, jornada: JornadaLaboral): number {
+    return jornada.id;
   }
 }

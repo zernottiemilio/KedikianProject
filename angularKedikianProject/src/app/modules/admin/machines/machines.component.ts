@@ -1,4 +1,4 @@
-// machines.component.ts - Versión sin proyectos
+// machines.component.ts - Versión sin proyectos, lista y funcional
 import { CommonModule, NgClass } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import {
@@ -230,26 +230,20 @@ export class MaquinariaComponent implements OnInit {
   // ========== MÉTODOS DE MANTENIMIENTO ==========
   
   procesarHistorialMantenimientos(mantenimientos: Mantenimiento[]): void {
-    // Limpiar datos anteriores
     this.ultimaHoraMantenimientoPorMaquina = {};
     this.historialPorMaquina = {};
-    
-    // Agrupar mantenimientos por máquina
+
     mantenimientos.forEach(mantenimiento => {
       const maquinaId = mantenimiento.maquina_id;
-      
       if (!this.historialPorMaquina[maquinaId]) {
         this.historialPorMaquina[maquinaId] = [];
       }
-      
       this.historialPorMaquina[maquinaId].push(mantenimiento);
     });
-    
-    // Calcular el último mantenimiento para cada máquina
+
     Object.keys(this.historialPorMaquina).forEach(maquinaIdStr => {
       const maquinaId = Number(maquinaIdStr);
       const historial = this.historialPorMaquina[maquinaId];
-      
       if (historial && historial.length > 0) {
         const ultimoMantenimiento = this.obtenerUltimoMantenimiento(maquinaId, historial);
         if (ultimoMantenimiento && typeof ultimoMantenimiento.horas_maquina === 'number') {
@@ -261,11 +255,8 @@ export class MaquinariaComponent implements OnInit {
 
   private obtenerUltimoMantenimiento(maquinaId: number, registros: Mantenimiento[]): Mantenimiento | null {
     if (!registros || registros.length === 0) return null;
-    
     const registrosConHoras = registros.filter(r => r.horas_maquina !== null && r.horas_maquina !== undefined);
-    
     if (registrosConHoras.length === 0) return null;
-    
     const ordenados = [...registrosConHoras].sort((a, b) => (b.horas_maquina || 0) - (a.horas_maquina || 0));
     return ordenados[0];
   }
@@ -413,12 +404,10 @@ export class MaquinariaComponent implements OnInit {
 
     console.log('📝 Enviando datos de horas:', horasData);
 
-    // Llamar al servicio para registrar horas (sin proyecto)
     this.machinesService.registrarHoras(horasData).subscribe({
       next: (response) => {
         console.log('✅ Respuesta del servidor:', response);
         
-        // Actualizar las horas totales de la máquina localmente
         if (this.maquinaSeleccionada) {
           this.maquinaSeleccionada.horas_uso = (this.maquinaSeleccionada.horas_uso || 0) + horasData.horas_trabajadas;
           const index = this.maquinas.findIndex(m => m.id === this.maquinaSeleccionada!.id);
@@ -490,8 +479,7 @@ export class MaquinariaComponent implements OnInit {
     }, 3000);
   }
 
-  // ========== GETTER PARA HISTORIAL (Corrige el error de TypeScript) ==========
-  
+  // Getter para historial de cada máquina
   getHistorialMaquina(maquinaId: number): Mantenimiento[] {
     return this.historialPorMaquina[maquinaId] || [];
   }
