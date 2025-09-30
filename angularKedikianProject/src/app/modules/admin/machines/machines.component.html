@@ -20,28 +20,28 @@
     <table>
       <thead>
         <tr>
-          <th>Código</th>
           <th>Nombre</th>
           <th>Estado</th>
           <th>Horas de Uso</th>
-          <th>Mantenimiento</th>
+          <th>Próximo Mant.</th>
+          <th>Horas Restantes</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let maquina of maquinasFiltradas">
-          <td>{{maquina.codigo}}</td>
           <td>{{maquina.nombre}}</td>
           <td>
             <span class="estado" [ngClass]="{'activo': maquina.estado, 'inactivo': !maquina.estado}">
               {{maquina.estado ? 'Activo' : 'Inactivo'}}
             </span>
           </td>
-          <td>{{maquina.horas_uso}} horas</td>
+          <td>{{maquina.horas_uso}} hs</td>
+          <td>{{getProximoMantenimiento(maquina)}} hs</td>
           <td>
-            <div [ngClass]="getMantenimientoClass(maquina)" class="badge-mant">
-              {{ getMantenimientoTexto(maquina) }}
-            </div>
+            <span [ngClass]="getColorHorasRestantes(maquina)" [title]="getEstadoMantenimiento(maquina)">
+              <strong>{{getHorasRestantes(maquina)}} hs</strong>
+            </span>
           </td>
           <td class="acciones">
             <button class="btn-mant btn-mant-registrar" title="Registrar mantenimiento" (click)="abrirModalRegistrarMantenimiento(maquina)">
@@ -202,32 +202,31 @@
       <button class="btn-cerrar" (click)="cerrarModalHistorial()">×</button>
     </div>
     <div class="modal-body">
-      <tr *ngFor="let mantenimiento of getHistorialMaquina(maquinaSeleccionada?.id || 0)">
-        <table>
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Horas Máquina</th>
-              <th>Tipo</th>
-              <th>Descripción</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let mantenimiento of getHistorialMaquina(maquinaSeleccionada?.id || 0)">
-              <td>{{ formatearFecha(mantenimiento.fecha_mantenimiento) }}</td>
-              <td>{{ mantenimiento.horas_maquina }} hs</td>
-              <td>{{ mantenimiento.tipo_mantenimiento | titlecase }}</td>
-              <td>{{ mantenimiento.descripcion }}</td>
-              <td class="acciones">
-                <button class="btn-eliminar-mant" (click)="eliminarMantenimiento(mantenimiento.id)" title="Eliminar">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <table *ngIf="getHistorialMaquina(maquinaSeleccionada?.id || 0).length > 0; else noHistorial">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Horas Máquina</th>
+            <th>Tipo</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let mantenimiento of getHistorialMaquina(maquinaSeleccionada?.id || 0)">
+            <td>{{ formatearFecha(mantenimiento.fecha_mantenimiento) }}</td>
+            <td>{{ mantenimiento.horas_maquina }} hs</td>
+            <td>{{ mantenimiento.tipo_mantenimiento | titlecase }}</td>
+            <td>{{ mantenimiento.descripcion }}</td>
+            <td class="acciones">
+              <button class="btn-eliminar-mant" (click)="eliminarMantenimiento(mantenimiento.id)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      
       <ng-template #noHistorial>
         <div class="no-data">
           <p>No hay registros de mantenimiento</p>
@@ -235,7 +234,7 @@
       </ng-template>
     </div>
   </div>
-
+</div>
 
 <!-- Modal de confirmación de eliminación -->
 <div class="modal" *ngIf="modalConfirmacionVisible">

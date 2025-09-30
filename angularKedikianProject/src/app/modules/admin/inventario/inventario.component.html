@@ -1,30 +1,38 @@
 <div class="inventario-container">
-  <!-- Mensaje de éxito -->
-  <div *ngIf="mensajeExito" class="alert alert-success text-center" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999;">
-    {{ mensajeExito }}
+  <!-- Mensaje de éxito con animación -->
+  <div *ngIf="mensajeExito" class="alert alert-success text-center" 
+       style="position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; min-width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
+    <i class="fas fa-check-circle"></i> {{ mensajeExito }}
   </div>
 
-  <!-- Modal de confirmación para eliminar -->
+  <!-- Modal de confirmación para eliminar (centrado) -->
   <div *ngIf="mostrarConfirmacionEliminar" class="modal-backdrop-custom">
     <div class="modal-custom">
-      <h5>¿Estás seguro de que deseas eliminar el producto "{{ productoAEliminar?.nombre }}"?</h5>
-      <div class="d-flex justify-content-end mt-3">
-        <button class="btn btn-danger mr-2" (click)="confirmarEliminarProducto()">Eliminar</button>
-        <button class="btn btn-secondary" (click)="cancelarEliminarProducto()">Cancelar</button>
+      <h5><i class="fas fa-exclamation-triangle" style="color: #ef4444; margin-right: 8px;"></i>Confirmar eliminación</h5>
+      <p style="margin: 20px 0; color: #6b7280; font-size: 15px;">
+        ¿Estás seguro de que deseas eliminar el producto <strong>"{{ productoAEliminar?.nombre }}"</strong>?
+      </p>
+      <div class="d-flex justify-content-end mt-3" style="gap: 12px;">
+        <button class="btn btn-secondary" (click)="cancelarEliminarProducto()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button class="btn btn-danger" (click)="confirmarEliminarProducto()">
+          <i class="fas fa-trash"></i> Eliminar
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Header con título y acciones principales -->
+  <!-- Header mejorado -->
   <header class="header">
     <div class="header-title">
-      <h1>Gestión de Inventario</h1>
+      <h1><i class="fas fa-boxes" style="margin-right: 12px;"></i>Gestión de Inventario</h1>
       <p>Administra el stock y movimientos de productos</p>
     </div>
     <div class="header-actions">
       <button class="btn btn-primary" (click)="abrirModalNuevoProducto()">
-        <i class="fas fa-plus"></i> Nuevo Producto
-        </button>
+        <i class="fas fa-plus-circle"></i> Nuevo Producto
+      </button>
       <button class="btn btn-primary" (click)="exportarInventarioCSV()">
         <i class="fas fa-file-export"></i> Exportar Inventario
       </button>
@@ -34,86 +42,99 @@
     </div>
   </header>
 
-  <!-- Panel de búsqueda y filtros -->
+  <!-- Panel de búsqueda mejorado -->
   <div class="search-panel">
     <form [formGroup]="busquedaForm" class="search-form">
       <div class="input-group">
-        <input type="text" class="form-control" placeholder="Buscar productos..." formControlName="termino">
+        <input type="text" class="form-control" placeholder="Buscar productos por nombre o código..." formControlName="termino">
         <div class="input-group-append">
-          <button class="btn btn-outline-secondary" type="button">
+          <button class="btn" type="button">
             <i class="fas fa-search"></i>
           </button>
         </div>
       </div>
+      
       <div class="filter-options">
-        <label class="mr-2">Filtrar por:</label>
-        <div class="btn-group filter-group">
-          <label class="btn btn-outline-secondary" [class.active]="busquedaForm.value.tipoFiltro === 'todos'">
-            <input type="radio" formControlName="tipoFiltro" value="todos"> Todos
+        <label>Filtrar por:</label>
+        <div class="filter-group">
+          <label class="btn" [class.active]="busquedaForm.value.tipoFiltro === 'todos'">
+            <input type="radio" formControlName="tipoFiltro" value="todos" style="display: none;"> 
+            <i class="fas fa-list"></i> Todos
           </label>
-          <label class="btn btn-outline-secondary" [class.active]="busquedaForm.value.tipoFiltro === 'nombre'">
-            <input type="radio" formControlName="tipoFiltro" value="nombre"> Nombre
+          <label class="btn" [class.active]="busquedaForm.value.tipoFiltro === 'nombre'">
+            <input type="radio" formControlName="tipoFiltro" value="nombre" style="display: none;"> 
+            <i class="fas fa-tag"></i> Nombre
           </label>
-          <label class="btn btn-outline-secondary" [class.active]="busquedaForm.value.tipoFiltro === 'codigo'">
-            <input type="radio" formControlName="tipoFiltro" value="codigo"> Código
+          <label class="btn" [class.active]="busquedaForm.value.tipoFiltro === 'codigo'">
+            <input type="radio" formControlName="tipoFiltro" value="codigo" style="display: none;"> 
+            <i class="fas fa-barcode"></i> Código
           </label>
-          <label class="btn btn-outline-secondary" [class.active]="busquedaForm.value.tipoFiltro === 'stock_bajo'">
-            <input type="radio" formControlName="tipoFiltro" value="stock_bajo"> Stock Bajo
+          <label class="btn" [class.active]="busquedaForm.value.tipoFiltro === 'stock_bajo'">
+            <input type="radio" formControlName="tipoFiltro" value="stock_bajo" style="display: none;"> 
+            <i class="fas fa-exclamation-triangle"></i> Stock Bajo
           </label>
         </div>
       </div>
+      
       <div class="view-toggle">
-        <button class="btn btn-sm" [class.btn-primary]="modoVisualizacion === 'tabla'"
-          [class.btn-outline-primary]="modoVisualizacion !== 'tabla'" (click)="cambiarModoVisualizacion('tabla')">
-          <i class="fas fa-list"></i> Tabla
+        <button type="button" class="btn" [class.active]="modoVisualizacion === 'tabla'"
+          (click)="cambiarModoVisualizacion('tabla')">
+          <i class="fas fa-table"></i> Tabla
         </button>
-        <button class="btn btn-sm ml-2" [class.btn-primary]="modoVisualizacion === 'tarjetas'"
-          [class.btn-outline-primary]="modoVisualizacion !== 'tarjetas'" (click)="cambiarModoVisualizacion('tarjetas')">
+        <button type="button" class="btn" [class.active]="modoVisualizacion === 'tarjetas'"
+          (click)="cambiarModoVisualizacion('tarjetas')">
           <i class="fas fa-th-large"></i> Tarjetas
         </button>
       </div>
     </form>
   </div>
 
-  <!-- Contenido principal: tabla o tarjetas -->
+  <!-- Contenido principal -->
   <div class="main-content">
     <div class="productos-panel">
       <!-- Vista de Tabla -->
       <div *ngIf="modoVisualizacion === 'tabla'" class="productos-tabla">
-        <table class="table table-hover">
+        <table>
           <thead>
             <tr>
-              <th>Código</th>
-              <th>Nombre del Producto</th>
-              <th class="text-center">Stock</th>
-              <th class="text-center">Acciones</th>
+              <th><i class="fas fa-barcode" style="margin-right: 6px;"></i>Código</th>
+              <th><i class="fas fa-box" style="margin-right: 6px;"></i>Nombre del Producto</th>
+              <th class="text-center"><i class="fas fa-cubes" style="margin-right: 6px;"></i>Stock</th>
+              <th class="text-center"><i class="fas fa-cog" style="margin-right: 6px;"></i>Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let producto of obtenerProductosPaginados()"
-              [class.selected]="productoSeleccionado?.id === producto.id" (click)="seleccionarProducto(producto)">
-              <td>{{ producto.codigo_producto }}</td>
+              [class.selected]="productoSeleccionado?.id === producto.id" 
+              (click)="seleccionarProducto(producto)"
+              style="cursor: pointer;">
+              <td><strong>{{ producto.codigo_producto }}</strong></td>
               <td>{{ producto.nombre }}</td>
               <td class="text-center">
-                <span class="badge" [class.badge-danger]="producto.inventario < 5"
+                <span class="badge" 
+                  [class.badge-danger]="producto.inventario < 5"
                   [class.badge-warning]="producto.inventario >= 5 && producto.inventario < 10"
                   [class.badge-success]="producto.inventario >= 10">
-                  {{ producto?.inventario }}
+                  <i class="fas fa-layer-group" style="margin-right: 4px;"></i>{{ producto?.inventario }} unidades
                 </span>
               </td>
               <td class="text-center">
                 <button class="btn btn-sm btn-outline-primary"
-                  (click)="seleccionarProducto(producto); $event.stopPropagation()">
-                  <i class="fas fa-eye"></i>
+                  (click)="seleccionarProducto(producto); $event.stopPropagation()"
+                  title="Ver detalles">
+                  <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-danger ml-2" (click)="eliminarProducto(producto, $event)">
-                  <i class="fas fa-times"></i>
+                <button class="btn btn-sm btn-outline-danger ml-2" 
+                  (click)="eliminarProducto(producto, $event)"
+                  title="Eliminar producto">
+                  <i class="fas fa-trash"></i>
                 </button>
               </td>
             </tr>
             <tr *ngIf="productosFiltrados.length === 0">
-              <td colspan="4" class="text-center">
-                No se encontraron productos que coincidan con la búsqueda
+              <td colspan="4" class="text-center" style="padding: 48px 20px;">
+                <i class="fas fa-search" style="font-size: 48px; color: #cbd5e1; margin-bottom: 16px; display: block;"></i>
+                <p style="color: #6b7280; font-size: 15px; margin: 0;">No se encontraron productos que coincidan con la búsqueda</p>
               </td>
             </tr>
           </tbody>
@@ -123,84 +144,98 @@
         <div *ngIf="productosFiltrados.length > 0" class="pagination-container">
           <ul class="pagination">
             <li class="page-item" [class.disabled]="paginaActual === 1">
-              <a class="page-link" (click)="cambiarPagina(paginaActual - 1)">Anterior</a>
+              <a class="page-link" (click)="cambiarPagina(paginaActual - 1)">
+                <i class="fas fa-chevron-left"></i>
+              </a>
             </li>
-            <li *ngFor="let pagina of [].constructor(obtenerTotalPaginas()); let i = index" class="page-item"
-              [class.active]="paginaActual === i + 1">
+            <li *ngFor="let pagina of [].constructor(obtenerTotalPaginas()); let i = index" 
+                class="page-item"
+                [class.active]="paginaActual === i + 1">
               <a class="page-link" (click)="cambiarPagina(i + 1)">{{ i + 1 }}</a>
             </li>
             <li class="page-item" [class.disabled]="paginaActual === obtenerTotalPaginas()">
-              <a class="page-link" (click)="cambiarPagina(paginaActual + 1)">Siguiente</a>
+              <a class="page-link" (click)="cambiarPagina(paginaActual + 1)">
+                <i class="fas fa-chevron-right"></i>
+              </a>
             </li>
           </ul>
           <div class="pagination-info">
-            Mostrando {{ (paginaActual - 1) * itemsPorPagina + 1 }} -
-            {{ Math?.min(paginaActual * itemsPorPagina, totalItems) }}
-            de {{ totalItems }}
+            Mostrando <strong>{{ (paginaActual - 1) * itemsPorPagina + 1 }}</strong> - 
+            <strong>{{ Math?.min(paginaActual * itemsPorPagina, totalItems) }}</strong>
+            de <strong>{{ totalItems }}</strong> productos
           </div>
         </div>
       </div>
 
       <!-- Vista de Tarjetas -->
       <div *ngIf="modoVisualizacion === 'tarjetas'" class="productos-tarjetas">
-        <div class="row">
-          <div *ngFor="let producto of obtenerProductosPaginados()" class="col-md-4 mb-4">
-            <div class="card producto-card" [class.selected]="productoSeleccionado?.id === producto.id"
-              (click)="seleccionarProducto(producto)">
-              <div class="card-header">
-                <h5 class="card-title">{{ producto.nombre }}</h5>
-                <span class="codigo-badge">{{ producto.codigo_producto }}</span>
-              </div>
-              <div class="card-body">
-                <div class="stock-indicator">
-                  <div class="stock-label">Stock actual:</div>
-                  <div class="stock-value" [class.text-danger]="producto.inventario < 5"
-                    [class.text-warning]="producto.inventario >= 5 && producto.inventario < 10"
-                    [class.text-success]="producto.inventario >= 10">
-                    {{ producto.inventario }} unidades
-                  </div>
-                </div>
-                <div class="stock-bar">
-                  <div class="stock-bar-fill" [style.width.%]="Math?.min(producto.inventario * 5, 100)"
-                    [class.bg-danger]="producto.inventario < 5"
-                    [class.bg-warning]="producto.inventario >= 5 && producto.inventario < 10"
-                    [class.bg-success]="producto.inventario >= 10">
-                  </div>
+        <div *ngFor="let producto of obtenerProductosPaginados()">
+          <div class="producto-card" 
+               [class.selected]="productoSeleccionado?.id === producto.id"
+               (click)="seleccionarProducto(producto)"
+               style="cursor: pointer;">
+            <div class="card-header">
+              <h5 class="card-title">{{ producto.nombre }}</h5>
+              <span class="codigo-badge">{{ producto.codigo_producto }}</span>
+            </div>
+            <div class="card-body">
+              <div class="stock-indicator">
+                <div class="stock-label">Stock actual:</div>
+                <div class="stock-value" 
+                     [class.text-danger]="producto.inventario < 5"
+                     [class.text-warning]="producto.inventario >= 5 && producto.inventario < 10"
+                     [class.text-success]="producto.inventario >= 10">
+                  {{ producto.inventario }} unidades
                 </div>
               </div>
-              <div class="card-footer text-center">
-                <button class="btn btn-sm btn-primary"
-                  (click)="seleccionarProducto(producto); $event.stopPropagation()">
-                  <i class="fas fa-eye"></i> Ver detalles
-                </button>
+              <div class="stock-bar">
+                <div class="stock-bar-fill" 
+                     [style.width.%]="Math?.min(producto.inventario * 5, 100)"
+                     [class.bg-danger]="producto.inventario < 5"
+                     [class.bg-warning]="producto.inventario >= 5 && producto.inventario < 10"
+                     [class.bg-success]="producto.inventario >= 10">
+                </div>
               </div>
+            </div>
+            <div class="card-footer text-center">
+              <button class="btn btn-sm btn-primary"
+                (click)="seleccionarProducto(producto); $event.stopPropagation()">
+                <i class="fas fa-eye"></i> Ver detalles
+              </button>
             </div>
           </div>
-          <div *ngIf="productosFiltrados.length === 0" class="col-12">
-            <div class="alert alert-info text-center">
-              No se encontraron productos que coincidan con la búsqueda
-            </div>
+        </div>
+        
+        <div *ngIf="productosFiltrados.length === 0" style="grid-column: 1 / -1;">
+          <div class="alert alert-info text-center" style="padding: 48px;">
+            <i class="fas fa-search" style="font-size: 48px; color: #60a5fa; margin-bottom: 16px; display: block;"></i>
+            <p style="margin: 0; font-size: 15px;">No se encontraron productos que coincidan con la búsqueda</p>
           </div>
         </div>
 
         <!-- Paginación -->
-        <div *ngIf="productosFiltrados.length > 0" class="pagination-container">
+        <div *ngIf="productosFiltrados.length > 0" class="pagination-container" style="grid-column: 1 / -1;">
           <ul class="pagination">
             <li class="page-item" [class.disabled]="paginaActual === 1">
-              <a class="page-link" (click)="cambiarPagina(paginaActual - 1)">Anterior</a>
+              <a class="page-link" (click)="cambiarPagina(paginaActual - 1)">
+                <i class="fas fa-chevron-left"></i>
+              </a>
             </li>
-            <li *ngFor="let pagina of [].constructor(obtenerTotalPaginas()); let i = index" class="page-item"
-              [class.active]="paginaActual === i + 1">
+            <li *ngFor="let pagina of [].constructor(obtenerTotalPaginas()); let i = index" 
+                class="page-item"
+                [class.active]="paginaActual === i + 1">
               <a class="page-link" (click)="cambiarPagina(i + 1)">{{ i + 1 }}</a>
             </li>
             <li class="page-item" [class.disabled]="paginaActual === obtenerTotalPaginas()">
-              <a class="page-link" (click)="cambiarPagina(paginaActual + 1)">Siguiente</a>
+              <a class="page-link" (click)="cambiarPagina(paginaActual + 1)">
+                <i class="fas fa-chevron-right"></i>
+              </a>
             </li>
           </ul>
           <div class="pagination-info">
-            Mostrando {{ (paginaActual - 1) * itemsPorPagina + 1 }} -
-            {{ Math?.min(paginaActual * itemsPorPagina, totalItems) }}
-            de {{ totalItems }}
+            Mostrando <strong>{{ (paginaActual - 1) * itemsPorPagina + 1 }}</strong> - 
+            <strong>{{ Math?.min(paginaActual * itemsPorPagina, totalItems) }}</strong>
+            de <strong>{{ totalItems }}</strong> productos
           </div>
         </div>
       </div>
@@ -208,54 +243,59 @@
 
     <!-- Panel de detalles del producto seleccionado -->
     <div class="detalle-panel" *ngIf="productoSeleccionado">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <button type="button" class="close" aria-label="Close" (click)="cerrarFormularioMovimiento()">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
+      <button type="button" class="close" aria-label="Close" (click)="cerrarFormularioMovimiento()" title="Cerrar">
+        <span aria-hidden="true">&times;</span>
+      </button>
+      
       <div class="detalle-header">
-        <h3>{{ productoSeleccionado.nombre }}</h3>
-        <span class="detalle-codigo">{{ productoSeleccionado.codigo_producto }}</span>
+        <h3><i class="fas fa-box-open" style="margin-right: 10px; color: #3b82f6;"></i>{{ productoSeleccionado.nombre }}</h3>
+        <span class="detalle-codigo"><i class="fas fa-barcode" style="margin-right: 6px;"></i>{{ productoSeleccionado.codigo_producto }}</span>
       </div>
 
       <div class="detalle-content">
         <div class="stock-summary">
-          <div class="stock-label">Stock actual:</div>
-          <div class="stock-value" [class.text-danger]="productoSeleccionado.inventario < 5"
-            [class.text-warning]="productoSeleccionado.inventario >= 5 && productoSeleccionado.inventario < 10"
-            [class.text-success]="productoSeleccionado.inventario >= 10">
-            {{ productoSeleccionado.inventario }} unidades
+          <div>
+            <div class="stock-label">Stock actual</div>
+            <div class="stock-value" 
+                 [class.text-danger]="productoSeleccionado.inventario < 5"
+                 [class.text-warning]="productoSeleccionado.inventario >= 5 && productoSeleccionado.inventario < 10"
+                 [class.text-success]="productoSeleccionado.inventario >= 10">
+              <i class="fas fa-cubes" style="margin-right: 8px;"></i>{{ productoSeleccionado.inventario }} unidades
+            </div>
           </div>
         </div>
 
         <!-- Formulario para registrar movimiento -->
         <div class="movimiento-form">
-          <h4>Registrar movimiento</h4>
+          <h4><i class="fas fa-exchange-alt" style="margin-right: 8px;"></i>Registrar movimiento</h4>
           <form [formGroup]="movimientoForm" (ngSubmit)="registrarMovimiento()">
             <div class="form-group">
-              <label>Tipo de movimiento:</label>
-              <div class="btn-group btn-group-toggle w-100">
+              <label>Tipo de movimiento</label>
+              <div class="btn-group-toggle">
                 <label class="btn btn-outline-success"
                   [class.active]="movimientoForm.value.tipo_transaccion === 'entrada'">
-                  <input type="radio" formControlName="tipo_transaccion" value="entrada">
+                  <input type="radio" formControlName="tipo_transaccion" value="entrada" style="display: none;">
                   <i class="fas fa-arrow-down"></i> Entrada
                 </label>
                 <label class="btn btn-outline-danger"
                   [class.active]="movimientoForm.value.tipo_transaccion === 'salida'">
-                  <input type="radio" formControlName="tipo_transaccion" value="salida">
+                  <input type="radio" formControlName="tipo_transaccion" value="salida" style="display: none;">
                   <i class="fas fa-arrow-up"></i> Salida
                 </label>
               </div>
             </div>
+            
             <div class="form-group">
-              <label>Cantidad:</label>
-              <input type="number" class="form-control" formControlName="cantidad" min="1">
+              <label><i class="fas fa-sort-numeric-up" style="margin-right: 6px;"></i>Cantidad</label>
+              <input type="number" class="form-control" formControlName="cantidad" min="1" placeholder="Ingrese la cantidad">
               <div *ngIf="movimientoForm.get('cantidad')?.invalid && movimientoForm.get('cantidad')?.touched"
-                class="invalid-feedback d-block">
-                La cantidad debe ser mayor a 0
+                class="invalid-feedback">
+                <i class="fas fa-exclamation-circle"></i> La cantidad debe ser mayor a 0
               </div>
             </div>
+            
             <button type="submit" class="btn btn-primary btn-block" [disabled]="movimientoForm.invalid">
+              <i class="fas fa-check-circle"></i> 
               Registrar {{ movimientoForm.value.tipo_transaccion === 'entrada' ? 'Entrada' : 'Salida' }}
             </button>
           </form>
@@ -264,34 +304,43 @@
         <!-- Historial de movimientos -->
         <div class="historial-movimientos">
           <div class="historial-header">
-            <h4>Historial de movimientos</h4>
-            <button class="btn btn-sm btn-link" (click)="mostrarHistorial = !mostrarHistorial">
+            <h4><i class="fas fa-history" style="margin-right: 8px;"></i>Historial de movimientos</h4>
+            <button class="btn-link" (click)="mostrarHistorial = !mostrarHistorial">
+              <i class="fas" [class.fa-eye]="!mostrarHistorial" [class.fa-eye-slash]="mostrarHistorial"></i>
               {{ mostrarHistorial ? 'Ocultar' : 'Mostrar' }}
             </button>
           </div>
 
           <div *ngIf="mostrarHistorial" class="historial-content">
-            <table class="table table-sm">
+            <table>
               <thead>
                 <tr>
-                  <th>Fecha</th>
-                  <th>Tipo</th>
-                  <th>Cantidad</th>
+                  <th><i class="fas fa-calendar" style="margin-right: 4px;"></i>Fecha</th>
+                  <th><i class="fas fa-tag" style="margin-right: 4px;"></i>Tipo</th>
+                  <th><i class="fas fa-sort-numeric-up" style="margin-right: 4px;"></i>Cantidad</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let mov of obtenerMovimientosProducto(productoSeleccionado.id)">
                   <td>{{ formatearFecha(mov.fecha) }}</td>
                   <td>
-                    <span class="badge" [class.badge-success]="mov.tipo_transaccion === 'entrada'"
-                      [class.badge-danger]="mov.tipo_transaccion === 'salida'">
+                    <span class="badge" 
+                          [class.badge-success]="mov.tipo_transaccion === 'entrada'"
+                          [class.badge-danger]="mov.tipo_transaccion === 'salida'">
+                      <i class="fas" 
+                         [class.fa-arrow-down]="mov.tipo_transaccion === 'entrada'"
+                         [class.fa-arrow-up]="mov.tipo_transaccion === 'salida'"
+                         style="margin-right: 4px;"></i>
                       {{ mov.tipo_transaccion === 'entrada' ? 'Entrada' : 'Salida' }}
                     </span>
                   </td>
-                  <td>{{ mov.cantidad }}</td>
+                  <td><strong>{{ mov.cantidad }}</strong></td>
                 </tr>
                 <tr *ngIf="obtenerMovimientosProducto(productoSeleccionado.id).length === 0">
-                  <td colspan="3" class="text-center">No hay movimientos registrados</td>
+                  <td colspan="3" class="text-center" style="padding: 32px;">
+                    <i class="fas fa-inbox" style="font-size: 32px; color: #cbd5e1; display: block; margin-bottom: 8px;"></i>
+                    <p style="color: #6b7280; margin: 0; font-size: 14px;">No hay movimientos registrados</p>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -303,78 +352,111 @@
     <!-- Mensaje cuando no hay producto seleccionado -->
     <div class="no-selection" *ngIf="!productoSeleccionado">
       <div class="no-selection-content">
-        <i class="fas fa-box-open no-selection-icon"></i>
+        <i class="fas fa-hand-pointer no-selection-icon"></i>
         <h3>Seleccione un producto</h3>
         <p>Haga clic en un producto para ver detalles y registrar movimientos</p>
       </div>
     </div>
-    <!-- Modal para añadir nuevo producto -->
-    <div class="modal-backdrop" *ngIf="mostrarModalNuevoProducto" (click)="cerrarModalNuevoProducto()"></div>
-    <div class="modal" [class.show]="mostrarModalNuevoProducto" tabindex="-1" role="dialog"
-      aria-labelledby="modalNuevoProducto" aria-hidden="true">
-      <div class="modal-dialog" role="document" (click)="$event.stopPropagation()">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Agregar Nuevo Producto</h5>
-            <button type="button" class="close" aria-label="Close" (click)="cerrarModalNuevoProducto()">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <form [formGroup]="productoForm" (ngSubmit)="agregarNuevoProducto()">
-              <div class="form-group">
-                <label for="nombreProducto">Nombre del producto</label>
-                <input type="text" class="form-control" id="nombreProducto" formControlName="nombre"
-                  placeholder="Ej: Monitor Samsung 32'" (blur)="generarCodigoProducto()">
-                <div *ngIf="productoForm.get('nombre')?.invalid && productoForm.get('nombre')?.touched" class="text-danger">
-                  <small *ngIf="productoForm.get('nombre')?.errors?.['required']">Nombre es obligatorio</small>
-                  <small *ngIf="productoForm.get('nombre')?.errors?.['minlength']">El nombre debe tener al menos 3
-                    caracteres</small>
+  </div>
+
+  <!-- Modal para añadir nuevo producto (centrado y mejorado) -->
+  <div class="modal-backdrop" *ngIf="mostrarModalNuevoProducto" (click)="cerrarModalNuevoProducto()"></div>
+  <div class="modal" [class.show]="mostrarModalNuevoProducto" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document" (click)="$event.stopPropagation()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-plus-circle" style="margin-right: 10px; color: #3b82f6;"></i>
+            Agregar Nuevo Producto
+          </h5>
+          <button type="button" class="close" aria-label="Close" (click)="cerrarModalNuevoProducto()">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <form [formGroup]="productoForm" (ngSubmit)="agregarNuevoProducto()">
+            <div class="form-group">
+              <label for="nombreProducto">
+                <i class="fas fa-tag" style="margin-right: 6px;"></i>Nombre del producto
+              </label>
+              <input type="text" class="form-control" id="nombreProducto" formControlName="nombre"
+                placeholder="Ej: Monitor Samsung 32'" (blur)="generarCodigoProducto()">
+              <div *ngIf="productoForm.get('nombre')?.invalid && productoForm.get('nombre')?.touched" class="invalid-feedback">
+                <small *ngIf="productoForm.get('nombre')?.errors?.['required']">
+                  <i class="fas fa-exclamation-circle"></i> El nombre es obligatorio
+                </small>
+                <small *ngIf="productoForm.get('nombre')?.errors?.['minlength']">
+                  <i class="fas fa-exclamation-circle"></i> El nombre debe tener al menos 3 caracteres
+                </small>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="codigoProducto">
+                <i class="fas fa-barcode" style="margin-right: 6px;"></i>Código del producto
+              </label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="codigoProducto" formControlName="codigo_producto"
+                  placeholder="Ej: MON-123">
+                <div class="input-group-append">
+                  <button type="button" class="btn" (click)="generarCodigoProducto()" title="Generar código automático">
+                    <i class="fas fa-sync-alt"></i>
+                  </button>
                 </div>
               </div>
-
-              <div class="form-group">
-                <label for="codigoProducto">Código del producto</label>
-                <div class="input-group">
-                  <input type="text" class="form-control" id="codigoProducto" formControlName="codigo_producto"
-                    placeholder="Ej: MON-123">
-                  <div class="input-group-append">
-                    <button type="button" class="btn btn-outline-secondary" (click)="generarCodigoProducto()">
-                      <i class="fas fa-sync-alt"></i>
-                    </button>
-                  </div>
-                </div>
-                <small class="form-text text-muted">Formato: XXX-123</small>
-                <div *ngIf="productoForm.get('codigo_producto')?.invalid && productoForm.get('codigo_producto')?.touched"
-                  class="text-danger">
-                  <small *ngIf="productoForm.get('codigo_producto')?.errors?.['required']">Código es obligatorio</small>
-                  <small *ngIf="productoForm.get('codigo_producto')?.errors?.['pattern']">Formato inválido (debe ser
-                    XXX-123)</small>
-                </div>
+              <small class="form-text" style="color: #6b7280; margin-top: 6px;">
+                <i class="fas fa-info-circle"></i> Formato: XXX-123
+              </small>
+              <div *ngIf="productoForm.get('codigo_producto')?.invalid && productoForm.get('codigo_producto')?.touched"
+                class="invalid-feedback">
+                <small *ngIf="productoForm.get('codigo_producto')?.errors?.['required']">
+                  <i class="fas fa-exclamation-circle"></i> El código es obligatorio
+                </small>
+                <small *ngIf="productoForm.get('codigo_producto')?.errors?.['pattern']">
+                  <i class="fas fa-exclamation-circle"></i> Formato inválido (debe ser XXX-123)
+                </small>
               </div>
+            </div>
 
-              <div class="form-group">
-                <label for="inventarioInicial">Inventario inicial</label>
-                <input type="number" class="form-control" id="inventarioInicial" formControlName="inventario" min="0">
-                <small class="form-text text-muted">Deja en 0 si no hay stock inicial</small>
-                <div *ngIf="productoForm.get('inventario')?.invalid && productoForm.get('inventario')?.touched"
-                  class="text-danger">
-                  <small *ngIf="productoForm.get('inventario')?.errors?.['required']">Inventario es obligatorio</small>
-                  <small *ngIf="productoForm.get('inventario')?.errors?.['min']">El inventario no puede ser negativo</small>
-                </div>
+            <div class="form-group">
+              <label for="inventarioInicial">
+                <i class="fas fa-cubes" style="margin-right: 6px;"></i>Inventario inicial
+              </label>
+              <input type="number" class="form-control" id="inventarioInicial" formControlName="inventario" min="0" placeholder="0">
+              <small class="form-text" style="color: #6b7280; margin-top: 6px;">
+                <i class="fas fa-info-circle"></i> Deja en 0 si no hay stock inicial
+              </small>
+              <div *ngIf="productoForm.get('inventario')?.invalid && productoForm.get('inventario')?.touched"
+                class="invalid-feedback">
+                <small *ngIf="productoForm.get('inventario')?.errors?.['required']">
+                  <i class="fas fa-exclamation-circle"></i> El inventario es obligatorio
+                </small>
+                <small *ngIf="productoForm.get('inventario')?.errors?.['min']">
+                  <i class="fas fa-exclamation-circle"></i> El inventario no puede ser negativo
+                </small>
               </div>
+            </div>
 
-              <div class="form-group">
-                <label for="imagenProducto">Imagen del producto</label>
-                <input type="file" class="form-control" id="imagenProducto" (change)="onFileSelected($event)" accept="image/*">
-              </div>
-
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" (click)="cerrarModalNuevoProducto()">Cancelar</button>
-                <button type="submit" class="btn btn-primary" [disabled]="productoForm.invalid">Guardar Producto</button>
-              </div>
-            </form>
-          </div>
+            <div class="form-group">
+              <label for="imagenProducto">
+                <i class="fas fa-image" style="margin-right: 6px;"></i>Imagen del producto
+              </label>
+              <input type="file" class="form-control" id="imagenProducto" (change)="onFileSelected($event)" accept="image/*">
+              <small class="form-text" style="color: #6b7280; margin-top: 6px;">
+                <i class="fas fa-info-circle"></i> Formatos permitidos: JPG, PNG, GIF
+              </small>
+            </div>
+          </form>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModalNuevoProducto()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="productoForm.invalid" (click)="agregarNuevoProducto()">
+            <i class="fas fa-save"></i> Guardar Producto
+          </button>
         </div>
       </div>
     </div>

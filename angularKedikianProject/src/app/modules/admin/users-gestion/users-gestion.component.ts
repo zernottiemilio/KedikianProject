@@ -32,8 +32,6 @@ interface UserFilters {
   estado: any;
 }
 
-
-
 @Component({
   selector: 'app-users-gestion',
   standalone: true,
@@ -179,7 +177,72 @@ export class UsersGestionComponent implements OnInit {
     this.loadingJornadas = true;
     this.jornadasLaborales = [];
     
-    // Llamada real al servicio
+    // Datos de prueba - comentar/descomentar según necesites
+    setTimeout(() => {
+      this.jornadasLaborales = [
+        {
+          id: 1,
+          usuario_id: usuarioId,
+          fecha: '2024-01-15',
+          hora_inicio: '2024-01-15T08:00:00',
+          hora_fin: '2024-01-15T17:30:00',
+          tiempo_descanso: 60,
+          horas_regulares: 8.5,
+          horas_extras: 0,
+          total_horas: 8.5,
+          estado: 'completada',
+          es_feriado: false,
+          limite_regular_alcanzado: false,
+          overtime_confirmado: false,
+          is_active: false,
+          is_in_overtime: false,
+          puede_iniciar_overtime: false,
+          created: '2024-01-15T08:00:00'
+        },
+        {
+          id: 2,
+          usuario_id: usuarioId,
+          fecha: '2024-01-16',
+          hora_inicio: '2024-01-16T08:00:00',
+          hora_fin: '2024-01-16T19:00:00',
+          tiempo_descanso: 60,
+          horas_regulares: 9.0,
+          horas_extras: 2.0,
+          total_horas: 11.0,
+          estado: 'completada',
+          es_feriado: false,
+          limite_regular_alcanzado: true,
+          overtime_confirmado: true,
+          is_active: false,
+          is_in_overtime: false,
+          puede_iniciar_overtime: false,
+          created: '2024-01-16T08:00:00'
+        },
+        {
+          id: 3,
+          usuario_id: usuarioId,
+          fecha: '2024-01-17',
+          hora_inicio: '2024-01-17T08:00:00',
+          hora_fin: '2024-01-17T17:00:00',
+          tiempo_descanso: 60,
+          horas_regulares: 8.0,
+          horas_extras: 0,
+          total_horas: 8.0,
+          estado: 'completada',
+          es_feriado: true,
+          limite_regular_alcanzado: false,
+          overtime_confirmado: false,
+          is_active: false,
+          is_in_overtime: false,
+          puede_iniciar_overtime: false,
+          created: '2024-01-17T08:00:00'
+        }
+      ];
+      this.loadingJornadas = false;
+    }, 1000);
+
+    // Llamada real al servicio - comentar/descomentar según necesites
+    /*
     this.userService.getJornadasLaborales(usuarioId).subscribe({
       next: (jornadas) => {
         this.jornadasLaborales = jornadas;
@@ -189,9 +252,9 @@ export class UsersGestionComponent implements OnInit {
         console.error('Error al cargar jornadas laborales:', err);
         this.jornadasLaborales = [];
         this.loadingJornadas = false;
-        // Aquí podrías mostrar un mensaje de error al usuario
       }
     });
+    */
   }
 
   // Método para abrir el modal de jornadas laborales

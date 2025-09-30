@@ -116,58 +116,47 @@ export class EgresoComponent implements OnInit {
   }
   
   guardarGasto(): void {
-    if (this.gastoForm.invalid) {
-      Object.keys(this.gastoForm.controls).forEach((key) => {
-        const control = this.gastoForm.get(key);
-        if (control) control.markAsTouched();
-      });
-      return;
-    }
-
-    const formValue = this.gastoForm.value;
-
-    const gastoPayload: any = {
-      usuario_id: Number(formValue.usuario_id),
-      maquina_id: formValue.maquina_id ? Number(formValue.maquina_id) : null,
-      tipo: formValue.tipo,
-      importe_total: Number(formValue.importe_total),
-      fecha: formValue.fecha,
-      descripcion: formValue.descripcion || '',
-    };
-
-    let dataToSend: any;
-
-    // Si hay imagen, usar FormData para enviarla correctamente
-    if (this.imagenSeleccionada) {
-      const formData = new FormData();
-      Object.keys(gastoPayload).forEach((key) => formData.append(key, gastoPayload[key]));
-      formData.append('imagen', this.imagenSeleccionada, this.imagenSeleccionada.name);
-      dataToSend = formData;
-    } else {
-      dataToSend = { ...gastoPayload, imagen: '' };
-    }
-
-    // Llamada al servicio según modo
-    if (this.modoEdicion && this.gastoSeleccionadoId) {
-      this.balanceService.actualizarGasto(this.gastoSeleccionadoId, dataToSend).subscribe(
-        () => {
-          this.actualizarBalance.emit();
-          this.resetForm();
-          this.mostrarFormulario = false;
-        },
-        (error) => console.error('Error al actualizar gasto:', error)
-      );
-    } else {
-      this.balanceService.crearGasto(dataToSend).subscribe(
-        () => {
-          this.actualizarBalance.emit();
-          this.resetForm();
-          this.mostrarFormulario = false;
-        },
-        (error) => console.error('Error al crear gasto:', error)
-      );
-    }
+  if (this.gastoForm.invalid) {
+    Object.keys(this.gastoForm.controls).forEach((key) => {
+      const control = this.gastoForm.get(key);
+      if (control) control.markAsTouched();
+    });
+    return;
   }
+
+  const formValue = this.gastoForm.value;
+
+  const gastoPayload: any = {
+    usuario_id: Number(formValue.usuario_id),
+    maquina_id: formValue.maquina_id ? Number(formValue.maquina_id) : null,
+    tipo: formValue.tipo,
+    importe_total: Number(formValue.importe_total),
+    fecha: formValue.fecha,
+    descripcion: formValue.descripcion || '',
+  };
+
+  // Llamada al servicio según modo
+  if (this.modoEdicion && this.gastoSeleccionadoId) {
+    this.balanceService.actualizarGasto(this.gastoSeleccionadoId, gastoPayload, this.imagenSeleccionada || undefined).subscribe(
+      () => {
+        this.actualizarBalance.emit();
+        this.resetForm();
+        this.mostrarFormulario = false;
+      },
+      (error) => console.error('Error al actualizar gasto:', error)
+    );
+  } else {
+    // Para crear: pasar los datos y la imagen por separado
+    this.balanceService.crearGasto(gastoPayload, this.imagenSeleccionada || undefined).subscribe(
+      () => {
+        this.actualizarBalance.emit();
+        this.resetForm();
+        this.mostrarFormulario = false;
+      },
+      (error) => console.error('Error al crear gasto:', error)
+    );
+  }
+}
 
   editarGasto(gasto: Gasto): void {
     this.modoEdicion = true;

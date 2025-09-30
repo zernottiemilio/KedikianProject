@@ -1,4 +1,4 @@
-// machines.component.ts - Versión sin proyectos, lista y funcional
+// machines.component.ts - Versión simplificada de mantenimiento
 import { CommonModule, NgClass } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import {
@@ -227,7 +227,7 @@ export class MaquinariaComponent implements OnInit {
     this.maquinaAEliminar = null;
   }
 
-  // ========== MÉTODOS DE MANTENIMIENTO ==========
+  // ========== MÉTODOS SIMPLIFICADOS DE MANTENIMIENTO ==========
   
   procesarHistorialMantenimientos(mantenimientos: Mantenimiento[]): void {
     this.ultimaHoraMantenimientoPorMaquina = {};
@@ -261,27 +261,72 @@ export class MaquinariaComponent implements OnInit {
     return ordenados[0];
   }
 
-  getMantenimientoClass(maquina: Maquina): string {
+  // Horas en las que se hizo el último mantenimiento
+  getUltimoMantenimiento(maquina: Maquina): number {
     const ultima = this.ultimaHoraMantenimientoPorMaquina[maquina.id];
-    const horasUso = maquina.horas_uso || 0;
-    const horasBase = typeof ultima === 'number' ? horasUso - ultima : horasUso;
-    if (horasBase >= 225) return 'mant-red';
-    if (horasBase >= 200) return 'mant-yellow';
-    return 'mant-green';
+    return typeof ultima === 'number' ? ultima : 0;
   }
 
-  getMantenimientoTexto(maquina: Maquina): string {
-    const ultima = this.ultimaHoraMantenimientoPorMaquina[maquina.id];
-    const horasUso = maquina.horas_uso || 0;
-    const horasDesde = typeof ultima === 'number' ? Math.max(0, horasUso - ultima) : horasUso;
-    const restante = Math.max(0, 250 - horasDesde);
-    const labelUltimo = typeof ultima === 'number' ? ` | Último: ${ultima} hs` : ' | Sin registro';
+  // Horas trabajadas desde el último mantenimiento
+  getHorasTrabajadas(maquina: Maquina): number {
+    const horasActuales = maquina.horas_uso || 0;
+    const horasUltimoMant = this.getUltimoMantenimiento(maquina);
+    return Math.max(0, horasActuales - horasUltimoMant);
+  }
+
+  // A qué hora total debe hacerse el próximo mantenimiento
+  getProximoMantenimiento(maquina: Maquina): number {
+    const horasUltimoMant = this.getUltimoMantenimiento(maquina);
+    return horasUltimoMant + 250; // Cada 250 horas
+  }
+
+  // Horas que faltan para el próximo mantenimiento
+  getHorasRestantes(maquina: Maquina): number {
+    const horasTrabajadas = this.getHorasTrabajadas(maquina);
+    return Math.max(0, 250 - horasTrabajadas);
+  }
+
+  // Color según las horas RESTANTES (invertido)
+  getColorHorasRestantes(maquina: Maquina): string {
+    const horasRestantes = this.getHorasRestantes(maquina);
     
-    if (typeof ultima !== 'number') {
-      return `${horasUso} hs sin mant. (${restante} restantes)${labelUltimo}`;
+    if (horasRestantes <= 0) {
+      return 'text-danger'; // Rojo - ¡YA PASÓ!
+    } else if (horasRestantes <= 25) {
+      return 'text-warning-bold'; // Naranja oscuro - URGENTE (quedan 25 hs o menos)
+    } else if (horasRestantes <= 50) {
+      return 'text-warning'; // Amarillo - PRONTO (quedan 50 hs o menos)
     }
+    return 'text-success'; // Verde - OK
+  }
+
+  // Color según las horas trabajadas
+  getColorHorasTrabajadas(maquina: Maquina): string {
+    const horasTrabajadas = this.getHorasTrabajadas(maquina);
     
-    return `${horasDesde} hs desde mant. (${restante} restantes)${labelUltimo}`;
+    if (horasTrabajadas >= 250) {
+      return 'text-danger'; // Rojo - URGENTE
+    } else if (horasTrabajadas >= 225) {
+      return 'text-warning-bold'; // Amarillo oscuro - PRONTO
+    } else if (horasTrabajadas >= 200) {
+      return 'text-warning'; // Amarillo - ATENCIÓN
+    }
+    return 'text-success'; // Verde - OK
+  }
+
+  // Texto descriptivo del estado (opcional, para mostrar en un badge o tooltip)
+  getEstadoMantenimiento(maquina: Maquina): string {
+    const horasTrabajadas = this.getHorasTrabajadas(maquina);
+    const restantes = this.getHorasRestantes(maquina);
+    
+    if (horasTrabajadas >= 250) {
+      return `¡URGENTE! Pasó ${horasTrabajadas - 250} hs del límite`;
+    } else if (horasTrabajadas >= 225) {
+      return `Faltan ${restantes} hs - Programar pronto`;
+    } else if (horasTrabajadas >= 200) {
+      return `Faltan ${restantes} hs`;
+    }
+    return `Todo OK - Faltan ${restantes} hs`;
   }
 
   abrirModalRegistrarMantenimiento(maquina: Maquina): void {

@@ -8,6 +8,7 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import { InventarioService, Producto, MovimientoProducto, NuevoProducto, NuevoMovimiento, FiltrosProducto, RespuestaPaginada, RespuestaAPI } from '../../../core/services/inventario.service';
+import { AuthService } from '../../../core/services/auth.service'; // ← Importar AuthService
 
 @Component({
   selector: 'app-inventario',
@@ -25,14 +26,14 @@ export class InventarioComponent implements OnInit {
   // Formularios
   movimientoForm: FormGroup;
   busquedaForm: FormGroup;
-  productoForm: FormGroup; // Nuevo formulario para agregar productos
+  productoForm: FormGroup;
 
   // Estado del componente
   productoSeleccionado: Producto | null = null;
   modoVisualizacion: 'tabla' | 'tarjetas' = 'tabla';
   cargando = false;
   mostrarHistorial = false;
-  mostrarModalNuevoProducto = false; // Controla la visibilidad del modal
+  mostrarModalNuevoProducto = false;
 
   // Paginación
   paginaActual = 1;
@@ -46,7 +47,11 @@ export class InventarioComponent implements OnInit {
   productoAEliminar: any = null;
   mostrarConfirmacionEliminar: boolean = false;
 
-  constructor(private fb: FormBuilder, private inventarioService: InventarioService) {
+  constructor(
+    private fb: FormBuilder, 
+    private inventarioService: InventarioService,
+    private authService: AuthService // ← Inyectar AuthService
+  ) {
     // Inicializar formulario de movimientos
     this.movimientoForm = this.fb.group({
       producto_id: [null, Validators.required],
@@ -90,14 +95,11 @@ export class InventarioComponent implements OnInit {
   }
 
   generarCodigoProducto(): void {
-    // Genera un código de producto basado en el nombre
     if (this.productoForm.get('nombre')?.value) {
       const nombre = this.productoForm.get('nombre')?.value.trim();
       if (nombre) {
-        // Tomar las primeras letras y convertirlas a mayúsculas
         const prefijo = nombre.split(' ')[0].substring(0, 3).toUpperCase();
 
-        // Encontrar el último número usado para este prefijo
         let maxNum = 0;
         this.productos.forEach((producto) => {
           if (producto.codigo_producto.startsWith(prefijo)) {
@@ -106,7 +108,6 @@ export class InventarioComponent implements OnInit {
           }
         });
 
-        // Formatear el nuevo código
         const nuevoNumero = (maxNum + 1).toString().padStart(3, '0');
         const codigo = `${prefijo}-${nuevoNumero}`;
 
@@ -129,7 +130,6 @@ export class InventarioComponent implements OnInit {
         this.productosFiltrados = [...this.productos];
         this.totalItems = resp.pagination ? resp.pagination.total : this.productos.length;
         this.cargando = false;
-        // Logs para depuración
         console.log('Respuesta del backend:', resp);
         console.log('Productos:', this.productos);
         console.log('Productos filtrados:', this.productosFiltrados);
@@ -199,12 +199,10 @@ export class InventarioComponent implements OnInit {
     this.cargarProductosBackend();
   }
 
-  // Método para cambiar entre vista de tabla y tarjetas
   cambiarModoVisualizacion(modo: 'tabla' | 'tarjetas'): void {
     this.modoVisualizacion = modo;
   }
 
-  // Método para seleccionar un producto
   seleccionarProducto(producto: Producto): void {
     this.productoSeleccionado = producto;
     this.movimientoForm.patchValue({
@@ -228,14 +226,26 @@ export class InventarioComponent implements OnInit {
     if (this.movimientoForm.invalid || !this.productoSeleccionado) {
       return;
     }
+    
     const formValue = this.movimientoForm.value;
+    
+    // ✅ SOLUCIÓN: Obtener usuario autenticado
+    const usuarioActual = this.authService.obtenerUsuarioActual();
+    
+    // Validar que exista un usuario autenticado
+    if (!usuarioActual || !usuarioActual.id) {
+      alert('Error: No se pudo obtener el usuario autenticado. Por favor, inicie sesión nuevamente.');
+      return;
+    }
+    
     const nuevoMovimiento: any = {
       producto_id: formValue.producto_id,
       cantidad: formValue.cantidad,
       tipo_transaccion: formValue.tipo_transaccion,
-      usuario_id: 1, // TODO: reemplazar por el ID real del usuario autenticado si está disponible
+      usuario_id: usuarioActual.id, // ✅ ID dinámico del usuario autenticado
       fecha: new Date().toISOString()
     };
+    
     this.inventarioService.registrarMovimiento(nuevoMovimiento).subscribe({
       next: () => {
         this.cargarProductosBackend();
@@ -263,7 +273,6 @@ export class InventarioComponent implements OnInit {
     return Math.ceil(this.totalItems / this.itemsPorPagina);
   }
 
-  // Métodos auxiliares para formatear datos
   formatearFecha(fecha: string | Date): string {
     const dateObj = typeof fecha === 'string' ? new Date(fecha) : fecha;
     return dateObj.toLocaleDateString('es-ES', {
@@ -275,17 +284,13 @@ export class InventarioComponent implements OnInit {
     });
   }
 
-  // Método para exportar el inventario actual a CSV
   exportarInventarioCSV(): void {
-    // Crear encabezados
     let csv = 'ID,Código,Nombre,Stock\n';
 
-    // Agregar datos
     this.productos.forEach((producto) => {
       csv += `${producto.id},${producto.codigo_producto},"${producto.nombre}",${producto.inventario}\n`;
     });
 
-    // Crear blob y descargar
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -300,19 +305,15 @@ export class InventarioComponent implements OnInit {
     document.body.removeChild(a);
   }
 
-  // Método para exportar movimientos a CSV
   exportarMovimientosCSV(): void {
-    // Crear encabezados
     let csv = 'ID,Producto,Código,Cantidad,Tipo,Fecha\n';
 
-    // Agregar datos
     this.movimientos.forEach((mov) => {
       csv += `${mov.id},"${mov.nombre_producto}",${mov.codigo_producto},${
         mov.cantidad
       },${mov.tipo_transaccion},"${this.formatearFecha(mov.fecha)}"\n`;
     });
 
-    // Crear blob y descargar
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -327,7 +328,6 @@ export class InventarioComponent implements OnInit {
     document.body.removeChild(a);
   }
 
-  // Método para cerrar el formulario de movimiento
   cerrarFormularioMovimiento(): void {
     this.productoSeleccionado = null;
     this.movimientoForm.reset({

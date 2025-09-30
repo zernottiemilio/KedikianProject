@@ -21,7 +21,6 @@ export function AuthInterceptor(
   const isAuthRoute = authRoutes.some(route => request.url.includes(route));
 
   if (isAuthRoute) {
-    // Dejo pasar sin token
     return next(request).pipe(
       catchError((error: HttpErrorResponse) => handleHttpError(error, router))
     );
@@ -40,13 +39,21 @@ export function AuthInterceptor(
     }
   }
 
+  // ⚠️ CAMBIO IMPORTANTE: No establecer Content-Type si es FormData
+  const headers: any = {};
+  
+  // Solo agregar Content-Type si NO es FormData
+  if (!(request.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
+  // Agregar Authorization si existe token
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   // Clonar request con headers
-  let secureRequest = request.clone({
-    setHeaders: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    }
-  });
+  const secureRequest = request.clone({ setHeaders: headers });
 
   return next(secureRequest).pipe(
     catchError((error: HttpErrorResponse) => handleHttpError(error, router))
@@ -55,14 +62,12 @@ export function AuthInterceptor(
 
 // Manejo seguro de errores
 function handleHttpError(error: HttpErrorResponse, router: Router): Observable<never> {
-  // 🚫 No mostramos datos sensibles
   switch (error.status) {
     case 401:
       localStorage.removeItem('usuarioActual');
       router.navigate(['/login']);
       break;
     case 403:
-      // opcional: redirigir a página de "no autorizado"
       break;
     case 0:
       console.error('Error de conexión con el servidor');

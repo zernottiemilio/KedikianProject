@@ -10,12 +10,11 @@
   <!-- Tabla de registros -->
   <div class="registros-tabla-container">
     <h2>Registros de Áridos</h2>
-    @if (registrosFiltrados.length === 0) {
-    <div class="no-registros">
+    <div *ngIf="registrosFiltrados.length === 0" class="no-registros">
       No hay registros que coincidan con los criterios de búsqueda.
     </div>
-    } @else {
-    <table class="tabla-registros">
+
+    <table *ngIf="registrosFiltrados.length > 0" class="tabla-registros">
       <thead>
         <tr>
           <th>Proyecto</th>
@@ -27,33 +26,30 @@
         </tr>
       </thead>
       <tbody>
-        @for (registro of registrosFiltrados; track registro.id) {
-        <tr>
-          <td>{{ registro.proyectoNombre }}</td>
-          <td>{{ registro.aridoNombre }}</td>
-          <td>{{ registro.cantidad | number:'1.2-2' }} {{ getUnidadMedida(registro.aridoId) }}</td>
-          <td>{{ registro.fechaEntrega | date:'dd/MM/yyyy' }}</td>
-          <td>{{ registro.operario }}</td>
-          <td class="acciones">
-            <button class="btn-icon btn-edit" title="Editar" (click)="editarRegistro(registro)">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn-icon btn-delete" title="Eliminar" (click)="confirmarEliminar(registro)">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-        @if (registro.observaciones) {
-        <tr class="fila-observaciones">
-          <td colspan="6">
-            <strong>Observaciones:</strong> {{ registro.observaciones }}
-          </td>
-        </tr>
-        }
-        }
+        <ng-container *ngFor="let registro of registrosFiltrados; trackBy: trackByRegistroId">
+          <tr>
+            <td>{{ registro.proyectoNombre }}</td>
+            <td>{{ registro.aridoNombre }}</td>
+            <td>{{ registro.cantidad | number:'1.2-2' }} {{ getUnidadMedida(registro.aridoId) }}</td>
+            <td>{{ registro.fechaEntrega | date:'dd/MM/yyyy' }}</td>
+            <td>{{ registro.operario }}</td>
+            <td class="acciones">
+              <button class="btn-icon btn-edit" title="Editar" (click)="editarRegistro(registro)">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-icon btn-delete" title="Eliminar" (click)="confirmarEliminar(registro)">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="registro.observaciones" class="fila-observaciones">
+            <td colspan="6">
+              <strong>Observaciones:</strong> {{ registro.observaciones }}
+            </td>
+          </tr>
+        </ng-container>
       </tbody>
     </table>
-    }
   </div>
 </div>
 
@@ -70,63 +66,56 @@
           <label for="proyectoId">Proyecto:</label>
           <select id="proyectoId" formControlName="proyectoId" class="form-control" required>
             <option value="">Seleccione un proyecto</option>
-            @for (proyecto of proyectos; track proyecto.id) {
-            <option [value]="proyecto.id">{{ proyecto.nombre }}</option>
-            }
+            <option *ngFor="let proyecto of proyectos" [value]="proyecto.id">{{ proyecto.nombre }}</option>
           </select>
-          @if (registroForm.get('proyectoId')?.invalid && registroForm.get('proyectoId')?.touched) {
-          <div class="error-message">El proyecto es obligatorio</div>
-          }
+          <div *ngIf="registroForm.get('proyectoId')?.invalid && registroForm.get('proyectoId')?.touched" class="error-message">
+            El proyecto es obligatorio
+          </div>
         </div>
 
         <div class="form-group">
           <label for="aridoId">Tipo de Árido:</label>
           <select id="aridoId" formControlName="aridoId" class="form-control" required>
             <option value="">Seleccione un árido</option>
-            @for (arido of aridos; track arido.id) {
-            <option [value]="arido.id">{{ arido.nombre }} ({{ arido.unidadMedida }})</option>
-            }
+            <option *ngFor="let arido of aridos" [value]="arido.id">
+              {{ arido.nombre }} ({{ arido.unidadMedida }})
+            </option>
           </select>
-          @if (registroForm.get('aridoId')?.invalid && registroForm.get('aridoId')?.touched) {
-          <div class="error-message">El tipo de árido es obligatorio</div>
-          }
+          <div *ngIf="registroForm.get('aridoId')?.invalid && registroForm.get('aridoId')?.touched" class="error-message">
+            El tipo de árido es obligatorio
+          </div>
         </div>
 
         <div class="form-group">
           <label for="cantidad">Cantidad:</label>
           <div class="input-group">
-            <input type="number" id="cantidad" formControlName="cantidad" class="form-control" step="0.01" min="0.1"
-              required>
+            <input type="number" id="cantidad" formControlName="cantidad" class="form-control" step="0.01" min="0.1" required>
             <span class="unidad-medida">
               {{ registroForm.get('aridoId')?.value ? getUnidadMedida(registroForm.get('aridoId')?.value) : '' }}
             </span>
           </div>
-          @if (registroForm.get('cantidad')?.invalid && registroForm.get('cantidad')?.touched) {
-          <div class="error-message">
+          <div *ngIf="registroForm.get('cantidad')?.invalid && registroForm.get('cantidad')?.touched" class="error-message">
             La cantidad es obligatoria y debe ser mayor a 0
           </div>
-          }
         </div>
 
         <div class="form-group">
           <label for="fechaEntrega">Fecha de Entrega:</label>
           <input type="date" id="fechaEntrega" formControlName="fechaEntrega" class="form-control" required>
-          @if (registroForm.get('fechaEntrega')?.invalid && registroForm.get('fechaEntrega')?.touched) {
-          <div class="error-message">La fecha de entrega es obligatoria</div>
-          }
+          <div *ngIf="registroForm.get('fechaEntrega')?.invalid && registroForm.get('fechaEntrega')?.touched" class="error-message">
+            La fecha de entrega es obligatoria
+          </div>
         </div>
 
         <div class="form-group">
           <label for="operario">Operario:</label>
           <select id="operario" formControlName="operario" class="form-control" required>
             <option value="">Seleccione un operario</option>
-            @for (operario of operarios; track operario.id) {
-            <option [value]="operario.nombre">{{ operario.nombre }}</option>
-            }
+            <option *ngFor="let operario of operarios" [value]="operario.id">{{ operario.nombre }}</option>
           </select>
-          @if (registroForm.get('operario')?.invalid && registroForm.get('operario')?.touched) {
-          <div class="error-message">El operario es obligatorio</div>
-          }
+          <div *ngIf="registroForm.get('operario')?.invalid && registroForm.get('operario')?.touched" class="error-message">
+            El operario es obligatorio
+          </div>
         </div>
 
         <div class="form-group">
