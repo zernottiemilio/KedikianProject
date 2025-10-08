@@ -26,11 +26,11 @@
             <div class="machines-list">
               <div class="machine-item" *ngFor="let maquina of proyecto.maquinas">
                 <span class="machine-name">{{ maquina.nombre }}</span>
-                <span class="machine-hours">{{ getMaquinaHours(maquina) }}h/sem</span>
+                <span class="machine-hours">{{ getMaquinaHours(maquina) }}h</span>
               </div>
             </div>
             <div class="total-hours">
-              <strong>Total horas semanales: {{ getTotalHours(proyecto.maquinas) }}h</strong>
+              <strong>Total horas registradas: {{ getTotalHours(proyecto.maquinas) }}h</strong>
             </div>
           </div>
 

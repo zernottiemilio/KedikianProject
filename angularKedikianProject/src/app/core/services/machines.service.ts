@@ -1,8 +1,7 @@
-// machines.service.ts - CORREGIDO SIN PROYECTOS
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { tap, map, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface Maquina {
@@ -13,7 +12,6 @@ export interface Maquina {
   horas_uso: number;
 }
 
-// Interfaz para el registro de horas trabajadas de una máquina
 export interface RegistroHoras {
   maquina_id: number;
   horas_trabajadas: number;
@@ -21,7 +19,6 @@ export interface RegistroHoras {
   descripcion?: string;
 }
 
-// Interfaz para historial de horas
 export interface HistorialHoras {
   id: number;
   maquina_id: number;
@@ -32,7 +29,6 @@ export interface HistorialHoras {
   updated_at?: string;
 }
 
-// Interfaz para estadísticas de horas
 export interface EstadisticasHoras {
   total_horas: number;
   total_registros: number;
@@ -50,7 +46,6 @@ export class MachinesService {
   constructor(private http: HttpClient) {}
 
   // ========== CRUD BÁSICO DE MÁQUINAS ==========
-
   obtenerMaquinas(): Observable<Maquina[]> {
     return this.http.get<Maquina[]>(this.apiUrl);
   }
@@ -71,8 +66,7 @@ export class MachinesService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  // ========== GESTIÓN DE HORAS (SIN PROYECTOS) ==========
-
+  // ========== GESTIÓN DE HORAS ==========
   registrarHoras(registro: RegistroHoras): Observable<any> {
     const url = `${this.apiUrl}/${registro.maquina_id}/horas`;
     const body = {
@@ -80,95 +74,54 @@ export class MachinesService {
       fecha: registro.fecha,
       descripcion: registro.descripcion || ''
     };
-
     console.log('⏱️ Registrando horas en:', url, 'con body:', body);
-
     return this.http.post<any>(url, body).pipe(
-      tap((response: any) => {
-        console.log('✅ Respuesta del servidor al registrar horas:', response);
-      }),
-      catchError((error: any) => {
-        console.error('❌ Error detallado al registrar horas:', error);
-        return throwError(() => error);
-      })
+      tap((response: any) => console.log('✅ Respuesta del servidor al registrar horas:', response)),
+      catchError((error: any) => throwError(() => error))
     );
   }
 
   obtenerHistorialHoras(maquinaId: number): Observable<HistorialHoras[]> {
-    const url = `${this.apiUrl}/${maquinaId}/horas/historial`;
-    console.log('🔍 Obteniendo historial desde:', url);
-
-    return this.http.get<HistorialHoras[]>(url).pipe(
-      tap((response) => {
-        console.log(`✅ Historial de horas para máquina ${maquinaId}:`, response);
-      }),
-      catchError((error: any) => {
-        console.error('❌ Error al obtener historial de horas:', error);
-        return throwError(() => error);
-      })
-    );
+    return this.http.get<HistorialHoras[]>(`${this.apiUrl}/${maquinaId}/horas/historial`);
   }
 
-  obtenerHistorialHorasFiltrado(
-    maquinaId: number,
-    fechaInicio?: string,
-    fechaFin?: string
-  ): Observable<HistorialHoras[]> {
+  obtenerEstadisticasHoras(maquinaId: number, fechaInicio?: string, fechaFin?: string): Observable<EstadisticasHoras> {
     let params = new HttpParams();
     if (fechaInicio) params = params.set('fecha_inicio', fechaInicio);
     if (fechaFin) params = params.set('fecha_fin', fechaFin);
-
-    const url = `${this.apiUrl}/${maquinaId}/horas/historial`;
-    console.log('🔍 Obteniendo historial filtrado desde:', url, 'con parámetros:', params.toString());
-
-    return this.http.get<HistorialHoras[]>(url, { params }).pipe(
-      tap((response) => {
-        console.log(`✅ Historial filtrado para máquina ${maquinaId}:`, response);
-      }),
-      catchError((error: any) => {
-        console.error('❌ Error al obtener historial filtrado:', error);
-        return throwError(() => error);
-      })
-    );
+    return this.http.get<EstadisticasHoras>(`${this.apiUrl}/${maquinaId}/horas/estadisticas`, { params });
   }
 
-  obtenerEstadisticasHoras(
-    maquinaId: number,
-    fechaInicio?: string,
-    fechaFin?: string
-  ): Observable<EstadisticasHoras> {
-    let params = new HttpParams();
-    if (fechaInicio) params = params.set('fecha_inicio', fechaInicio);
-    if (fechaFin) params = params.set('fecha_fin', fechaFin);
-
-    const url = `${this.apiUrl}/${maquinaId}/horas/estadisticas`;
-
-    return this.http.get<EstadisticasHoras>(url, { params }).pipe(
-      tap((response) => {
-        console.log(`📊 Estadísticas para máquina ${maquinaId}:`, response);
-      }),
-      catchError((error: any) => {
-        console.error('❌ Error al obtener estadísticas:', error);
-        return throwError(() => error);
-      })
+  // ====================== NUEVO MÉTODO: HORÓMETRO INICIAL DESDE REPORTES ======================
+  obtenerHorasIniciales(): Observable<Record<number, number>> {
+    const url = `${this.apiUrl}/horometro-inicial`;
+    return this.http.get<Record<number, number>>(url).pipe(
+      tap(response => console.log('⏱️ Horómetro inicial cargado:', response)),
+      catchError(error => throwError(() => error))
     );
   }
+  // ====================== NUEVO MÉTODO: HORÓMETRO INICIAL POR MÁQUINA ======================
+obtenerHorometroInicial(maquinaId: number): Observable<number> {
+  const url = `${this.apiUrl}/${maquinaId}/horometro-inicial`;
+  return this.http.get<{ horometro_inicial: number }>(url).pipe(
+    tap(response => console.log(`⏱️ Horómetro inicial de máquina ${maquinaId}:`, response.horometro_inicial)),
+    // Extraemos directamente el valor del horómetro
+    map(response => response.horometro_inicial ?? 0),
+    catchError(error => {
+      console.error(`Error al obtener horómetro inicial de máquina ${maquinaId}:`, error);
+      return of(0); // Si falla, devolvemos 0
+    })
+  );
+}
 
   // ========== UTILIDADES ==========
-
   validarRegistroHoras(registro: RegistroHoras): boolean {
-    const esValido = (
+    return (
       registro.maquina_id > 0 &&
       registro.horas_trabajadas > 0 &&
       registro.fecha !== '' &&
       !isNaN(Date.parse(registro.fecha))
     );
-
-    if (!esValido) {
-      console.warn('❌ Registro de horas inválido:', registro);
-    }
-
-    return esValido;
   }
 
   formatearHoras(horas: number): string {

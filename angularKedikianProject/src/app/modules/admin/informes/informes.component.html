@@ -82,23 +82,24 @@
     </div>
   </div>
 
-  <!-- TABLA SIMPLIFICADA -->
+  <!-- TABLA CON HOROMETRO_INICIAL -->
   <div class="tabla-container">
     <table>
       <thead>
         <tr>
-          <th style="width: 20%;">Máquina</th>
-          <th style="width: 20%;">Proyecto</th>
-          <th style="width: 15%;">Usuario</th>
-          <th style="width: 12%;">Horas</th>
-          <th style="width: 15%;">Fecha</th>
-          <th style="width: 18%;">Acciones</th>
+          <th style="width: 16%;">Máquina</th>
+          <th style="width: 16%;">Proyecto</th>
+          <th style="width: 12%;">Usuario</th>
+          <th style="width: 10%;">Horas</th>
+          <th style="width: 12%;">Horómetro Inicial</th>
+          <th style="width: 12%;">Fecha</th>
+          <th style="width: 14%;">Acciones</th>
         </tr>
       </thead>
       <tbody>
         <!-- Mensaje cuando no hay datos -->
         <tr *ngIf="reportes.length === 0">
-          <td colspan="6" class="empty-state">
+          <td colspan="7" class="empty-state">
             <i>📊</i>
             <h3>No hay registros</h3>
             <p>No se encontraron informes con los filtros aplicados</p>
@@ -123,6 +124,9 @@
           </td>
           <td>
             <strong>{{ reporte.horas_turno || 0 }} horas</strong>
+          </td>
+          <td>
+            <strong>{{ reporte.horometro_inicial || 0 }} hs</strong>
           </td>
           <td>
             <span>{{ reporte.fecha_asignacion | date:'dd/MM/yyyy' }}</span>
@@ -171,7 +175,7 @@
     </button>
   </div>
 
-  <!-- MODAL -->
+  <!-- MODAL CON HOROMETRO_INICIAL -->
   <div class="modal" *ngIf="modalAbierto" (click)="cerrarModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
@@ -230,6 +234,18 @@
             step="0.1"
             required>
         </div>
+
+        <div class="form-group">
+          <label for="modal-horometro">Horómetro inicial *</label>
+          <input 
+            id="modal-horometro"
+            type="number" 
+            placeholder="Ej: 1250" 
+            [(ngModel)]="formulario.horometro_inicial" 
+            min="0" 
+            step="1"
+            required>
+        </div>
       </div>
       
       <div class="modal-footer">
@@ -239,7 +255,7 @@
         <button 
           class="btn btn-success" 
           (click)="guardarReporte()"
-          [disabled]="!formulario.maquina_id || !formulario.proyecto_id || !formulario.usuario_id">
+          [disabled]="!formulario.maquina_id || !formulario.proyecto_id || !formulario.usuario_id || !formulario.horometro_inicial">
           {{ reporteEditando ? 'Actualizar' : 'Crear' }}
         </button>
       </div>

@@ -5,12 +5,23 @@ import {
   Project,
 } from '../../../core/services/project.service';
 
+interface ReporteLaboral {
+  id: number;
+  maquina_id: number;
+  usuario_id: number;
+  proyecto_id: number;
+  fecha_asignacion: string;
+  horas_turno: number;
+  horometro_inicial: number;
+  created: string;
+  updated: string;
+}
+
 interface Maquina {
+  id?: number;
   nombre: string;
-  horasSemanales?: number;
-  horas_uso?: number;
-  horas_semanales?: number;
-  [key: string]: any; // Para propiedades adicionales
+  horasAcumuladas?: number; // Horas totales de reportes laborales
+  [key: string]: any;
 }
 
 interface ProyectoExtendido extends Omit<Project, 'startDate' | 'endDate'> {
@@ -43,26 +54,35 @@ export class MainContentComponent implements OnInit {
       next: (projects: Project[]) => {
         console.log('📋 Proyectos obtenidos:', projects);
         
-        // Para cada proyecto, obtener máquinas y áridos
+        // Para cada proyecto, obtener máquinas, áridos y reportes laborales
         const proyectosExtendidos$ = projects.map((project) => {
           return Promise.all([
             this.projectService.getMaquinasPorProyecto(project.id).toPromise(),
             this.projectService.getAridosPorProyecto(project.id).toPromise(),
-          ]).then(([maquinas, aridos]) => {
+            this.projectService.getReportesLaboralesPorProyecto(project.id).toPromise(),
+          ]).then(([maquinas, aridos, reportes]) => {
             console.log(`🔧 Proyecto ${project.nombre}:`);
             console.log('  - Máquinas:', maquinas);
             console.log('  - Áridos:', aridos);
+            console.log('  - Reportes:', reportes);
+            
+            // Calcular horas acumuladas por máquina
+            const maquinasConHoras = this.calcularHorasPorMaquina(
+              maquinas || [],
+              reportes || []
+            );
             
             return {
               ...project,
               fechaInicio: new Date(project.startDate ?? project.fecha_inicio),
               fechaFin: new Date(project.endDate ?? project.fecha_fin),
               descripcion: project.description ?? project.descripcion,
-              maquinas: maquinas || [],
+              maquinas: maquinasConHoras,
               aridos: aridos || [],
             };
           });
         });
+        
         Promise.all(proyectosExtendidos$).then((proyectos) => {
           this.proyectos = proyectos;
           this.loading = false;
@@ -78,18 +98,42 @@ export class MainContentComponent implements OnInit {
   }
 
   /**
-   * Calcula el total de horas semanales de todas las máquinas de un proyecto
+   * Calcula las horas acumuladas por máquina desde los reportes laborales
+   */
+  private calcularHorasPorMaquina(
+    maquinas: Maquina[],
+    reportes: ReporteLaboral[]
+  ): Maquina[] {
+    return maquinas.map((maquina) => {
+      // Filtrar reportes de esta máquina
+      const reportesMaquina = reportes.filter(
+        (reporte) => reporte.maquina_id === maquina.id
+      );
+      
+      // Sumar todas las horas_turno
+      const horasAcumuladas = reportesMaquina.reduce(
+        (total, reporte) => total + (reporte.horas_turno || 0),
+        0
+      );
+      
+      console.log(`⏱️ Máquina ${maquina.nombre} (ID: ${maquina.id}): ${horasAcumuladas} horas acumuladas`);
+      
+      return {
+        ...maquina,
+        horasAcumuladas,
+      };
+    });
+  }
+
+  /**
+   * Calcula el total de horas acumuladas de todas las máquinas de un proyecto
    */
   getTotalHours(maquinas: Maquina[]): number {
-    console.log('🔧 Calculando horas para máquinas:', maquinas);
-    
     const total = maquinas.reduce((total, maquina) => {
-      const horas = maquina.horasSemanales || maquina.horas_semanales || maquina.horas_uso || 0;
-      console.log(`📊 Máquina ${maquina.nombre}: ${horas} horas`);
-      return total + horas;
+      return total + (maquina.horasAcumuladas || 0);
     }, 0);
     
-    console.log(`📈 Total de horas: ${total}`);
+    console.log(`📈 Total de horas acumuladas: ${total}`);
     return total;
   }
 
@@ -129,11 +173,10 @@ export class MainContentComponent implements OnInit {
   }
 
   /**
-   * Obtiene las horas de una máquina individual
+   * Obtiene las horas acumuladas de una máquina individual
    */
   getMaquinaHours(maquina: Maquina): number {
-    const horas = maquina.horasSemanales || maquina.horas_semanales || maquina.horas_uso || 0;
-    return horas;
+    return maquina.horasAcumuladas || 0;
   }
 
   /**
@@ -147,7 +190,6 @@ export class MainContentComponent implements OnInit {
     }
     
     if (typeof arido === 'object' && arido !== null) {
-      // Intentar diferentes propiedades comunes
       const possibleNames = ['nombre', 'tipo', 'tipo_arido', 'name', 'type', 'descripcion', 'description'];
       
       for (const prop of possibleNames) {
@@ -157,7 +199,6 @@ export class MainContentComponent implements OnInit {
         }
       }
       
-      // Si no encontramos una propiedad de nombre, mostrar las propiedades disponibles
       console.log(`⚠️ Árido ${index} - propiedades disponibles:`, Object.keys(arido));
       return `Árido ${index + 1}`;
     }

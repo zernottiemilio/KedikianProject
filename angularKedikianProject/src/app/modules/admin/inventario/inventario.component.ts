@@ -1,14 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import {
-  FormBuilder,
-  FormGroup,
-  NgModel,
-  Validators,
-  ReactiveFormsModule,
-} from '@angular/forms';
-import { InventarioService, Producto, MovimientoProducto, NuevoProducto, NuevoMovimiento, FiltrosProducto, RespuestaPaginada, RespuestaAPI } from '../../../core/services/inventario.service';
-import { AuthService } from '../../../core/services/auth.service'; // ← Importar AuthService
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { InventarioService, Producto, MovimientoProducto, FiltrosProducto, RespuestaPaginada } from '../../../core/services/inventario.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-inventario',
@@ -30,48 +24,45 @@ export class InventarioComponent implements OnInit {
 
   // Estado del componente
   productoSeleccionado: Producto | null = null;
-  modoVisualizacion: 'tabla' | 'tarjetas' = 'tabla';
-  cargando = false;
-  mostrarHistorial = false;
   mostrarModalNuevoProducto = false;
+  mostrarModalEditar = false;
+  mostrarHistorial = false;
+  mostrarConfirmacionEliminar = false;
+  productoAEliminar: Producto | null = null;
+
+  // Mensajes
+  mensajeExito: string | null = null;
 
   // Paginación
   paginaActual = 1;
   itemsPorPagina = 10;
   totalItems = 0;
-  Math: any;
+  Math = Math;
 
+  // Imagen
   imagenSeleccionada: File | null = null;
 
-  mensajeExito: string | null = null;
-  productoAEliminar: any = null;
-  mostrarConfirmacionEliminar: boolean = false;
-
   constructor(
-    private fb: FormBuilder, 
+    private fb: FormBuilder,
     private inventarioService: InventarioService,
-    private authService: AuthService // ← Inyectar AuthService
+    private authService: AuthService
   ) {
-    // Inicializar formulario de movimientos
+    // Formulario de movimientos
     this.movimientoForm = this.fb.group({
       producto_id: [null, Validators.required],
       cantidad: [1, [Validators.required, Validators.min(1)]],
       tipo_transaccion: ['entrada', Validators.required],
     });
 
-    // Inicializar formulario de búsqueda
+    // Formulario de búsqueda
     this.busquedaForm = this.fb.group({
-      termino: [''],
-      tipoFiltro: ['todos'],
+      termino: ['']
     });
 
-    // Inicializar formulario para nuevo producto
+    // Formulario para nuevo producto
     this.productoForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3)]],
-      codigo_producto: [
-        '',
-        [Validators.required, Validators.pattern('[A-Z]+-[0-9]{3}')],
-      ],
+      codigo_producto: ['', [Validators.required, Validators.pattern('[A-Z]+-[0-9]{3}')]],
       inventario: [0, [Validators.required, Validators.min(0)]],
     });
   }
@@ -79,63 +70,27 @@ export class InventarioComponent implements OnInit {
   ngOnInit(): void {
     this.cargarProductosBackend();
     this.busquedaForm.valueChanges.subscribe(() => {
-      this.filtrarProductos();
+      this.paginaActual = 1;
+      this.cargarProductosBackend();
     });
-    this.Math = Math;
   }
 
-  // Métodos para el nuevo producto
-  abrirModalNuevoProducto(): void {
-    this.mostrarModalNuevoProducto = true;
-    this.productoForm.reset({ inventario: 0 });
-  }
-
-  cerrarModalNuevoProducto(): void {
-    this.mostrarModalNuevoProducto = false;
-  }
-
-  generarCodigoProducto(): void {
-    if (this.productoForm.get('nombre')?.value) {
-      const nombre = this.productoForm.get('nombre')?.value.trim();
-      if (nombre) {
-        const prefijo = nombre.split(' ')[0].substring(0, 3).toUpperCase();
-
-        let maxNum = 0;
-        this.productos.forEach((producto) => {
-          if (producto.codigo_producto.startsWith(prefijo)) {
-            const num = parseInt(producto.codigo_producto.split('-')[1]);
-            if (num > maxNum) maxNum = num;
-          }
-        });
-
-        const nuevoNumero = (maxNum + 1).toString().padStart(3, '0');
-        const codigo = `${prefijo}-${nuevoNumero}`;
-
-        this.productoForm.patchValue({ codigo_producto: codigo });
-      }
-    }
-  }
-
+  // Cargar productos del backend
   cargarProductosBackend(): void {
-    this.cargando = true;
     const filtros: FiltrosProducto = {
       termino: this.busquedaForm.value.termino,
-      tipo_filtro: this.busquedaForm.value.tipoFiltro,
+      tipo_filtro: 'todos',
       pagina: this.paginaActual,
       limite: this.itemsPorPagina
     };
+
     this.inventarioService.obtenerProductos(filtros).subscribe({
       next: (resp: RespuestaPaginada<Producto>) => {
         this.productos = resp.data;
         this.productosFiltrados = [...this.productos];
         this.totalItems = resp.pagination ? resp.pagination.total : this.productos.length;
-        this.cargando = false;
-        console.log('Respuesta del backend:', resp);
-        console.log('Productos:', this.productos);
-        console.log('Productos filtrados:', this.productosFiltrados);
       },
       error: () => {
-        this.cargando = false;
         this.productos = [];
         this.productosFiltrados = [];
         this.totalItems = 0;
@@ -143,6 +98,61 @@ export class InventarioComponent implements OnInit {
     });
   }
 
+  // Modal nuevo producto
+  abrirModalNuevoProducto(): void {
+    this.mostrarModalNuevoProducto = true;
+    this.productoForm.reset({ inventario: 0 });
+    this.imagenSeleccionada = null;
+  }
+
+  cerrarModalNuevoProducto(): void {
+    this.mostrarModalNuevoProducto = false;
+    this.productoForm.reset();
+    this.imagenSeleccionada = null;
+  }
+
+  // Modal editar producto
+  abrirModalEditar(producto: Producto): void {
+    this.productoSeleccionado = producto;
+    this.mostrarModalEditar = true;
+    this.mostrarHistorial = false;
+    this.movimientoForm.patchValue({
+      producto_id: producto.id,
+      cantidad: 1,
+      tipo_transaccion: 'entrada'
+    });
+    this.cargarMovimientosProducto(producto.id);
+  }
+
+  cerrarModalEditar(): void {
+    this.mostrarModalEditar = false;
+    this.productoSeleccionado = null;
+    this.movimientoForm.reset({ tipo_transaccion: 'entrada', cantidad: 1 });
+  }
+
+  // Generar código automático
+  generarCodigoProducto(): void {
+    const nombreControl = this.productoForm.get('nombre');
+    if (!nombreControl) return;
+    
+    const nombre = nombreControl.value?.trim();
+    if (!nombre) return;
+
+    const prefijo = nombre.split(' ')[0].substring(0, 3).toUpperCase();
+    let maxNum = 0;
+
+    this.productos.forEach((producto) => {
+      if (producto.codigo_producto.startsWith(prefijo)) {
+        const num = parseInt(producto.codigo_producto.split('-')[1]);
+        if (num > maxNum) maxNum = num;
+      }
+    });
+
+    const nuevoNumero = (maxNum + 1).toString().padStart(3, '0');
+    this.productoForm.patchValue({ codigo_producto: `${prefijo}-${nuevoNumero}` });
+  }
+
+  // Seleccionar imagen
   onFileSelected(event: any): void {
     const file = event.target.files[0];
     if (file) {
@@ -150,67 +160,69 @@ export class InventarioComponent implements OnInit {
     }
   }
 
+  // Agregar producto
   agregarNuevoProducto(): void {
     if (this.productoForm.invalid) {
       Object.keys(this.productoForm.controls).forEach((key) => {
-        const control = this.productoForm.get(key);
-        control?.markAsTouched();
+        this.productoForm.get(key)?.markAsTouched();
       });
-      console.log('Formulario inválido:', this.productoForm.value);
       return;
     }
+
     const formValue = this.productoForm.value;
     const formData = new FormData();
     formData.append('nombre', formValue.nombre);
     formData.append('codigo_producto', formValue.codigo_producto);
     formData.append('inventario', formValue.inventario.toString());
+
     if (this.imagenSeleccionada) {
       formData.append('imagen', this.imagenSeleccionada);
     }
-    console.log('Enviando FormData:', formValue);
 
     this.inventarioService.crearProducto(formData).subscribe({
       next: (resp: any) => {
-        console.log('Respuesta al crear producto:', resp);
-        if ((resp && resp.data && resp.data.nombre) || (resp && resp.nombre)) {
-          this.cerrarModalNuevoProducto();
-          this.busquedaForm.patchValue({ termino: '', tipoFiltro: 'todos' });
-          this.paginaActual = 1;
-          this.cargarProductosBackend();
-          alert(`Producto "${resp.nombre || resp.data.nombre}" agregado con éxito.`);
-        } else {
-          alert('Producto creado, pero la respuesta del servidor no es válida.');
-        }
-        this.imagenSeleccionada = null;
+        this.cerrarModalNuevoProducto();
+        this.paginaActual = 1;
+        this.cargarProductosBackend();
+        this.mostrarMensajeExito(`Producto "${resp.nombre || resp.data?.nombre}" agregado con éxito.`);
       },
       error: (err) => {
-        let msg = 'Error al agregar el producto.';
-        if (err && err.error && err.error.message) {
-          msg += `\n${err.error.message}`;
-        }
-        alert(msg);
-        this.imagenSeleccionada = null;
-        console.log('Error al crear producto:', err);
+        alert(err?.error?.message || 'Error al agregar el producto.');
       }
     });
   }
 
-  filtrarProductos(): void {
-    this.cargarProductosBackend();
+  // Eliminar producto
+  eliminarProducto(producto: Producto, event: Event): void {
+    event.stopPropagation();
+    this.productoAEliminar = producto;
+    this.mostrarConfirmacionEliminar = true;
   }
 
-  cambiarModoVisualizacion(modo: 'tabla' | 'tarjetas'): void {
-    this.modoVisualizacion = modo;
-  }
+  confirmarEliminarProducto(): void {
+    if (!this.productoAEliminar) return;
 
-  seleccionarProducto(producto: Producto): void {
-    this.productoSeleccionado = producto;
-    this.movimientoForm.patchValue({
-      producto_id: producto.id,
+    this.inventarioService.eliminarProducto(this.productoAEliminar.id).subscribe({
+      next: () => {
+        this.mostrarMensajeExito('Producto eliminado correctamente.');
+        this.cargarProductosBackend();
+        this.mostrarConfirmacionEliminar = false;
+        this.productoAEliminar = null;
+      },
+      error: () => {
+        alert('Error al eliminar el producto.');
+        this.mostrarConfirmacionEliminar = false;
+        this.productoAEliminar = null;
+      }
     });
-    this.cargarMovimientosProducto(producto.id);
   }
 
+  cancelarEliminarProducto(): void {
+    this.mostrarConfirmacionEliminar = false;
+    this.productoAEliminar = null;
+  }
+
+  // Cargar movimientos de un producto
   cargarMovimientosProducto(productoId: number): void {
     this.inventarioService.obtenerMovimientosProducto(productoId).subscribe({
       next: (resp: RespuestaPaginada<MovimientoProducto>) => {
@@ -222,36 +234,32 @@ export class InventarioComponent implements OnInit {
     });
   }
 
+  // Registrar movimiento
   registrarMovimiento(): void {
-    if (this.movimientoForm.invalid || !this.productoSeleccionado) {
-      return;
-    }
-    
+    if (this.movimientoForm.invalid || !this.productoSeleccionado) return;
+
     const formValue = this.movimientoForm.value;
-    
-    // ✅ SOLUCIÓN: Obtener usuario autenticado
     const usuarioActual = this.authService.obtenerUsuarioActual();
-    
-    // Validar que exista un usuario autenticado
+
     if (!usuarioActual || !usuarioActual.id) {
-      alert('Error: No se pudo obtener el usuario autenticado. Por favor, inicie sesión nuevamente.');
+      alert('Error: No se pudo obtener el usuario autenticado.');
       return;
     }
-    
+
     const nuevoMovimiento: any = {
       producto_id: formValue.producto_id,
       cantidad: formValue.cantidad,
       tipo_transaccion: formValue.tipo_transaccion,
-      usuario_id: usuarioActual.id, // ✅ ID dinámico del usuario autenticado
+      usuario_id: usuarioActual.id,
       fecha: new Date().toISOString()
     };
-    
+
     this.inventarioService.registrarMovimiento(nuevoMovimiento).subscribe({
       next: () => {
         this.cargarProductosBackend();
         this.cargarMovimientosProducto(formValue.producto_id);
         this.movimientoForm.patchValue({ cantidad: 1 });
-        alert(`Movimiento registrado con éxito.`);
+        this.mostrarMensajeExito('Movimiento registrado con éxito.');
       },
       error: () => {
         alert('Error al registrar el movimiento.');
@@ -259,8 +267,14 @@ export class InventarioComponent implements OnInit {
     });
   }
 
-  // Métodos para paginación
+  // Obtener movimientos de un producto
+  obtenerMovimientosProducto(productoId: number): MovimientoProducto[] {
+    return this.movimientos.filter(m => m.producto_id === productoId);
+  }
+
+  // Paginación
   cambiarPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.obtenerTotalPaginas()) return;
     this.paginaActual = pagina;
     this.cargarProductosBackend();
   }
@@ -273,6 +287,7 @@ export class InventarioComponent implements OnInit {
     return Math.ceil(this.totalItems / this.itemsPorPagina);
   }
 
+  // Formatear fecha
   formatearFecha(fecha: string | Date): string {
     const dateObj = typeof fecha === 'string' ? new Date(fecha) : fecha;
     return dateObj.toLocaleDateString('es-ES', {
@@ -284,6 +299,7 @@ export class InventarioComponent implements OnInit {
     });
   }
 
+  // Exportar inventario
   exportarInventarioCSV(): void {
     let csv = 'ID,Código,Nombre,Stock\n';
 
@@ -291,83 +307,25 @@ export class InventarioComponent implements OnInit {
       csv += `${producto.id},${producto.codigo_producto},"${producto.nombre}",${producto.inventario}\n`;
     });
 
-    const blob = new Blob([csv], { type: 'text/csv' });
+    this.descargarCSV(csv, `inventario_${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+
+  // Descargar CSV
+  private descargarCSV(contenido: string, nombreArchivo: string): void {
+    const blob = new Blob([contenido], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.setAttribute('hidden', '');
     a.setAttribute('href', url);
-    a.setAttribute(
-      'download',
-      `inventario_${new Date().toISOString().slice(0, 10)}.csv`
-    );
+    a.setAttribute('download', nombreArchivo);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   }
 
-  exportarMovimientosCSV(): void {
-    let csv = 'ID,Producto,Código,Cantidad,Tipo,Fecha\n';
-
-    this.movimientos.forEach((mov) => {
-      csv += `${mov.id},"${mov.nombre_producto}",${mov.codigo_producto},${
-        mov.cantidad
-      },${mov.tipo_transaccion},"${this.formatearFecha(mov.fecha)}"\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.setAttribute('hidden', '');
-    a.setAttribute('href', url);
-    a.setAttribute(
-      'download',
-      `movimientos_${new Date().toISOString().slice(0, 10)}.csv`
-    );
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-
-  cerrarFormularioMovimiento(): void {
-    this.productoSeleccionado = null;
-    this.movimientoForm.reset({
-      tipo_transaccion: 'entrada',
-      cantidad: 1,
-    });
-  }
-
-  obtenerMovimientosProducto(productoId: number): MovimientoProducto[] {
-    return this.movimientos.filter(m => m.producto_id === productoId);
-  }
-
-  eliminarProducto(producto: any, event: Event): void {
-    event.stopPropagation();
-    this.productoAEliminar = producto;
-    this.mostrarConfirmacionEliminar = true;
-  }
-
-  confirmarEliminarProducto(): void {
-    if (!this.productoAEliminar) return;
-    this.inventarioService.eliminarProducto(this.productoAEliminar.id).subscribe({
-      next: () => {
-        this.mensajeExito = 'Producto eliminado correctamente.';
-        this.cargarProductosBackend();
-        this.mostrarConfirmacionEliminar = false;
-        this.productoAEliminar = null;
-        setTimeout(() => this.mensajeExito = null, 3000);
-      },
-      error: (err) => {
-        this.mensajeExito = 'Error al eliminar el producto.';
-        this.mostrarConfirmacionEliminar = false;
-        this.productoAEliminar = null;
-        setTimeout(() => this.mensajeExito = null, 3000);
-        console.log('Error al eliminar producto:', err);
-      }
-    });
-  }
-
-  cancelarEliminarProducto(): void {
-    this.mostrarConfirmacionEliminar = false;
-    this.productoAEliminar = null;
+  // Mostrar mensaje de éxito
+  private mostrarMensajeExito(mensaje: string): void {
+    this.mensajeExito = mensaje;
+    setTimeout(() => this.mensajeExito = null, 3000);
   }
 }

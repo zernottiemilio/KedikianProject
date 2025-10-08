@@ -47,6 +47,7 @@ export class EgresoComponent implements OnInit {
   previewURL: string | ArrayBuffer | null = null;
   mostrarModal = false;
   imagenModal = '';
+  eliminarImagenExistente = false; // Flag para indicar que se debe eliminar la imagen
   tiposGasto = [
     { value: 'material', label: 'Material' },
     { value: 'servicio', label: 'Servicio' },
@@ -99,6 +100,7 @@ export class EgresoComponent implements OnInit {
     this.gastoSeleccionadoId = null;
     this.imagenSeleccionada = null;
     this.previewURL = null;
+    this.eliminarImagenExistente = false;
   }
 
   onImagenChange(event: Event): void {
@@ -107,6 +109,7 @@ export class EgresoComponent implements OnInit {
 
     if (files && files.length > 0) {
       this.imagenSeleccionada = files[0];
+      this.eliminarImagenExistente = false;
 
       // Crear preview
       const reader = new FileReader();
@@ -114,49 +117,86 @@ export class EgresoComponent implements OnInit {
       reader.readAsDataURL(this.imagenSeleccionada);
     }
   }
+
+  eliminarImagen(): void {
+    this.previewURL = null;
+    this.imagenSeleccionada = null;
+    this.eliminarImagenExistente = true;
+    
+    // Limpiar el input file
+    const fileInput = document.getElementById('imagen') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  }
   
   guardarGasto(): void {
-  if (this.gastoForm.invalid) {
-    Object.keys(this.gastoForm.controls).forEach((key) => {
-      const control = this.gastoForm.get(key);
-      if (control) control.markAsTouched();
-    });
-    return;
+    if (this.gastoForm.invalid) {
+      Object.keys(this.gastoForm.controls).forEach((key) => {
+        const control = this.gastoForm.get(key);
+        if (control) control.markAsTouched();
+      });
+      return;
+    }
+
+    const formValue = this.gastoForm.value;
+
+    const gastoPayload: any = {
+      usuario_id: Number(formValue.usuario_id),
+      maquina_id: formValue.maquina_id ? Number(formValue.maquina_id) : null,
+      tipo: formValue.tipo,
+      importe_total: Number(formValue.importe_total),
+      fecha: formValue.fecha,
+      descripcion: formValue.descripcion || '',
+    };
+
+    // Determinar qué hacer con la imagen
+    let imagenParaEnviar: File | undefined | null = undefined;
+    
+    if (this.imagenSeleccionada) {
+      // Si hay una nueva imagen seleccionada, enviarla
+      imagenParaEnviar = this.imagenSeleccionada;
+    } else if (this.eliminarImagenExistente && this.modoEdicion) {
+      // Si se marcó para eliminar en modo edición, enviar null explícitamente
+      imagenParaEnviar = null;
+    }
+
+    // Llamada al servicio según modo
+    if (this.modoEdicion && this.gastoSeleccionadoId) {
+      // Si eliminamos la imagen, necesitamos enviarla como null
+      if (this.eliminarImagenExistente) {
+        // Pasamos null para indicar que se debe eliminar
+        this.balanceService.actualizarGasto(this.gastoSeleccionadoId, gastoPayload, null as any).subscribe(
+          () => {
+            this.actualizarBalance.emit();
+            this.resetForm();
+            this.mostrarFormulario = false;
+          },
+          (error) => console.error('Error al actualizar gasto:', error)
+        );
+      } else {
+        // Pasamos la imagen nueva o undefined si no hay cambios
+        this.balanceService.actualizarGasto(this.gastoSeleccionadoId, gastoPayload, imagenParaEnviar as any).subscribe(
+          () => {
+            this.actualizarBalance.emit();
+            this.resetForm();
+            this.mostrarFormulario = false;
+          },
+          (error) => console.error('Error al actualizar gasto:', error)
+        );
+      }
+    } else {
+      // Para crear: pasar los datos y la imagen por separado
+      this.balanceService.crearGasto(gastoPayload, imagenParaEnviar as any).subscribe(
+        () => {
+          this.actualizarBalance.emit();
+          this.resetForm();
+          this.mostrarFormulario = false;
+        },
+        (error) => console.error('Error al crear gasto:', error)
+      );
+    }
   }
-
-  const formValue = this.gastoForm.value;
-
-  const gastoPayload: any = {
-    usuario_id: Number(formValue.usuario_id),
-    maquina_id: formValue.maquina_id ? Number(formValue.maquina_id) : null,
-    tipo: formValue.tipo,
-    importe_total: Number(formValue.importe_total),
-    fecha: formValue.fecha,
-    descripcion: formValue.descripcion || '',
-  };
-
-  // Llamada al servicio según modo
-  if (this.modoEdicion && this.gastoSeleccionadoId) {
-    this.balanceService.actualizarGasto(this.gastoSeleccionadoId, gastoPayload, this.imagenSeleccionada || undefined).subscribe(
-      () => {
-        this.actualizarBalance.emit();
-        this.resetForm();
-        this.mostrarFormulario = false;
-      },
-      (error) => console.error('Error al actualizar gasto:', error)
-    );
-  } else {
-    // Para crear: pasar los datos y la imagen por separado
-    this.balanceService.crearGasto(gastoPayload, this.imagenSeleccionada || undefined).subscribe(
-      () => {
-        this.actualizarBalance.emit();
-        this.resetForm();
-        this.mostrarFormulario = false;
-      },
-      (error) => console.error('Error al crear gasto:', error)
-    );
-  }
-}
 
   editarGasto(gasto: Gasto): void {
     this.modoEdicion = true;
@@ -170,7 +210,15 @@ export class EgresoComponent implements OnInit {
       descripcion: gasto.descripcion,
     });
 
-    if (gasto.imagen) this.previewURL = gasto.imagen;
+    // Resetear estados de imagen
+    this.imagenSeleccionada = null;
+    this.eliminarImagenExistente = false;
+    
+    if (gasto.imagen) {
+      this.previewURL = this.getImagenSrc(gasto.imagen);
+    } else {
+      this.previewURL = null;
+    }
 
     this.mostrarFormulario = true;
   }

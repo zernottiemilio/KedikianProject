@@ -51,7 +51,7 @@ export class InformesComponent implements OnInit {
     this.cargandoDatos = true;
 
     forkJoin({
-      maquinas: this.machinesService.obtenerMaquinas(), // horas_uso ya acumuladas
+      maquinas: this.machinesService.obtenerMaquinas(),
       proyectos: this.projectService.getProjects(),
       usuarios: this.userService.getUsers()
     }).subscribe({
@@ -69,14 +69,29 @@ export class InformesComponent implements OnInit {
   }
 
   cargarReportes(): void {
-    const filtros = {
-      busqueda: this.filtroBusqueda,
-      maquina_id: this.filtroMaquina,
-      proyecto_id: this.filtroProyecto,
-      usuario_id: this.filtroUsuario,
-      fecha_desde: this.filtroFechaDesde,
-      fecha_hasta: this.filtroFechaHasta,
-    };
+    // 🔹 Construir filtros solo con valores válidos
+    const filtros: any = {};
+    
+    if (this.filtroBusqueda?.trim()) {
+      filtros.busqueda = this.filtroBusqueda.trim();
+    }
+    if (this.filtroMaquina) {
+      filtros.maquina_id = this.filtroMaquina;
+    }
+    if (this.filtroProyecto) {
+      filtros.proyecto_id = this.filtroProyecto;
+    }
+    if (this.filtroUsuario) {
+      filtros.usuario_id = this.filtroUsuario;
+    }
+    if (this.filtroFechaDesde) {
+      filtros.fecha_desde = this.filtroFechaDesde;
+    }
+    if (this.filtroFechaHasta) {
+      filtros.fecha_hasta = this.filtroFechaHasta;
+    }
+
+    console.log('🔍 Filtros aplicados:', filtros); // Debug temporal
 
     this.reportesService.getReportes(filtros).subscribe({
       next: (data) => {
@@ -96,6 +111,8 @@ export class InformesComponent implements OnInit {
 
         this.paginaActual = 1;
         this.cargandoDatos = false;
+        
+        console.log(`✅ ${this.reportes.length} reportes cargados`); // Debug temporal
       },
       error: (error) => {
         console.error('❌ Error cargando reportes:', error);
@@ -147,7 +164,6 @@ export class InformesComponent implements OnInit {
   guardarReporte(): void {
     if (this.reporteEditando && this.formulario.id) {
       this.reportesService.updateReporte(this.formulario).subscribe(r => {
-        // 🔹 Recargar máquinas para reflejar horas acumuladas
         this.machinesService.obtenerMaquinas().subscribe(maquinasActualizadas => {
           this.maquinas = maquinasActualizadas;
           this.cargarReportes();
@@ -156,7 +172,6 @@ export class InformesComponent implements OnInit {
       });
     } else {
       this.reportesService.createReporte(this.formulario).subscribe(r => {
-        // 🔹 Recargar máquinas para reflejar horas acumuladas
         this.machinesService.obtenerMaquinas().subscribe(maquinasActualizadas => {
           this.maquinas = maquinasActualizadas;
           this.cargarReportes();

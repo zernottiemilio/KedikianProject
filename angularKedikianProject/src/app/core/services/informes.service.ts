@@ -8,8 +8,9 @@ export interface ReporteLaboral {
   maquina_id: number;
   proyecto_id: number;
   usuario_id: number;
-  fecha_asignacion: string; // ISO date string
+  fecha_asignacion: string;
   horas_turno: number;
+  horometro_inicial: number;
   maquina_nombre?: string;
   proyecto_nombre?: string;
   usuario_nombre?: string;
@@ -25,13 +26,17 @@ export class ReportesLaboralesService {
 
   getReportes(filtros?: any): Observable<ReporteLaboral[]> {
     let params = new HttpParams();
+    
     if (filtros) {
       Object.keys(filtros).forEach(key => {
-        if (filtros[key]) {
-          params = params.set(key, filtros[key]);
+        const value = filtros[key];
+        // Solo agregar el parámetro si tiene un valor válido (no vacío, no null, no undefined)
+        if (value !== null && value !== undefined && value !== '') {
+          params = params.set(key, String(value).trim());
         }
       });
     }
+    
     return this.http.get<ReporteLaboral[]>(this.apiUrl, { params });
   }
 
@@ -53,13 +58,16 @@ export class ReportesLaboralesService {
 
   exportarExcel(filtros?: any): Observable<Blob> {
     let params = new HttpParams();
+    
     if (filtros) {
       Object.keys(filtros).forEach(key => {
-        if (filtros[key]) {
-          params = params.set(key, filtros[key]);
+        const value = filtros[key];
+        if (value !== null && value !== undefined && value !== '') {
+          params = params.set(key, String(value).trim());
         }
       });
     }
+    
     return this.http.get(`${this.apiUrl}/export/excel`, {
       params,
       responseType: 'blob',
@@ -68,13 +76,16 @@ export class ReportesLaboralesService {
 
   exportarPDF(filtros?: any): Observable<Blob> {
     let params = new HttpParams();
+    
     if (filtros) {
       Object.keys(filtros).forEach(key => {
-        if (filtros[key]) {
-          params = params.set(key, filtros[key]);
+        const value = filtros[key];
+        if (value !== null && value !== undefined && value !== '') {
+          params = params.set(key, String(value).trim());
         }
       });
     }
+    
     return this.http.get(`${this.apiUrl}/export/pdf`, {
       params,
       responseType: 'blob',

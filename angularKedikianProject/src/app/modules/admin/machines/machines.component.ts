@@ -1,4 +1,4 @@
-// machines.component.ts - Versión simplificada de mantenimiento
+// machines.component.ts - Con correcciones de errores 422
 import { CommonModule, NgClass } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import {
@@ -16,6 +16,14 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { MantenimientosService, Mantenimiento } from '../../../core/services/mantenimientos.service';
 
+interface NotaMaquina {
+  id: number;
+  maquina_id: number;
+  texto: string;
+  fecha: string;
+  usuario: string;
+}
+
 @Component({
   selector: 'app-maquinaria',
   imports: [CommonModule, NgClass, FormsModule, ReactiveFormsModule],
@@ -23,47 +31,41 @@ import { MantenimientosService, Mantenimiento } from '../../../core/services/man
   styleUrls: ['./machines.component.css'],
 })
 export class MaquinariaComponent implements OnInit {
-  // Datos de máquinas
   maquinas: Maquina[] = [];
   maquinasFiltradas: Maquina[] = [];
-
-  // Variables para filtrado
   terminoBusqueda: string = '';
-  mostrarSoloActivas: boolean = false;
 
-  // Variables para modal
   modalVisible: boolean = false;
   modoEdicion: boolean = false;
   maquinaEditando: Maquina | null = null;
-
-  // Variable para el modal de confirmación de eliminación
   modalConfirmacionVisible: boolean = false;
   maquinaAEliminar: number | null = null;
 
-  // Formularios
   maquinaForm: FormGroup;
   mantenimientoForm: FormGroup;
   horasForm: FormGroup;
-  
-  // Variables para modales
+  horasMantenimientoForm: FormGroup;
+  notaForm: FormGroup;
+
   modalHorasVisible: boolean = false;
   modalMantVisible: boolean = false;
   modalHistorialVisible: boolean = false;
+  modalEditarHorasMantenimientoVisible: boolean = false;
+  modalNotasVisible: boolean = false;
   maquinaSeleccionada: Maquina | null = null;
 
-  // Variables para mantenimiento
   ultimaHoraMantenimientoPorMaquina: Record<number, number> = {};
   historialPorMaquina: Record<number, Mantenimiento[]> = {};
+  proximoMantenimientoPorMaquina: Record<number, number> = {};
+  notasPorMaquina: Record<number, NotaMaquina[]> = {};
 
   constructor(
     private fb: FormBuilder,
     private machinesService: MachinesService,
     private mantenimientosService: MantenimientosService
   ) {
-    // Formulario simplificado sin proyecto_id
     this.maquinaForm = this.fb.group({
       nombre: ['', [Validators.required]],
-      estado: [true],
       horas_uso: [0, [Validators.required, Validators.min(0)]],
     });
 
@@ -73,38 +75,49 @@ export class MaquinariaComponent implements OnInit {
       descripcion: ['', [Validators.required, Validators.minLength(3)]],
     });
 
-    // Formulario simplificado para horas sin proyecto
     this.horasForm = this.fb.group({
       horas: [null, [Validators.required, Validators.min(0.1), Validators.pattern(/^\d*\.?\d+$/)]],
       fecha: [new Date().toISOString().split('T')[0], [Validators.required]],
       descripcion: ['']
     });
+
+    this.horasMantenimientoForm = this.fb.group({
+      horas_proximo_mantenimiento: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]]
+    });
+
+    this.notaForm = this.fb.group({
+      texto: ['', [Validators.required, Validators.minLength(3)]]
+    });
   }
 
   ngOnInit(): void {
+    this.cargarProximosMantenimientos();
+    this.cargarNotas();
     this.loadData();
   }
 
   loadData(): void {
-    forkJoin({
-      maquinas: this.machinesService.obtenerMaquinas(),
-      mantenimientos: this.mantenimientosService.listarTodos()
-    }).subscribe(({ maquinas, mantenimientos }) => {
-      this.maquinas = maquinas;
-      
-      // Procesar el historial de mantenimientos para cada máquina
-      this.procesarHistorialMantenimientos(mantenimientos);
-      
-      this.filtrarMaquinas();
-    });
-  }
+  forkJoin({
+    maquinas: this.machinesService.obtenerMaquinas(),
+    mantenimientos: this.mantenimientosService.listarTodos(),
+    horometros: this.machinesService.obtenerHorasIniciales()
+  }).subscribe(({ maquinas, mantenimientos, horometros }) => {
+    this.maquinas = maquinas;
 
-  // ========== MÉTODOS DE FILTRADO ==========
-  
+    // Actualizar horas_uso con el horómetro actual desde reportes
+    this.maquinas.forEach(m => {
+      if (horometros[m.id] !== undefined) {
+        m.horas_uso = horometros[m.id];
+      }
+    });
+
+    this.procesarHistorialMantenimientos(mantenimientos);
+    this.filtrarMaquinas();
+  });
+}
+
   filtrarMaquinas(): void {
     let resultado = [...this.maquinas];
-
-    // Filtrar por término de búsqueda
     if (this.terminoBusqueda && this.terminoBusqueda.trim() !== '') {
       const busqueda = this.terminoBusqueda.toLowerCase();
       resultado = resultado.filter(
@@ -113,23 +126,14 @@ export class MaquinariaComponent implements OnInit {
           maquina.codigo.toString().includes(busqueda)
       );
     }
-
-    // Filtrar por estado activo si la opción está seleccionada
-    if (this.mostrarSoloActivas) {
-      resultado = resultado.filter((maquina) => maquina.estado);
-    }
-
     this.maquinasFiltradas = resultado;
   }
 
-  // ========== MÉTODOS DE MÁQUINAS ==========
-  
   abrirModalAgregar(): void {
     this.modoEdicion = false;
     this.maquinaEditando = null;
     this.maquinaForm.reset({
       nombre: '',
-      estado: true,
       horas_uso: 0,
     });
     this.modalVisible = true;
@@ -140,7 +144,6 @@ export class MaquinariaComponent implements OnInit {
     this.maquinaEditando = maquina;
     this.maquinaForm.setValue({
       nombre: maquina.nombre,
-      estado: maquina.estado,
       horas_uso: maquina.horas_uso,
     });
     this.modalVisible = true;
@@ -155,7 +158,6 @@ export class MaquinariaComponent implements OnInit {
       this.maquinaForm.markAllAsTouched();
       return;
     }
-
     const formData = this.maquinaForm.value;
 
     if (this.modoEdicion && this.maquinaEditando) {
@@ -163,7 +165,7 @@ export class MaquinariaComponent implements OnInit {
         id: this.maquinaEditando.id,
         codigo: this.maquinaEditando.codigo,
         nombre: formData.nombre,
-        estado: formData.estado,
+        estado: true,
         horas_uso: formData.horas_uso,
       }).subscribe({
         next: () => {
@@ -180,7 +182,7 @@ export class MaquinariaComponent implements OnInit {
       this.machinesService.crearMaquina({
         codigo: nuevoCodigo.toString(),
         nombre: formData.nombre,
-        estado: formData.estado,
+        estado: true,
         horas_uso: formData.horas_uso,
       } as any).subscribe({
         next: (maquinaCreada) => {
@@ -226,7 +228,7 @@ export class MaquinariaComponent implements OnInit {
     this.modalConfirmacionVisible = false;
     this.maquinaAEliminar = null;
   }
-
+  
   // ========== MÉTODOS SIMPLIFICADOS DE MANTENIMIENTO ==========
   
   procesarHistorialMantenimientos(mantenimientos: Mantenimiento[]): void {
@@ -261,73 +263,139 @@ export class MaquinariaComponent implements OnInit {
     return ordenados[0];
   }
 
-  // Horas en las que se hizo el último mantenimiento
   getUltimoMantenimiento(maquina: Maquina): number {
     const ultima = this.ultimaHoraMantenimientoPorMaquina[maquina.id];
     return typeof ultima === 'number' ? ultima : 0;
   }
 
-  // Horas trabajadas desde el último mantenimiento
   getHorasTrabajadas(maquina: Maquina): number {
     const horasActuales = maquina.horas_uso || 0;
     const horasUltimoMant = this.getUltimoMantenimiento(maquina);
     return Math.max(0, horasActuales - horasUltimoMant);
   }
 
-  // A qué hora total debe hacerse el próximo mantenimiento
   getProximoMantenimiento(maquina: Maquina): number {
+    if (this.proximoMantenimientoPorMaquina[maquina.id]) {
+      return this.proximoMantenimientoPorMaquina[maquina.id];
+    }
     const horasUltimoMant = this.getUltimoMantenimiento(maquina);
-    return horasUltimoMant + 250; // Cada 250 horas
+    return horasUltimoMant + 250;
   }
 
-  // Horas que faltan para el próximo mantenimiento
   getHorasRestantes(maquina: Maquina): number {
-    const horasTrabajadas = this.getHorasTrabajadas(maquina);
-    return Math.max(0, 250 - horasTrabajadas);
+    const horasActuales = maquina.horas_uso || 0;
+    const proximoMant = this.getProximoMantenimiento(maquina);
+    return Math.max(0, proximoMant - horasActuales);
   }
 
-  // Color según las horas RESTANTES (invertido)
   getColorHorasRestantes(maquina: Maquina): string {
     const horasRestantes = this.getHorasRestantes(maquina);
+    const horasActuales = maquina.horas_uso || 0;
+    const proximoMant = this.getProximoMantenimiento(maquina);
+    const totalHoras = proximoMant - this.getUltimoMantenimiento(maquina);
+    const porcentajeRestante = totalHoras > 0 ? (horasRestantes / totalHoras) * 100 : 0;
     
-    if (horasRestantes <= 0) {
-      return 'text-danger'; // Rojo - ¡YA PASÓ!
-    } else if (horasRestantes <= 25) {
-      return 'text-warning-bold'; // Naranja oscuro - URGENTE (quedan 25 hs o menos)
-    } else if (horasRestantes <= 50) {
-      return 'text-warning'; // Amarillo - PRONTO (quedan 50 hs o menos)
+    if (horasRestantes <= 0 || horasActuales >= proximoMant) {
+      return 'text-danger';
+    } else if (porcentajeRestante <= 10) {
+      return 'text-warning-bold';
+    } else if (porcentajeRestante <= 20) {
+      return 'text-warning';
     }
-    return 'text-success'; // Verde - OK
+    return 'text-success';
   }
 
-  // Color según las horas trabajadas
   getColorHorasTrabajadas(maquina: Maquina): string {
     const horasTrabajadas = this.getHorasTrabajadas(maquina);
+    const proximoMant = this.getProximoMantenimiento(maquina);
+    const totalHoras = proximoMant - this.getUltimoMantenimiento(maquina);
+    const porcentajeTrabajado = totalHoras > 0 ? (horasTrabajadas / totalHoras) * 100 : 0;
     
-    if (horasTrabajadas >= 250) {
-      return 'text-danger'; // Rojo - URGENTE
-    } else if (horasTrabajadas >= 225) {
-      return 'text-warning-bold'; // Amarillo oscuro - PRONTO
-    } else if (horasTrabajadas >= 200) {
-      return 'text-warning'; // Amarillo - ATENCIÓN
+    if (porcentajeTrabajado >= 100) {
+      return 'text-danger';
+    } else if (porcentajeTrabajado >= 90) {
+      return 'text-warning-bold';
+    } else if (porcentajeTrabajado >= 80) {
+      return 'text-warning';
     }
-    return 'text-success'; // Verde - OK
+    return 'text-success';
   }
 
-  // Texto descriptivo del estado (opcional, para mostrar en un badge o tooltip)
   getEstadoMantenimiento(maquina: Maquina): string {
-    const horasTrabajadas = this.getHorasTrabajadas(maquina);
+    const horasActuales = maquina.horas_uso || 0;
+    const proximoMant = this.getProximoMantenimiento(maquina);
     const restantes = this.getHorasRestantes(maquina);
     
-    if (horasTrabajadas >= 250) {
-      return `¡URGENTE! Pasó ${horasTrabajadas - 250} hs del límite`;
-    } else if (horasTrabajadas >= 225) {
+    if (horasActuales >= proximoMant) {
+      return `¡URGENTE! Pasó ${horasActuales - proximoMant} hs del límite`;
+    } else if (restantes <= 25) {
       return `Faltan ${restantes} hs - Programar pronto`;
-    } else if (horasTrabajadas >= 200) {
+    } else if (restantes <= 50) {
       return `Faltan ${restantes} hs`;
     }
     return `Todo OK - Faltan ${restantes} hs`;
   }
+
+  // ========== MÉTODOS PARA EDITAR HORAS DEL PRÓXIMO MANTENIMIENTO ==========
+
+  abrirModalEditarHorasMantenimiento(maquina: Maquina): void {
+    this.maquinaSeleccionada = maquina;
+    const proximoMant = this.getProximoMantenimiento(maquina);
+    this.horasMantenimientoForm.setValue({
+      horas_proximo_mantenimiento: proximoMant
+    });
+    this.modalEditarHorasMantenimientoVisible = true;
+  }
+
+  cerrarModalEditarHorasMantenimiento(): void {
+    this.modalEditarHorasMantenimientoVisible = false;
+    this.maquinaSeleccionada = null;
+  }
+
+  guardarHorasMantenimiento(): void {
+    if (!this.maquinaSeleccionada || this.horasMantenimientoForm.invalid) {
+      this.horasMantenimientoForm.markAllAsTouched();
+      return;
+    }
+
+    const nuevasHorasProxMant = this.horasMantenimientoForm.value.horas_proximo_mantenimiento;
+    const horasActuales = this.maquinaSeleccionada.horas_uso || 0;
+    
+    if (nuevasHorasProxMant <= horasActuales) {
+      this.mostrarMensaje('El próximo mantenimiento debe ser mayor a las horas actuales de la máquina');
+      return;
+    }
+    
+    this.proximoMantenimientoPorMaquina[this.maquinaSeleccionada.id] = nuevasHorasProxMant;
+    this.guardarProximosMantenimientos();
+    
+    const horasRestantes = nuevasHorasProxMant - horasActuales;
+    this.mostrarMensaje(`Próximo mantenimiento actualizado a ${nuevasHorasProxMant} horas (faltan ${horasRestantes} hs)`);
+    this.cerrarModalEditarHorasMantenimiento();
+    this.filtrarMaquinas();
+  }
+
+  private guardarProximosMantenimientos(): void {
+    try {
+      localStorage.setItem('proximos_mantenimientos', JSON.stringify(this.proximoMantenimientoPorMaquina));
+    } catch (error) {
+      console.error('Error al guardar próximos mantenimientos:', error);
+    }
+  }
+
+  private cargarProximosMantenimientos(): void {
+    try {
+      const guardado = localStorage.getItem('proximos_mantenimientos');
+      if (guardado) {
+        this.proximoMantenimientoPorMaquina = JSON.parse(guardado);
+      }
+    } catch (error) {
+      console.error('Error al cargar próximos mantenimientos:', error);
+      this.proximoMantenimientoPorMaquina = {};
+    }
+  }
+
+  // ========== MÉTODOS DE MANTENIMIENTO ==========
 
   abrirModalRegistrarMantenimiento(maquina: Maquina): void {
     this.maquinaSeleccionada = maquina;
@@ -447,11 +515,11 @@ export class MaquinariaComponent implements OnInit {
       descripcion: formData.descripcion || ''
     };
 
-    console.log('📝 Enviando datos de horas:', horasData);
+    console.log('Enviando datos de horas:', horasData);
 
     this.machinesService.registrarHoras(horasData).subscribe({
       next: (response) => {
-        console.log('✅ Respuesta del servidor:', response);
+        console.log('Respuesta del servidor:', response);
         
         if (this.maquinaSeleccionada) {
           this.maquinaSeleccionada.horas_uso = (this.maquinaSeleccionada.horas_uso || 0) + horasData.horas_trabajadas;
@@ -467,7 +535,7 @@ export class MaquinariaComponent implements OnInit {
         this.loadData();
       },
       error: (error: any) => {
-        console.error('❌ Error al registrar horas:', error);
+        console.error('Error al registrar horas:', error);
         let mensajeError = 'Error al registrar las horas';
         if (error.status) {
           mensajeError += ` (${error.status})`;
@@ -478,6 +546,83 @@ export class MaquinariaComponent implements OnInit {
         this.mostrarMensaje(mensajeError);
       }
     });
+  }
+
+  // ========== MÉTODOS PARA NOTAS ==========
+
+  abrirModalNotas(maquina: Maquina): void {
+    this.maquinaSeleccionada = maquina;
+    this.notaForm.reset({
+      texto: ''
+    });
+    this.modalNotasVisible = true;
+  }
+
+  cerrarModalNotas(): void {
+    this.modalNotasVisible = false;
+    this.maquinaSeleccionada = null;
+    this.notaForm.reset();
+  }
+
+  agregarNota(): void {
+    if (!this.maquinaSeleccionada || this.notaForm.invalid) {
+      this.notaForm.markAllAsTouched();
+      return;
+    }
+
+    const nuevaNota: NotaMaquina = {
+      id: Date.now(),
+      maquina_id: this.maquinaSeleccionada.id,
+      texto: this.notaForm.value.texto,
+      fecha: new Date().toISOString(),
+      usuario: 'Usuario'
+    };
+
+    if (!this.notasPorMaquina[this.maquinaSeleccionada.id]) {
+      this.notasPorMaquina[this.maquinaSeleccionada.id] = [];
+    }
+
+    this.notasPorMaquina[this.maquinaSeleccionada.id].unshift(nuevaNota);
+    this.guardarNotas();
+    this.mostrarMensaje('Nota agregada correctamente');
+    this.notaForm.reset({ texto: '' });
+  }
+
+  eliminarNota(notaId: number): void {
+    if (!this.maquinaSeleccionada) return;
+    
+    if (confirm('¿Está seguro que desea eliminar esta nota?')) {
+      const maquinaId = this.maquinaSeleccionada.id;
+      this.notasPorMaquina[maquinaId] = this.notasPorMaquina[maquinaId].filter(
+        nota => nota.id !== notaId
+      );
+      this.guardarNotas();
+      this.mostrarMensaje('Nota eliminada correctamente');
+    }
+  }
+
+  getNotasMaquina(maquinaId: number): NotaMaquina[] {
+    return this.notasPorMaquina[maquinaId] || [];
+  }
+
+  private guardarNotas(): void {
+    try {
+      localStorage.setItem('notas_maquinas', JSON.stringify(this.notasPorMaquina));
+    } catch (error) {
+      console.error('Error al guardar notas:', error);
+    }
+  }
+
+  private cargarNotas(): void {
+    try {
+      const guardado = localStorage.getItem('notas_maquinas');
+      if (guardado) {
+        this.notasPorMaquina = JSON.parse(guardado);
+      }
+    } catch (error) {
+      console.error('Error al cargar notas:', error);
+      this.notasPorMaquina = {};
+    }
   }
 
   // ========== UTILIDADES ==========
@@ -524,7 +669,6 @@ export class MaquinariaComponent implements OnInit {
     }, 3000);
   }
 
-  // Getter para historial de cada máquina
   getHistorialMaquina(maquinaId: number): Mantenimiento[] {
     return this.historialPorMaquina[maquinaId] || [];
   }

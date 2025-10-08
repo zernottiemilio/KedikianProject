@@ -183,4 +183,24 @@ export class ProjectService {
   getAridosPorProyecto(id: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/${id}/aridos`);
   }
+
+  /**
+   * Obtiene todos los reportes laborales de un proyecto específico
+   * Endpoint: GET /proyectos/{id}/reportes-laborales
+   */
+  getReportesLaboralesPorProyecto(id: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${id}/reportes-laborales`).pipe(
+      tap((response) => {
+        console.log(`📊 Reportes laborales del proyecto ${id}:`, response);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        console.error(`❌ Error al obtener reportes laborales del proyecto ${id}:`, error);
+        // Si el endpoint no existe o falla, devolvemos un array vacío
+        return new Observable<any[]>(observer => {
+          observer.next([]);
+          observer.complete();
+        });
+      })
+    );
+  }
 }
