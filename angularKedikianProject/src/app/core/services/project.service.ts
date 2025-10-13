@@ -3,25 +3,29 @@ import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { HttpClient, HttpErrorResponse, HttpParams, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, tap, map } from 'rxjs/operators';
 
 export interface Project {
   id: number;
   nombre: string;
   description: string;
   startDate: Date;
-  endDate: Date;
-  daysRemaining: number;
-  estado: boolean; // true = activo, false = inactivo
-  progress: number;
+  endDate?: Date;
+  daysRemaining?: number;
+  estado: boolean;
+  progress?: number;
   manager: string;
   fecha_creacion: Date;
-  contrato_id: number;
+  contrato_id?: number;
+  contrato_file?: File;
+  contrato_url?: string; // URL del contrato almacenado en el servidor
+  contrato_nombre?: string; // Nombre del archivo de contrato
+  contrato_tipo?: string; // Tipo MIME del contrato
   ubicacion: string;
-  images?: string[]; // URLs de las imágenes
-  isOverdue?: boolean; // true = proyecto atrasado
+  images?: string[];
+  isOverdue?: boolean;
   
-  // Campos del backend (opcionales para compatibilidad)
+  // Campos del backend
   descripcion?: string;
   fecha_inicio?: string | Date;
   fecha_fin?: string | Date;
@@ -29,7 +33,6 @@ export interface Project {
   progreso?: number;
 }
 
-// Nuevas interfaces para los endpoints
 export interface CantidadProyectosActivos {
   cantidad_activos: number;
 }
@@ -39,7 +42,6 @@ export interface ProyectosPaginadosResponse {
   total: number;
   skip: number;
   limit: number;
-  // En caso de que el backend devuelva la estructura de otra forma
   items?: Project[];
   count?: number;
 }
@@ -52,12 +54,19 @@ export class ProjectService {
 
   constructor(private http: HttpClient) {}
 
-  // Método para obtener headers con token
   private getAuthHeaders(): HttpHeaders {
     const token = localStorage.getItem('token') || '';
     return new HttpHeaders({
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
+    });
+  }
+
+  private getAuthHeadersForFiles(): HttpHeaders {
+    const token = localStorage.getItem('token') || '';
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+      // NO incluir Content-Type para que el browser lo configure automáticamente con boundary
     });
   }
 
@@ -70,24 +79,16 @@ export class ProjectService {
   }
 
   findByIdMaquina(id: number): Observable<Project[]> {
-    // TODO: Implementar cuando el backend tenga el endpoint correspondiente
-    // Por ahora, retornamos un observable vacío para evitar errores 404
     return new Observable<Project[]>(observer => {
       observer.next([]);
       observer.complete();
     });
-    
-    return this.http.get<Project[]>(`${this.apiUrl}/maquinas/${id}`);
   }
 
   getActiveProjects(): Observable<Project[]> {
     return this.http.get<Project[]>(`${this.apiUrl}/activos`);
   }
 
-  /**
-   * NUEVO: Obtener la cantidad de proyectos activos
-   * Endpoint: GET /proyectos/activos/cantidad
-   */
   getCantidadProyectosActivos(): Observable<CantidadProyectosActivos> {
     return this.http.get<CantidadProyectosActivos>(`${this.apiUrl}/activos/cantidad`).pipe(
       tap((response) => {
@@ -100,10 +101,6 @@ export class ProjectService {
     );
   }
 
-  /**
-   * NUEVO: Obtener proyectos de forma paginada
-   * Endpoint: GET /proyectos/paginado?skip=0&limit=15
-   */
   getProyectosPaginados(skip: number = 0, limit: number = 15): Observable<ProyectosPaginadosResponse> {
     const params = new HttpParams()
       .set('skip', skip.toString())
@@ -112,82 +109,138 @@ export class ProjectService {
     return this.http.get<ProyectosPaginadosResponse>(`${this.apiUrl}/paginado`, { params }).pipe(
       tap((response) => {
         console.log('Proyectos paginados obtenidos:', response);
-        console.log(`Skip: ${skip}, Limit: ${limit}`);
-        console.log(`Total de proyectos: ${response.total || response.count || 0}`);
-        console.log(`Proyectos en esta página: ${response.proyectos?.length || response.items?.length || 0}`);
       }),
       catchError((error: HttpErrorResponse) => {
         console.error('Error al obtener proyectos paginados:', error);
-        console.error('Parámetros enviados:', { skip, limit });
         return throwError(() => error);
       })
     );
   }
 
-  createProject(project: any): Observable<any> {
-    console.log('=== CREANDO PROYECTO ===');
-    console.log('Datos originales del proyecto:', project);
+  /**
+   * Crear proyecto con archivo de contrato opcional
+   */
+  createProject(project: any, contratoFile?: File): Observable<any> {
+    console.log('=== CREANDO PROYECTO CON ARCHIVO ===');
     
-    // Agregar fecha_creacion al proyecto
-    const projectData = {
-      ...project,
-      fecha_creacion: new Date().toISOString().split('T')[0] // Formato YYYY-MM-DD
-    };
+    const formData = new FormData();
     
-    console.log('Datos finales a enviar al backend:', projectData);
-    console.log('URL de la petición:', this.apiUrl);
-    console.log('JSON que se enviará:', JSON.stringify(projectData, null, 2));
+    // Agregar datos del proyecto
+    formData.append('nombre', project.nombre);
+    formData.append('fecha_inicio', project.fecha_inicio);
+    formData.append('estado', project.estado.toString());
+    formData.append('gerente', project.gerente);
+    formData.append('ubicacion', project.ubicacion);
+    formData.append('descripcion', project.descripcion);
+    formData.append('fecha_creacion', new Date().toISOString().split('T')[0]);
     
-    return this.http.post<any>(this.apiUrl, projectData).pipe(
+    // Agregar archivo de contrato si existe
+    if (contratoFile) {
+      formData.append('contrato', contratoFile, contratoFile.name);
+      console.log('Archivo de contrato adjuntado:', contratoFile.name);
+    }
+    
+    console.log('FormData preparado para enviar');
+    
+    return this.http.post<any>(this.apiUrl, formData, {
+      headers: this.getAuthHeadersForFiles()
+    }).pipe(
       tap((response) => {
         console.log('=== RESPUESTA EXITOSA DEL BACKEND ===');
         console.log('Respuesta completa:', response);
-        console.log('Campos en la respuesta:', Object.keys(response));
-        console.log('fecha_inicio en respuesta:', response.fecha_inicio);
-        console.log('fecha_fin en respuesta:', response.fecha_fin);
-        console.log('descripcion en respuesta:', response.descripcion);
-        console.log('gerente en respuesta:', response.gerente);
-        console.log('progreso en respuesta:', response.progreso);
       }),
       catchError((error: HttpErrorResponse) => {
         console.error('=== ERROR DEL BACKEND ===');
-        console.error('Error detallado del backend:', error);
-        console.error('Response body:', error.error);
-        if (error.error && error.error.detail) {
-          console.error('Detail array:', error.error.detail);
-          error.error.detail.forEach((err: any, index: number) => {
-            console.error(`Error ${index + 1}:`, err);
-            console.error(`Error ${index + 1} - Location:`, err.loc);
-            console.error(`Error ${index + 1} - Input:`, err.input);
-          });
-        }
+        console.error('Error detallado:', error);
         return throwError(() => error);
       })
     );
   }
 
-  updateProject(updatedProject: Project): Observable<Project> {
-    return this.http.put<Project>(`${this.apiUrl}/${updatedProject.id}`, updatedProject);
+  /**
+   * Actualizar proyecto con archivo de contrato opcional
+   */
+  updateProject(updatedProject: Project, contratoFile?: File): Observable<Project> {
+    console.log('=== ACTUALIZANDO PROYECTO ===');
+    
+    const formData = new FormData();
+    
+    // Agregar datos del proyecto
+    formData.append('nombre', updatedProject.nombre);
+    
+    // Manejar fecha_inicio de forma segura
+    let fechaInicioStr: string;
+    if (typeof updatedProject.startDate === 'string') {
+      fechaInicioStr = updatedProject.startDate;
+    } else if (updatedProject.startDate instanceof Date && !isNaN(updatedProject.startDate.getTime())) {
+      fechaInicioStr = updatedProject.startDate.toISOString().split('T')[0];
+    } else {
+      // Si la fecha no es válida, usar fecha actual
+      fechaInicioStr = new Date().toISOString().split('T')[0];
+    }
+    formData.append('fecha_inicio', fechaInicioStr);
+    
+    formData.append('estado', updatedProject.estado.toString());
+    formData.append('gerente', updatedProject.manager);
+    formData.append('ubicacion', updatedProject.ubicacion);
+    formData.append('descripcion', updatedProject.description);
+    
+    // Agregar archivo de contrato si existe
+    if (contratoFile) {
+      formData.append('contrato', contratoFile, contratoFile.name);
+      console.log('Nuevo archivo de contrato adjuntado:', contratoFile.name);
+    }
+    
+    return this.http.put<Project>(`${this.apiUrl}/${updatedProject.id}`, formData, {
+      headers: this.getAuthHeadersForFiles()
+    }).pipe(
+      tap((response) => {
+        console.log('Proyecto actualizado exitosamente:', response);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error al actualizar proyecto:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   deleteProject(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  // Obtener máquinas asignadas a un proyecto
+  /**
+   * Descargar archivo de contrato
+   */
+  downloadContrato(proyectoId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${proyectoId}/contrato`, {
+      responseType: 'blob',
+      headers: this.getAuthHeadersForFiles()
+    }).pipe(
+      tap(() => {
+        console.log(`Descargando contrato del proyecto ${proyectoId}`);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error al descargar contrato:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Obtener URL del contrato (si el backend lo proporciona)
+   */
+  getContratoUrl(proyectoId: number): string {
+    return `${this.apiUrl}/${proyectoId}/contrato`;
+  }
+
   getMaquinasPorProyecto(id: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/${id}/maquinas`);
   }
 
-  // Obtener áridos utilizados en un proyecto
   getAridosPorProyecto(id: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/${id}/aridos`);
   }
 
-  /**
-   * Obtiene todos los reportes laborales de un proyecto específico
-   * Endpoint: GET /proyectos/{id}/reportes-laborales
-   */
   getReportesLaboralesPorProyecto(id: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/${id}/reportes-laborales`).pipe(
       tap((response) => {
@@ -195,7 +248,6 @@ export class ProjectService {
       }),
       catchError((error: HttpErrorResponse) => {
         console.error(`❌ Error al obtener reportes laborales del proyecto ${id}:`, error);
-        // Si el endpoint no existe o falla, devolvemos un array vacío
         return new Observable<any[]>(observer => {
           observer.next([]);
           observer.complete();

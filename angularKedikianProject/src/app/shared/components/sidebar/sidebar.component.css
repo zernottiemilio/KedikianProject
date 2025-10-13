@@ -90,7 +90,7 @@ body {
   padding: 14px 20px;
   display: flex;
   align-items: center;
-  color: var(--sidebar-text);
+  color: white;
   text-decoration: none;
   transition: all var(--transition-speed);
   cursor: pointer;

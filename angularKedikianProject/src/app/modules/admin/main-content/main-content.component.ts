@@ -28,7 +28,7 @@ interface ProyectoExtendido extends Omit<Project, 'startDate' | 'endDate'> {
   maquinas: Maquina[];
   aridos: any[];
   fechaInicio: Date;
-  fechaFin: Date;
+  fechaFin?: Date; // Hacer opcional ya que no siempre existe
   descripcion: string;
 }
 
@@ -75,7 +75,8 @@ export class MainContentComponent implements OnInit {
             return {
               ...project,
               fechaInicio: new Date(project.startDate ?? project.fecha_inicio),
-              fechaFin: new Date(project.endDate ?? project.fecha_fin),
+              fechaFin: project.endDate ? new Date(project.endDate) : 
+                       project.fecha_fin ? new Date(project.fecha_fin) : undefined,
               descripcion: project.description ?? project.descripcion,
               maquinas: maquinasConHoras,
               aridos: aridos || [],
@@ -140,24 +141,29 @@ export class MainContentComponent implements OnInit {
   /**
    * Determina el estado del proyecto basado en las fechas
    */
-  getProjectStatus(fechaInicio: Date, fechaFin: Date): string {
+  getProjectStatus(fechaInicio: Date, fechaFin?: Date): string {
     const hoy = new Date();
     const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
 
     if (hoy < inicio) {
       return 'Pendiente';
-    } else if (hoy >= inicio && hoy <= fin) {
-      return 'En Progreso';
+    } else if (fechaFin) {
+      const fin = new Date(fechaFin);
+      if (hoy >= inicio && hoy <= fin) {
+        return 'En Progreso';
+      } else {
+        return 'Completado';
+      }
     } else {
-      return 'Completado';
+      // Si no hay fecha de fin, siempre está en progreso después del inicio
+      return 'En Progreso';
     }
   }
 
   /**
    * Obtiene la clase CSS para el badge de estado
    */
-  getStatusClass(fechaInicio: Date, fechaFin: Date): string {
+  getStatusClass(fechaInicio: Date, fechaFin?: Date): string {
     const status = this.getProjectStatus(fechaInicio, fechaFin);
 
     switch (status) {

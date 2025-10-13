@@ -7,7 +7,8 @@
   </div>
   <div *ngIf="!loading && !error">
     <div class="projects-grid">
-      <div class="project-card" *ngFor="let proyecto of proyectos">
+      <ng-container *ngFor="let proyecto of proyectos">
+        <div class="project-card" *ngIf="proyecto.estado">
         <div class="card-header">
           <h2>{{ proyecto.nombre }}</h2>
           <span class="status-badge" [ngClass]="getStatusClass(proyecto.fechaInicio, proyecto.fechaFin)">
@@ -39,10 +40,6 @@
               <span class="date-label">Inicio:</span>
               <span class="date-value">{{ proyecto.fechaInicio | date:'dd/MM/yyyy' }}</span>
             </div>
-            <div class="date-item">
-              <span class="date-label">Fin:</span>
-              <span class="date-value">{{ proyecto.fechaFin | date:'dd/MM/yyyy' }}</span>
-            </div>
           </div>
 
           <div class="location-section">
@@ -59,7 +56,8 @@
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </ng-container>
     </div>
   </div>
 </div>

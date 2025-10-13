@@ -51,16 +51,44 @@
         </div>
 
         <div class="form-group">
-          <label for="contrato_id">ID de Contrato</label>
-          <select id="contrato_id" formControlName="contrato_id" class="form-control">
-            <option [value]="null" disabled>Seleccione un contrato</option>
-            <option *ngFor="let contrato of contratos" [value]="contrato.id">
-              {{ contrato.nombre || 'Contrato #' + contrato.id }}
-            </option>
-          </select>
-          <div class="error-message"
-            *ngIf="projectForm.get('contrato_id')?.invalid && projectForm.get('contrato_id')?.touched">
-            El contrato es obligatorio
+          <label for="contrato_file">Contrato</label>
+          <div class="file-upload-container">
+            <!-- Vista previa de imagen si es imagen -->
+            <div class="file-preview-image" *ngIf="contratoPreviewUrl && contratoFile?.type?.startsWith('image/')">
+              <img [src]="contratoPreviewUrl" alt="Vista previa del contrato" class="contrato-thumbnail">
+              <button type="button" class="remove-file-overlay" (click)="removeContratoFile()" title="Eliminar archivo">×</button>
+            </div>
+            
+            <!-- Vista previa de PDF/DOC -->
+            <div class="file-preview" *ngIf="contratoFile && !contratoFile.type?.startsWith('image/')">
+              <div class="file-info">
+                <i class="fa fa-file-pdf" *ngIf="contratoFile.type === 'application/pdf'"></i>
+                <i class="fa fa-file-word" *ngIf="contratoFile.type?.includes('word') || contratoFile.type?.includes('document')"></i>
+                <span class="file-name">{{ contratoFile.name }}</span>
+                <span class="file-size">({{ formatFileSize(contratoFile.size) }})</span>
+              </div>
+              <button type="button" class="remove-file" (click)="removeContratoFile()">×</button>
+            </div>
+
+            <!-- Vista previa cuando se edita y hay contrato existente -->
+            <div class="file-preview-existing" *ngIf="!contratoFile && contratoPreviewUrl && isEditing">
+              <div class="file-info">
+                <i class="fa fa-file-pdf"></i>
+                <span class="file-name">Contrato existente</span>
+              </div>
+              <button type="button" class="view-existing-button" (click)="viewContratoById(projectForm.get('id')?.value)">
+                <i class="fa fa-eye"></i> Ver
+              </button>
+            </div>
+            
+            <!-- Botón para subir archivo -->
+            <div class="upload-button-container" *ngIf="!contratoFile && (!contratoPreviewUrl || !isEditing)">
+              <label for="contrato-upload" class="upload-button">
+                <i class="fa fa-upload"></i> Adjuntar Contrato
+              </label>
+              <input type="file" id="contrato-upload" accept=".pdf,.doc,.docx,image/*" (change)="onContratoFileSelected($event)"
+                class="file-input">
+            </div>
           </div>
         </div>
       </div>
@@ -72,14 +100,6 @@
           <div class="error-message"
             *ngIf="projectForm.get('startDate')?.invalid && projectForm.get('startDate')?.touched">
             La fecha de inicio es obligatoria
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="endDate">Fecha de finalización</label>
-          <input type="date" id="endDate" formControlName="endDate" class="form-control">
-          <div class="error-message" *ngIf="projectForm.get('endDate')?.invalid && projectForm.get('endDate')?.touched">
-            La fecha de finalización es obligatoria
           </div>
         </div>
       </div>
@@ -100,7 +120,7 @@
         <div class="error-message"
           *ngIf="projectForm.get('description')?.invalid && projectForm.get('description')?.touched">
           La descripción es obligatoria
-        </div>
+          </div>
       </div>
 
       <div class="form-group">
@@ -140,6 +160,7 @@
         <div class="project-item header-row">
           <div class="project-name">Nombre</div>
           <div class="project-manager">Responsable</div>
+          <div class="project-contrato">Contrato</div>
           <div class="project-status">Estado</div>
           <div class="project-actions">Acciones</div>
         </div>
@@ -148,6 +169,14 @@
           [class.selected]="selectedProject && selectedProject.id === project.id" [class.inactive]="!project.estado">
           <div class="project-name" (click)="selectProject(project)">{{ project.nombre }}</div>
           <div class="project-manager">{{ project.manager }}</div>
+          <div class="project-contrato">
+            <!-- Miniatura clickeable si hay contrato -->
+            <button class="contrato-thumbnail-button" *ngIf="project.contrato_url" (click)="viewContratoById(project.id)" title="Ver contrato">
+              <i class="fa fa-file-pdf"></i>
+              <span class="contrato-icon-text">Ver</span>
+            </button>
+            <span class="no-contrato" *ngIf="!project.contrato_url">Sin contrato</span>
+          </div>
           <div class="project-status">
             <span class="status-badge" [ngClass]="project.estado ? 'status-active' : 'status-inactive'">
               {{ project.estado ? 'Activo' : 'Inactivo' }}
@@ -207,9 +236,20 @@
         <p>{{ selectedProject.ubicacion }}</p>
       </div>
 
-      <div class="detail-row">
+      <div class="detail-row" *ngIf="selectedProject.contrato_url">
         <label>Contrato:</label>
-        <p>{{ getContratoNombre(selectedProject.contrato_id) }}</p>
+        <div class="contrato-file-info">
+          <i class="fa fa-file-pdf"></i>
+          <span class="file-name">{{ selectedProject.contrato_nombre || 'contrato.pdf' }}</span>
+          <div class="contrato-actions-group">
+            <button class="view-button" (click)="viewContratoById(selectedProject.id)" title="Ver contrato">
+              <i class="fa fa-eye"></i> Ver
+            </button>
+            <button class="download-button" (click)="downloadContratoFromServer(selectedProject.id, selectedProject.contrato_nombre || 'contrato.pdf')">
+              <i class="fa fa-download"></i> Descargar
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="detail-row">
@@ -228,10 +268,6 @@
           <p>{{ selectedProject.startDate | date:'dd/MM/yyyy' }}</p>
         </div>
 
-        <div class="detail-item">
-          <label>Fecha de finalización:</label>
-          <p>{{ selectedProject.endDate | date : 'dd/MM/yyyy' }}</p>
-        </div>
       </div>
 
       <!-- Imágenes del proyecto -->
@@ -274,6 +310,53 @@
           [disabled]="currentImageIndex === (selectedProject?.images?.length || 0) - 1">
           <i class="fa fa-arrow-right"></i>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visor de contrato modal -->
+  <div class="contrato-viewer-modal" *ngIf="showContratoViewer" (click)="closeContratoViewer()">
+    <div class="modal-content-large" (click)="$event.stopPropagation()">
+      <span class="close-modal" (click)="closeContratoViewer()">&times;</span>
+      <div class="contrato-viewer-container">
+        <div class="contrato-viewer-header">
+          <i class="fa fa-file-pdf" *ngIf="currentContratoTipo === 'application/pdf'"></i>
+          <i class="fa fa-file-word" *ngIf="currentContratoTipo?.includes('word') || currentContratoTipo?.includes('document')"></i>
+          <i class="fa fa-file-image" *ngIf="currentContratoTipo?.startsWith('image/')"></i>
+          <i class="fa fa-file" *ngIf="!currentContratoTipo"></i>
+          <h3>Vista Previa del Contrato</h3>
+        </div>
+        <div class="contrato-viewer-body">
+          <!-- Vista previa para PDF -->
+          <iframe *ngIf="currentContratoUrl && currentContratoTipo === 'application/pdf'" 
+                  [src]="currentContratoUrl" 
+                  frameborder="0"></iframe>
+          
+          <!-- Vista previa para imágenes -->
+          <div *ngIf="currentContratoUrl && currentContratoTipo?.startsWith('image/')" class="image-preview-full">
+            <img [src]="currentContratoUrl" alt="Vista previa del contrato">
+          </div>
+          
+          <!-- Mensaje para archivos DOCX y otros -->
+          <div *ngIf="!currentContratoUrl || (!currentContratoTipo?.startsWith('image/') && currentContratoTipo !== 'application/pdf')" 
+               class="no-preview-message">
+            <i class="fa fa-file-text-o fa-5x"></i>
+            <h4>Vista previa no disponible</h4>
+            <p *ngIf="currentContratoTipo?.includes('word') || currentContratoTipo?.includes('document')">
+              Los archivos de Word no se pueden visualizar directamente.<br>
+              Haz clic en "Descargar Contrato" para ver el contenido.
+            </p>
+            <p *ngIf="!currentContratoTipo || (!currentContratoTipo?.includes('word') && !currentContratoTipo?.includes('document') && !currentContratoTipo?.startsWith('image/') && currentContratoTipo !== 'application/pdf')">
+              Este tipo de archivo no se puede visualizar en el navegador.<br>
+              Haz clic en "Descargar Contrato" para abrirlo.
+            </p>
+          </div>
+        </div>
+        <div class="contrato-viewer-footer">
+          <button class="download-button-large" (click)="downloadContratoFromServer(currentProyectoId, currentContratoNombre)">
+            <i class="fa fa-download"></i> Descargar Contrato
+          </button>
+        </div>
       </div>
     </div>
   </div>

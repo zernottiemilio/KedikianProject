@@ -256,12 +256,12 @@
                   <div class="detail-item">
                     <i class="fas fa-play-circle text-success"></i>
                     <span class="detail-label">Inicio:</span>
-                    <span class="detail-value">{{ jornada.hora_inicio | date:'HH:mm' }}</span>
+                    <span class="detail-value">{{ formatHora(jornada.hora_inicio) }}</span>
                   </div>
                   <div class="detail-item">
                     <i class="fas fa-stop-circle text-danger"></i>
                     <span class="detail-label">Fin:</span>
-                    <span class="detail-value">{{ jornada.hora_fin ? (jornada.hora_fin | date:'HH:mm') : 'En curso' }}</span>
+                    <span class="detail-value">{{ formatHora(jornada.hora_fin) }}</span>
                   </div>
                 </div>
                 

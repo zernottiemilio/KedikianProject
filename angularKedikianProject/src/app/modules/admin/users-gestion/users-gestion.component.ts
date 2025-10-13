@@ -170,13 +170,42 @@ export class UsersGestionComponent implements OnInit {
   }
 
   formatFecha(fechaStr: string): string {
-    const fecha = new Date(fechaStr);
-    return fecha.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+  if (!fechaStr) return '-';
+  
+  // Si la fecha viene en formato YYYY-MM-DD, parsearla directamente sin conversión de zona horaria
+  const partes = fechaStr.split('T')[0].split('-');
+  if (partes.length === 3) {
+    const [year, month, day] = partes;
+    return `${day}/${month}/${year}`;
   }
+  
+  // Fallback al método anterior si el formato es diferente
+  const fecha = new Date(fechaStr);
+  return fecha.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
+
+formatHora(horaStr: string | null): string {
+  if (!horaStr) return 'En curso';
+  try {
+    // Si viene en formato ISO completo
+    if (horaStr.includes('T')) {
+      const fecha = new Date(horaStr);
+      return fecha.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    }
+    // Si viene solo la hora (HH:mm:ss o HH:mm)
+    return horaStr.substring(0, 5);
+  } catch (e) {
+    return horaStr;
+  }
+}
 
   getEstadoBadgeClass(estado: string): string {
     switch (estado.toLowerCase()) {
@@ -352,62 +381,62 @@ export class UsersGestionComponent implements OnInit {
   }
 
   saveUser(): void {
-    if (this.userForm.invalid) {
-      alert('Por favor, completa todos los campos requeridos correctamente.');
+  if (this.userForm.invalid) {
+    alert('Por favor, completa todos los campos requeridos correctamente.');
+    return;
+  }
+
+  const userData = { ...this.userForm.value };
+
+  // Mapear roles al formato del backend
+  userData.roles = this.mapRolesToBackend(
+    Array.isArray(userData.roles) ? userData.roles : [userData.roles]
+  );
+
+  // Manejar la contraseña
+  if (this.isEditMode) {
+    // Si está en modo edición y no se marcó cambiar contraseña, enviar cadena vacía
+    if (!this.changePassword || !userData.hash_contrasena || userData.hash_contrasena.trim() === '') {
+      userData.hash_contrasena = ''; // Enviar cadena vacía en lugar de null o eliminar
+    }
+    
+    // Manejar fecha_creacion
+    if (this.originalUser) {
+      userData.fecha_creacion = this.originalUser.fecha_creacion instanceof Date
+        ? this.originalUser.fecha_creacion.toISOString()
+        : this.originalUser.fecha_creacion;
+    }
+  } else {
+    // En modo creación, la contraseña es obligatoria
+    if (!userData.hash_contrasena || userData.hash_contrasena.trim() === '') {
+      alert('La contraseña es requerida para crear un nuevo usuario.');
       return;
     }
-
-    const userData = { ...this.userForm.value };
-
-    // Mapear roles al formato del backend
-    userData.roles = this.mapRolesToBackend(
-      Array.isArray(userData.roles) ? userData.roles : [userData.roles]
-    );
-
-    // Manejar la contraseña
-    if (this.isEditMode) {
-      // Si está en modo edición y no se marcó cambiar contraseña, eliminar el campo
-      if (!this.changePassword || !userData.hash_contrasena || userData.hash_contrasena.trim() === '') {
-        userData.hash_contrasena = null;
-      }
-      
-      // Manejar fecha_creacion
-      if (this.originalUser) {
-        userData.fecha_creacion = this.originalUser.fecha_creacion instanceof Date
-          ? this.originalUser.fecha_creacion.toISOString()
-          : this.originalUser.fecha_creacion;
-      }
-    } else {
-      // En modo creación, la contraseña es obligatoria
-      if (!userData.hash_contrasena || userData.hash_contrasena.trim() === '') {
-        alert('La contraseña es requerida para crear un nuevo usuario.');
-        return;
-      }
-      userData.fecha_creacion = new Date().toISOString();
-    }
-
-    console.log('Usuario a enviar:', userData);
-
-    const operation = this.isEditMode
-      ? this.userService.updateUser(userData)
-      : this.userService.createUser(userData);
-
-    operation.subscribe({
-      next: (response) => {
-        const message = this.isEditMode
-          ? 'Usuario actualizado correctamente'
-          : 'Usuario creado correctamente';
-        alert(message);
-        this.loadUsers();
-        this.closeModals();
-      },
-      error: (err) => {
-        const action = this.isEditMode ? 'actualizar' : 'crear';
-        console.error(`Error al ${action} el usuario:`, err);
-        alert(`Error al ${action} el usuario: ${err.message}`);
-      },
-    });
+    userData.fecha_creacion = new Date().toISOString();
   }
+
+  console.log('Usuario a enviar:', userData);
+
+  const operation = this.isEditMode
+    ? this.userService.updateUser(userData)
+    : this.userService.createUser(userData);
+
+  operation.subscribe({
+    next: (response) => {
+      const message = this.isEditMode
+        ? 'Usuario actualizado correctamente'
+        : 'Usuario creado correctamente';
+      alert(message);
+      this.loadUsers();
+      this.closeModals();
+    },
+    error: (err) => {
+      const action = this.isEditMode ? 'actualizar' : 'crear';
+      console.error(`Error al ${action} el usuario:`, err);
+      alert(`Error al ${action} el usuario: ${err.message}`);
+    },
+  });
+}
 
   deleteUser(user: User): void {
     this.userToDelete = user;
