@@ -22,51 +22,51 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let maquina of maquinasFiltradas">
-          <td>{{maquina.nombre}}</td>
+  <tr *ngFor="let maquina of maquinasFiltradas">
+    <td>{{maquina.nombre}}</td>
 
-          <!-- Horas de uso actualizadas desde el componente de informes -->
-          <td>
-            <span [ngClass]="getColorHorasTrabajadas(maquina)" 
-                  [title]="'Horas totales desde proyecto: ' + (maquina.horas_uso || 0) + ' hs'">
-              <strong>{{maquina.horas_uso || 0}} hs</strong>
-            </span>
-          </td>
+    <!-- 🆕 Horómetro inicial desde el último reporte -->
+    <td>
+      <span [ngClass]="getColorHorasTrabajadas(maquina)" 
+            [title]="'Horómetro inicial del último reporte registrado'">
+        <strong>{{getHorometroInicial(maquina)}} hs</strong>
+      </span>
+    </td>
 
-          <td>
-            <button class="btn-editar-horas-mant" 
-                    (click)="abrirModalEditarHorasMantenimiento(maquina)" 
-                    title="Editar intervalo de mantenimiento">
-              {{getProximoMantenimiento(maquina)}} hs
-              <i class="fas fa-edit"></i>
-            </button>
-          </td>
+    <td>
+      <button class="btn-editar-horas-mant" 
+              (click)="abrirModalEditarHorasMantenimiento(maquina)" 
+              title="Editar intervalo de mantenimiento">
+        {{getProximoMantenimiento(maquina)}} hs
+        <i class="fas fa-edit"></i>
+      </button>
+    </td>
 
-          <td>
-            <span [ngClass]="getColorHorasRestantes(maquina)" [title]="getEstadoMantenimiento(maquina)">
-              <strong>{{getHorasRestantes(maquina)}} hs</strong>
-            </span>
-          </td>
+    <td>
+      <span [ngClass]="getColorHorasRestantes(maquina)" [title]="getEstadoMantenimiento(maquina)">
+        <strong>{{getHorasRestantes(maquina)}} hs</strong>
+      </span>
+    </td>
 
-          <td class="acciones">
-            <button class="btn-mant btn-mant-registrar" title="Registrar mantenimiento" (click)="abrirModalRegistrarMantenimiento(maquina)">
-              <i class="fas fa-wrench"></i>
-            </button>
-            <button class="btn-mant btn-mant-historial" title="Ver historial mantenimiento" (click)="abrirModalHistorial(maquina)">
-              <i class="fas fa-history"></i>
-            </button>
-            <button class="btn-notas" title="Notas" (click)="abrirModalNotas(maquina)">
-              <i class="fas fa-sticky-note"></i>
-            </button>
-            <button class="btn-editar" (click)="abrirModalEditar(maquina)">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn-eliminar" (click)="eliminarMaquina(maquina.id)">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-      </tbody>
+    <td class="acciones">
+      <button class="btn-mant btn-mant-registrar" title="Registrar mantenimiento" (click)="abrirModalRegistrarMantenimiento(maquina)">
+        <i class="fas fa-wrench"></i>
+      </button>
+      <button class="btn-mant btn-mant-historial" title="Ver historial mantenimiento" (click)="abrirModalHistorial(maquina)">
+        <i class="fas fa-history"></i>
+      </button>
+      <button class="btn-notas" title="Notas" (click)="abrirModalNotas(maquina)">
+        <i class="fas fa-sticky-note"></i>
+      </button>
+      <button class="btn-editar" (click)="abrirModalEditar(maquina)">
+        <i class="fas fa-edit"></i>
+      </button>
+      <button class="btn-eliminar" (click)="eliminarMaquina(maquina.id)">
+        <i class="fas fa-trash"></i>
+      </button>
+    </td>
+  </tr>
+</tbody>
     </table>
   </div>
 
@@ -79,7 +79,7 @@
 
 <!-- Modales (agregar/editar, horas, mantenimiento, historial, notas, confirmación) -->
 
-<!-- Modal para agregar/editar máquina -->
+<!-- ✅ CAMBIO: Modal simplificado - solo pide nombre -->
 <div class="modal" *ngIf="modalVisible">
   <div class="modal-content">
     <div class="modal-header">
@@ -93,14 +93,6 @@
           <input type="text" id="nombre" formControlName="nombre" placeholder="Nombre de la máquina">
           <div class="error-message" *ngIf="maquinaForm.get('nombre')?.invalid && maquinaForm.get('nombre')?.touched">
             El nombre es obligatorio
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="horas_uso">Horas de uso:</label>
-          <input type="number" id="horas_uso" formControlName="horas_uso" min="0">
-          <div class="error-message" *ngIf="maquinaForm.get('horas_uso')?.invalid && maquinaForm.get('horas_uso')?.touched">
-            Las horas deben ser un número válido mayor o igual a 0
           </div>
         </div>
 

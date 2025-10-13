@@ -84,20 +84,13 @@
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="estado">Estado</label>
-          <div class="toggle-switch">
-            <input type="checkbox" id="estado" formControlName="estado" class="toggle-input">
-            <label for="estado" class="toggle-label">
-              <span class="toggle-text">{{ projectForm.get('estado')?.value ? 'Activo' : 'Inactivo' }}</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="progress">Progreso (%)</label>
-          <input type="number" id="progress" formControlName="progress" class="form-control" min="0" max="100">
+      <div class="form-group">
+        <label for="estado">Estado</label>
+        <div class="toggle-switch">
+          <input type="checkbox" id="estado" formControlName="estado" class="toggle-input">
+          <label for="estado" class="toggle-label">
+            <span class="toggle-text">{{ projectForm.get('estado')?.value ? 'Activo' : 'Inactivo' }}</span>
+          </label>
         </div>
       </div>
 
@@ -147,8 +140,6 @@
         <div class="project-item header-row">
           <div class="project-name">Nombre</div>
           <div class="project-manager">Responsable</div>
-          <div class="project-progress">Progreso</div>
-          <div class="project-days">Días Restantes</div>
           <div class="project-status">Estado</div>
           <div class="project-actions">Acciones</div>
         </div>
@@ -157,21 +148,6 @@
           [class.selected]="selectedProject && selectedProject.id === project.id" [class.inactive]="!project.estado">
           <div class="project-name" (click)="selectProject(project)">{{ project.nombre }}</div>
           <div class="project-manager">{{ project.manager }}</div>
-          <div class="project-progress">
-            <div class="progress-bar">
-              <div class="progress-fill" [style.width.%]="project.progress"></div>
-            </div>
-            <span>{{ project.progress }}%</span>
-          </div>
-          <div class="project-days" [ngClass]="getDaysPriorityClass(project.daysRemaining)">
-            <ng-container *ngIf="project.progress === 100; else diasRestantes">
-              <span class="completed-indicator">Completado</span>
-            </ng-container>
-            <ng-template #diasRestantes>
-              <span *ngIf="project.isOverdue" class="overdue-indicator">⚠️</span>
-              {{ project.isOverdue ? 'Atrasado' : (project.daysRemaining + ' días restantes') }}
-            </ng-template>
-          </div>
           <div class="project-status">
             <span class="status-badge" [ngClass]="project.estado ? 'status-active' : 'status-inactive'">
               {{ project.estado ? 'Activo' : 'Inactivo' }}
@@ -255,29 +231,6 @@
         <div class="detail-item">
           <label>Fecha de finalización:</label>
           <p>{{ selectedProject.endDate | date : 'dd/MM/yyyy' }}</p>
-        </div>
-
-        <div class="detail-item">
-          <label>Días restantes:</label>
-          <p [ngClass]="getDaysPriorityClass(selectedProject.daysRemaining)">
-            <span *ngIf="selectedProject.isOverdue" class="overdue-indicator">⚠️</span>
-            {{ selectedProject.isOverdue ? 'Proyecto atrasado' : (selectedProject.daysRemaining + ' días restantes') }}
-          </p>
-        </div>
-      </div>
-
-      <div class="detail-section">
-        <label>Progreso:</label>
-        <div class="detail-progress">
-          <div class="progress-bar large">
-            <div class="progress-fill" [style.width.%]="selectedProject.progress"></div>
-          </div>
-          <span>{{ selectedProject.progress }}%</span>
-        </div>
-
-        <div class="progress-control">
-          <input type="range" min="0" max="100" [value]="selectedProject.progress || 0"
-            (input)="updateProjectProgress(selectedProject, $any($event.target).value)">
         </div>
       </div>
 

@@ -4,11 +4,11 @@ import { Observable, of, throwError } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
+// ✅ CAMBIO: Eliminado campo "estado"
 export interface Maquina {
   id: number;
   codigo: string;
   nombre: string;
-  estado: boolean;
   horas_uso: number;
 }
 
@@ -55,7 +55,35 @@ export class MachinesService {
   }
 
   crearMaquina(maquina: Omit<Maquina, 'id'>): Observable<Maquina> {
-    return this.http.post<Maquina>(this.apiUrl, maquina);
+    // ✅ IMPORTANTE: Crear un objeto NUEVO con SOLO el campo nombre
+    // Esto evita que se envíen campos extras como "estado"
+    const payload = {
+      nombre: String(maquina.nombre).trim()
+    };
+    
+    console.log('🔍 Datos que llegan al servicio:', maquina);
+    console.log('🔍 Payload LIMPIO a enviar:', payload);
+    console.log('🔍 Claves del payload:', Object.keys(payload));
+    console.log('🔍 JSON del payload:', JSON.stringify(payload));
+    
+    // Usar JSON.parse(JSON.stringify()) para asegurar que es un objeto limpio
+    const payloadLimpio = JSON.parse(JSON.stringify(payload));
+    
+    console.log('🔍 Payload después de limpiar:', payloadLimpio);
+    console.log('🔍 Tiene "estado"?:', 'estado' in payloadLimpio);
+    
+    return this.http.post<Maquina>(this.apiUrl, payloadLimpio).pipe(
+      tap(response => console.log('✅ Respuesta exitosa del servidor:', response)),
+      catchError(error => {
+        console.error('❌ Error en la petición:', error);
+        console.error('❌ URL:', this.apiUrl);
+        console.error('❌ Payload enviado:', payloadLimpio);
+        if (error.error) {
+          console.error('❌ Detalle del error:', error.error);
+        }
+        return throwError(() => error);
+      })
+    );
   }
 
   actualizarMaquina(maquina: Maquina): Observable<Maquina> {
@@ -92,7 +120,7 @@ export class MachinesService {
     return this.http.get<EstadisticasHoras>(`${this.apiUrl}/${maquinaId}/horas/estadisticas`, { params });
   }
 
-  // ====================== NUEVO MÉTODO: HORÓMETRO INICIAL DESDE REPORTES ======================
+  // ========== HORÓMETRO INICIAL ==========
   obtenerHorasIniciales(): Observable<Record<number, number>> {
     const url = `${this.apiUrl}/horometro-inicial`;
     return this.http.get<Record<number, number>>(url).pipe(
@@ -100,19 +128,32 @@ export class MachinesService {
       catchError(error => throwError(() => error))
     );
   }
-  // ====================== NUEVO MÉTODO: HORÓMETRO INICIAL POR MÁQUINA ======================
-obtenerHorometroInicial(maquinaId: number): Observable<number> {
-  const url = `${this.apiUrl}/${maquinaId}/horometro-inicial`;
-  return this.http.get<{ horometro_inicial: number }>(url).pipe(
-    tap(response => console.log(`⏱️ Horómetro inicial de máquina ${maquinaId}:`, response.horometro_inicial)),
-    // Extraemos directamente el valor del horómetro
-    map(response => response.horometro_inicial ?? 0),
-    catchError(error => {
-      console.error(`Error al obtener horómetro inicial de máquina ${maquinaId}:`, error);
-      return of(0); // Si falla, devolvemos 0
-    })
-  );
-}
+
+  obtenerHorometroInicial(maquinaId: number): Observable<number> {
+    const url = `${this.apiUrl}/${maquinaId}/horometro-inicial`;
+    return this.http.get<{ horometro_inicial: number }>(url).pipe(
+      tap(response => console.log(`⏱️ Horómetro inicial de máquina ${maquinaId}:`, response.horometro_inicial)),
+      map(response => response.horometro_inicial ?? 0),
+      catchError(error => {
+        console.error(`Error al obtener horómetro inicial de máquina ${maquinaId}:`, error);
+        return of(0);
+      })
+    );
+  }
+
+  // 🆕 NUEVO: Actualizar horómetro inicial
+  actualizarHorometroInicial(maquinaId: number, nuevoHorometro: number): Observable<any> {
+    const url = `${this.apiUrl}/${maquinaId}/horometro-inicial`;
+    const body = { horometro_inicial: nuevoHorometro };
+    console.log('⏱️ Actualizando horómetro inicial en:', url, 'con body:', body);
+    return this.http.put<any>(url, body).pipe(
+      tap((response: any) => console.log('✅ Horómetro actualizado:', response)),
+      catchError((error: any) => {
+        console.error('❌ Error al actualizar horómetro:', error);
+        return throwError(() => error);
+      })
+    );
+  }
 
   // ========== UTILIDADES ==========
   validarRegistroHoras(registro: RegistroHoras): boolean {

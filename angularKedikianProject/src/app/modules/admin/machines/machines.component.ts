@@ -1,4 +1,3 @@
-// machines.component.ts - Con correcciones de errores 422
 import { CommonModule, NgClass } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import {
@@ -24,6 +23,11 @@ interface NotaMaquina {
   usuario: string;
 }
 
+// 🆕 Extender la interfaz Maquina con horómetro inicial
+interface MaquinaExtendida extends Maquina {
+  horometro_inicial?: number;
+}
+
 @Component({
   selector: 'app-maquinaria',
   imports: [CommonModule, NgClass, FormsModule, ReactiveFormsModule],
@@ -31,13 +35,13 @@ interface NotaMaquina {
   styleUrls: ['./machines.component.css'],
 })
 export class MaquinariaComponent implements OnInit {
-  maquinas: Maquina[] = [];
-  maquinasFiltradas: Maquina[] = [];
+  maquinas: MaquinaExtendida[] = [];
+  maquinasFiltradas: MaquinaExtendida[] = [];
   terminoBusqueda: string = '';
 
   modalVisible: boolean = false;
   modoEdicion: boolean = false;
-  maquinaEditando: Maquina | null = null;
+  maquinaEditando: MaquinaExtendida | null = null;
   modalConfirmacionVisible: boolean = false;
   maquinaAEliminar: number | null = null;
 
@@ -52,7 +56,7 @@ export class MaquinariaComponent implements OnInit {
   modalHistorialVisible: boolean = false;
   modalEditarHorasMantenimientoVisible: boolean = false;
   modalNotasVisible: boolean = false;
-  maquinaSeleccionada: Maquina | null = null;
+  maquinaSeleccionada: MaquinaExtendida | null = null;
 
   ultimaHoraMantenimientoPorMaquina: Record<number, number> = {};
   historialPorMaquina: Record<number, Mantenimiento[]> = {};
@@ -64,9 +68,9 @@ export class MaquinariaComponent implements OnInit {
     private machinesService: MachinesService,
     private mantenimientosService: MantenimientosService
   ) {
+    // ✅ CAMBIO: Solo pedir nombre al crear máquina
     this.maquinaForm = this.fb.group({
       nombre: ['', [Validators.required]],
-      horas_uso: [0, [Validators.required, Validators.min(0)]],
     });
 
     this.mantenimientoForm = this.fb.group({
@@ -97,24 +101,28 @@ export class MaquinariaComponent implements OnInit {
   }
 
   loadData(): void {
-  forkJoin({
-    maquinas: this.machinesService.obtenerMaquinas(),
-    mantenimientos: this.mantenimientosService.listarTodos(),
-    horometros: this.machinesService.obtenerHorasIniciales()
-  }).subscribe(({ maquinas, mantenimientos, horometros }) => {
-    this.maquinas = maquinas;
+    forkJoin({
+      maquinas: this.machinesService.obtenerMaquinas(),
+      mantenimientos: this.mantenimientosService.listarTodos(),
+      horometros: this.machinesService.obtenerHorasIniciales()
+    }).subscribe(({ maquinas, mantenimientos, horometros }) => {
+      console.log('🔍 Horómetros recibidos:', horometros);
+      
+      // 🆕 Extender las máquinas con horómetro inicial
+      this.maquinas = maquinas.map(m => {
+        const horometroInicial = horometros[m.id] !== undefined ? horometros[m.id] : 0;
+        console.log(`Máquina ${m.nombre} (ID: ${m.id}): horometro_inicial = ${horometroInicial}`);
+        return {
+          ...m,
+          horometro_inicial: horometroInicial
+        };
+      });
 
-    // Actualizar horas_uso con el horómetro actual desde reportes
-    this.maquinas.forEach(m => {
-      if (horometros[m.id] !== undefined) {
-        m.horas_uso = horometros[m.id];
-      }
+      console.log('✅ Máquinas con horómetro:', this.maquinas);
+      this.procesarHistorialMantenimientos(mantenimientos);
+      this.filtrarMaquinas();
     });
-
-    this.procesarHistorialMantenimientos(mantenimientos);
-    this.filtrarMaquinas();
-  });
-}
+  }
 
   filtrarMaquinas(): void {
     let resultado = [...this.maquinas];
@@ -129,22 +137,22 @@ export class MaquinariaComponent implements OnInit {
     this.maquinasFiltradas = resultado;
   }
 
+  // ✅ CAMBIO: Reset solo con nombre
   abrirModalAgregar(): void {
     this.modoEdicion = false;
     this.maquinaEditando = null;
     this.maquinaForm.reset({
       nombre: '',
-      horas_uso: 0,
     });
     this.modalVisible = true;
   }
 
-  abrirModalEditar(maquina: Maquina): void {
+  // ✅ CAMBIO: Set solo nombre al editar
+  abrirModalEditar(maquina: MaquinaExtendida): void {
     this.modoEdicion = true;
     this.maquinaEditando = maquina;
     this.maquinaForm.setValue({
       nombre: maquina.nombre,
-      horas_uso: maquina.horas_uso,
     });
     this.modalVisible = true;
   }
@@ -153,55 +161,84 @@ export class MaquinariaComponent implements OnInit {
     this.modalVisible = false;
   }
 
+  // ✅ CAMBIO: Backend solo acepta nombre (genera código automáticamente)
   guardarMaquina(): void {
-    if (this.maquinaForm.invalid) {
-      this.maquinaForm.markAllAsTouched();
-      return;
-    }
-    const formData = this.maquinaForm.value;
-
-    if (this.modoEdicion && this.maquinaEditando) {
-      this.machinesService.actualizarMaquina({
-        id: this.maquinaEditando.id,
-        codigo: this.maquinaEditando.codigo,
-        nombre: formData.nombre,
-        estado: true,
-        horas_uso: formData.horas_uso,
-      }).subscribe({
-        next: () => {
-          this.loadData();
-          this.mostrarMensaje('Máquina actualizada correctamente');
-          this.cerrarModal();
-        },
-        error: () => {
-          this.mostrarMensaje('Error al actualizar la máquina');
-        }
-      });
-    } else {
-      const nuevoCodigo = this.generarNuevoCodigo();
-      this.machinesService.crearMaquina({
-        codigo: nuevoCodigo.toString(),
-        nombre: formData.nombre,
-        estado: true,
-        horas_uso: formData.horas_uso,
-      } as any).subscribe({
-        next: (maquinaCreada) => {
-          this.loadData();
-          this.mostrarMensaje('Máquina agregada correctamente');
-          this.cerrarModal();
-        },
-        error: () => {
-          this.mostrarMensaje('Error al agregar la máquina');
-        }
-      });
-    }
+  if (this.maquinaForm.invalid) {
+    this.maquinaForm.markAllAsTouched();
+    return;
   }
+  
+  const formData = this.maquinaForm.value;
+  console.log('📝 Datos del formulario:', formData);
+  console.log('📝 Claves del formulario:', Object.keys(formData));
 
-  generarNuevoCodigo(): number {
-    return this.maquinas.length > 0
-      ? Math.max(...this.maquinas.map((m) => Number(m.codigo))) + 1
-      : 1;
+  if (this.modoEdicion && this.maquinaEditando) {
+    // Al editar, enviamos solo los campos necesarios
+    const maquinaActualizada: Maquina = {
+      id: this.maquinaEditando.id,
+      codigo: this.maquinaEditando.codigo,
+      nombre: formData.nombre.trim(),
+      horas_uso: this.maquinaEditando.horas_uso,
+    };
+    
+    console.log('✏️ Actualizando máquina:', maquinaActualizada);
+    
+    this.machinesService.actualizarMaquina(maquinaActualizada).subscribe({
+      next: () => {
+        this.loadData();
+        this.mostrarMensaje('Máquina actualizada correctamente');
+        this.cerrarModal();
+      },
+      error: (error) => {
+        console.error('❌ Error al actualizar:', error);
+        const errorMsg = error.error?.message || error.error?.detail || 'Error al actualizar la máquina';
+        this.mostrarMensaje(`Error: ${errorMsg}`);
+      }
+    });
+  } else {
+    // ✅ CREAR: Enviar SOLO el nombre, nada más
+    // Importante: crear un objeto completamente nuevo
+    const nuevaMaquina = {
+      nombre: formData.nombre.trim()
+    };
+    
+    console.log('➕ Creando nueva máquina');
+    console.log('📤 Objeto a enviar:', nuevaMaquina);
+    console.log('📤 Claves:', Object.keys(nuevaMaquina));
+    console.log('📤 JSON:', JSON.stringify(nuevaMaquina));
+    console.log('📤 Tiene "estado"?:', 'estado' in nuevaMaquina);
+    console.log('📤 Tiene "horas_uso"?:', 'horas_uso' in nuevaMaquina);
+    console.log('📤 Tiene "codigo"?:', 'codigo' in nuevaMaquina);
+    
+    this.machinesService.crearMaquina(nuevaMaquina as Omit<Maquina, 'id'>).subscribe({
+      next: (maquinaCreada) => {
+        console.log('✅ Máquina creada exitosamente:', maquinaCreada);
+        this.loadData();
+        this.mostrarMensaje('Máquina agregada correctamente');
+        this.cerrarModal();
+      },
+      error: (error) => {
+        console.error('❌ Error completo al crear:', error);
+        console.error('❌ Status:', error.status);
+        console.error('❌ Error.error:', error.error);
+        console.error('❌ Headers:', error.headers);
+        
+        // Mostrar el error completo del backend
+        let errorMsg = 'Error al agregar la máquina';
+        if (error.error?.message) {
+          errorMsg = error.error.message;
+        } else if (error.error?.detail) {
+          errorMsg = error.error.detail;
+        } else if (typeof error.error === 'string') {
+          errorMsg = error.error;
+        }
+        
+        console.error('❌ Mensaje de error final:', errorMsg);
+        this.mostrarMensaje(`Error: ${errorMsg}`);
+      }
+    });
   }
+}
 
   eliminarMaquina(id: number): void {
     this.maquinaAEliminar = id;
@@ -263,18 +300,18 @@ export class MaquinariaComponent implements OnInit {
     return ordenados[0];
   }
 
-  getUltimoMantenimiento(maquina: Maquina): number {
+  getUltimoMantenimiento(maquina: MaquinaExtendida): number {
     const ultima = this.ultimaHoraMantenimientoPorMaquina[maquina.id];
     return typeof ultima === 'number' ? ultima : 0;
   }
 
-  getHorasTrabajadas(maquina: Maquina): number {
+  getHorasTrabajadas(maquina: MaquinaExtendida): number {
     const horasActuales = maquina.horas_uso || 0;
     const horasUltimoMant = this.getUltimoMantenimiento(maquina);
     return Math.max(0, horasActuales - horasUltimoMant);
   }
 
-  getProximoMantenimiento(maquina: Maquina): number {
+  getProximoMantenimiento(maquina: MaquinaExtendida): number {
     if (this.proximoMantenimientoPorMaquina[maquina.id]) {
       return this.proximoMantenimientoPorMaquina[maquina.id];
     }
@@ -282,30 +319,27 @@ export class MaquinariaComponent implements OnInit {
     return horasUltimoMant + 250;
   }
 
-  getHorasRestantes(maquina: Maquina): number {
-    const horasActuales = maquina.horas_uso || 0;
+  getHorasRestantes(maquina: MaquinaExtendida): number {
+    const horometroInicial = this.getHorometroInicial(maquina);
     const proximoMant = this.getProximoMantenimiento(maquina);
-    return Math.max(0, proximoMant - horasActuales);
+    const restantes = proximoMant - horometroInicial;
+    return Math.max(0, restantes);
   }
 
-  getColorHorasRestantes(maquina: Maquina): string {
+  getColorHorasRestantes(maquina: MaquinaExtendida): string {
     const horasRestantes = this.getHorasRestantes(maquina);
-    const horasActuales = maquina.horas_uso || 0;
-    const proximoMant = this.getProximoMantenimiento(maquina);
-    const totalHoras = proximoMant - this.getUltimoMantenimiento(maquina);
-    const porcentajeRestante = totalHoras > 0 ? (horasRestantes / totalHoras) * 100 : 0;
     
-    if (horasRestantes <= 0 || horasActuales >= proximoMant) {
-      return 'text-danger';
-    } else if (porcentajeRestante <= 10) {
-      return 'text-warning-bold';
-    } else if (porcentajeRestante <= 20) {
-      return 'text-warning';
+    if (horasRestantes <= 0) {
+      return 'text-danger'; // Rojo fuerte - Ya pasó el mantenimiento
+    } else if (horasRestantes <= 20) {
+      return 'text-danger'; // Rojo fuerte - 20 horas o menos
+    } else if (horasRestantes <= 100) {
+      return 'text-warning'; // Amarillo - 100 horas o menos
     }
-    return 'text-success';
+    return 'text-success'; // Verde - Más de 100 horas
   }
 
-  getColorHorasTrabajadas(maquina: Maquina): string {
+  getColorHorasTrabajadas(maquina: MaquinaExtendida): string {
     const horasTrabajadas = this.getHorasTrabajadas(maquina);
     const proximoMant = this.getProximoMantenimiento(maquina);
     const totalHoras = proximoMant - this.getUltimoMantenimiento(maquina);
@@ -321,7 +355,7 @@ export class MaquinariaComponent implements OnInit {
     return 'text-success';
   }
 
-  getEstadoMantenimiento(maquina: Maquina): string {
+  getEstadoMantenimiento(maquina: MaquinaExtendida): string {
     const horasActuales = maquina.horas_uso || 0;
     const proximoMant = this.getProximoMantenimiento(maquina);
     const restantes = this.getHorasRestantes(maquina);
@@ -336,9 +370,16 @@ export class MaquinariaComponent implements OnInit {
     return `Todo OK - Faltan ${restantes} hs`;
   }
 
+  // 🆕 NUEVO MÉTODO: Obtener horómetro inicial para mostrar en la tabla
+  getHorometroInicial(maquina: MaquinaExtendida): number {
+    const valor = maquina.horometro_inicial ?? 0;
+    console.log(`getHorometroInicial para ${maquina.nombre}: ${valor}`);
+    return valor;
+  }
+
   // ========== MÉTODOS PARA EDITAR HORAS DEL PRÓXIMO MANTENIMIENTO ==========
 
-  abrirModalEditarHorasMantenimiento(maquina: Maquina): void {
+  abrirModalEditarHorasMantenimiento(maquina: MaquinaExtendida): void {
     this.maquinaSeleccionada = maquina;
     const proximoMant = this.getProximoMantenimiento(maquina);
     this.horasMantenimientoForm.setValue({
@@ -397,7 +438,7 @@ export class MaquinariaComponent implements OnInit {
 
   // ========== MÉTODOS DE MANTENIMIENTO ==========
 
-  abrirModalRegistrarMantenimiento(maquina: Maquina): void {
+  abrirModalRegistrarMantenimiento(maquina: MaquinaExtendida): void {
     this.maquinaSeleccionada = maquina;
     this.mantenimientoForm.reset({
       fecha: new Date().toISOString().split('T')[0],
@@ -418,7 +459,7 @@ export class MaquinariaComponent implements OnInit {
       return;
     }
     const maquina = this.maquinaSeleccionada;
-    const horasActuales = maquina.horas_uso || 0;
+    const horasActuales = this.getHorometroInicial(maquina);
     const { fecha, tipo, descripcion } = this.mantenimientoForm.value;
     
     const fechaISO = new Date(fecha).toISOString();
@@ -445,7 +486,7 @@ export class MaquinariaComponent implements OnInit {
     });
   }
 
-  abrirModalHistorial(maquina: Maquina): void {
+  abrirModalHistorial(maquina: MaquinaExtendida): void {
     this.maquinaSeleccionada = maquina;
     this.mantenimientosService.listarPorMaquina(maquina.id).subscribe({
       next: (lista) => {
@@ -484,7 +525,7 @@ export class MaquinariaComponent implements OnInit {
 
   // ========== MÉTODOS PARA AGREGAR HORAS ==========
 
-  abrirModalAgregarHoras(maquina: Maquina): void {
+  abrirModalAgregarHoras(maquina: MaquinaExtendida): void {
     this.maquinaSeleccionada = maquina;
     this.horasForm.reset({
       horas: 0,
@@ -550,7 +591,7 @@ export class MaquinariaComponent implements OnInit {
 
   // ========== MÉTODOS PARA NOTAS ==========
 
-  abrirModalNotas(maquina: Maquina): void {
+  abrirModalNotas(maquina: MaquinaExtendida): void {
     this.maquinaSeleccionada = maquina;
     this.notaForm.reset({
       texto: ''

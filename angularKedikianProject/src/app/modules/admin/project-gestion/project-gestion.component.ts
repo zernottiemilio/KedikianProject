@@ -16,15 +16,6 @@ interface Contrato {
   nombre: string;
 }
 
-interface MaquinaAsignada {
-  id: number;
-  codigo: string;
-  nombre: string;
-  estado: boolean;
-  horas_uso: number;
-  fechaAsignacion: Date;
-}
-
 @Component({
   selector: 'app-project-gestion',
   standalone: true,
@@ -73,10 +64,6 @@ export class ProjectGestionComponent implements OnInit {
       endDate: ['', Validators.required],
       manager: ['', Validators.required],
       estado: [true],
-      progress: [
-        0,
-        [Validators.required, Validators.min(0), Validators.max(100)],
-      ],
       ubicacion: ['', Validators.required],
       contrato_id: [null, Validators.required],
       description: ['', Validators.required],
@@ -90,7 +77,6 @@ export class ProjectGestionComponent implements OnInit {
     // Cargar proyectos reales desde el backend
     this.loadProjects();
 
-    this.calculateDaysRemaining();
     this.filterProjects();
     this.calculateTotalPages();
   }
@@ -109,113 +95,40 @@ export class ProjectGestionComponent implements OnInit {
     this.projectService.getProjects().subscribe({
       next: (projects) => {
         console.log('Datos originales del backend:', projects);
-        console.log('Estructura del primer proyecto:', projects[0] ? Object.keys(projects[0]) : 'No hay proyectos');
         
         this.projects = projects.map(project => {
           // Valores por defecto para campos faltantes del backend
           const defaultProject = {
             description: 'Sin descripción',
             startDate: new Date(),
-            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días desde hoy
+            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             manager: 'Sin asignar',
-            progress: 0,
-            daysRemaining: 0
           };
-
-          console.log('Proyecto original del backend:', project);
-          console.log('Campos disponibles:', Object.keys(project));
-          console.log('fecha_inicio:', project.fecha_inicio);
-          console.log('fecha_fin:', project.fecha_fin);
-          console.log('descripcion:', project.descripcion);
-          console.log('gerente:', project.gerente);
-          console.log('progreso:', project.progreso);
 
           const mappedProject = {
             ...defaultProject,
             ...project,
             // Mapear campos del backend a campos del frontend
             description: project.descripcion || project.description || defaultProject.description,
-            contrato_id: project.contrato_id ?? null, // Mapeo explícito de contrato_id
+            contrato_id: project.contrato_id ?? null,
             startDate: project.fecha_inicio ? new Date(project.fecha_inicio) : 
                       project.startDate ? new Date(project.startDate) : defaultProject.startDate,
             endDate: project.fecha_fin ? new Date(project.fecha_fin) : 
                     project.endDate ? new Date(project.endDate) : defaultProject.endDate,
             manager: project.gerente || project.manager || defaultProject.manager,
-            progress: project.progreso || project.progress || defaultProject.progress,
             fecha_creacion: project.fecha_creacion ? new Date(project.fecha_creacion) : new Date()
           };
           
-          console.log('Proyecto mapeado:', mappedProject);
-          console.log('Fechas finales:', {
-            startDate: mappedProject.startDate,
-            endDate: mappedProject.endDate
-          });
           return mappedProject;
         });
         
         console.log('Proyectos mapeados:', this.projects);
-        this.calculateDaysRemaining();
         this.filterProjects();
         this.calculateTotalPages();
       },
       error: (error) => {
         console.error('Error al cargar proyectos:', error);
         this.mostrarMensaje('Error al cargar proyectos');
-      }
-    });
-  }
-
-  calculateDaysRemaining(): void {
-    const today = new Date();
-    console.log('Fecha actual para cálculo:', today);
-    
-    this.projects.forEach((project) => {
-      try {
-        console.log(`Calculando días para proyecto "${project.nombre}":`);
-        console.log('- Fecha de inicio:', project.startDate);
-        console.log('- Fecha de fin:', project.endDate);
-        console.log('- Tipo de fecha de inicio:', typeof project.startDate);
-        console.log('- Tipo de fecha de fin:', typeof project.endDate);
-        
-        // Verificar que las fechas sean válidas
-        if (project.startDate && project.endDate && 
-            !isNaN(project.startDate.getTime()) && !isNaN(project.endDate.getTime())) {
-          
-          // Calcular duración total del proyecto (días)
-          const totalDuration = Math.ceil((project.endDate.getTime() - project.startDate.getTime()) / (1000 * 3600 * 24));
-          
-          // Calcular días transcurridos desde el inicio
-          const daysElapsed = Math.ceil((today.getTime() - project.startDate.getTime()) / (1000 * 3600 * 24));
-          
-          // Calcular días restantes
-          const daysRemaining = totalDuration - daysElapsed;
-          
-          // Asegurar que no sea negativo
-          project.daysRemaining = Math.max(0, daysRemaining);
-          
-          // Determinar si el proyecto está atrasado
-          project.isOverdue = daysElapsed > totalDuration;
-          
-          console.log('- Duración total del proyecto:', totalDuration, 'días');
-          console.log('- Días transcurridos:', daysElapsed, 'días');
-          console.log('- Días restantes:', project.daysRemaining, 'días');
-          console.log('- Proyecto atrasado:', project.isOverdue);
-          
-        } else {
-          project.daysRemaining = 0;
-          project.isOverdue = false;
-          console.warn('- Fechas inválidas para proyecto:', project.nombre);
-          if (!project.startDate || isNaN(project.startDate.getTime())) {
-            console.warn('  - Fecha de inicio inválida');
-          }
-          if (!project.endDate || isNaN(project.endDate.getTime())) {
-            console.warn('  - Fecha de fin inválida');
-          }
-        }
-      } catch (error) {
-        project.daysRemaining = 0;
-        project.isOverdue = false;
-        console.error('- Error calculando días restantes para proyecto:', project.nombre, error);
       }
     });
   }
@@ -232,18 +145,9 @@ export class ProjectGestionComponent implements OnInit {
     if (this.projectForm.valid) {
       const formValues = this.projectForm.value;
       console.log('Valores del formulario:', formValues);
-      console.log('Formulario válido:', this.projectForm.valid);
-      console.log('Errores del formulario:', this.projectForm.errors);
       
       const startDate = new Date(formValues.startDate);
       const endDate = new Date(formValues.endDate);
-      
-      console.log('Fechas parseadas:', { startDate, endDate });
-
-      // Calcular días restantes
-      const today = new Date();
-      const diffTime = endDate.getTime() - today.getTime();
-      const daysRemaining = Math.ceil(diffTime / (1000 * 3600 * 24));
 
       if (this.isEditing && formValues.id) {
         // Actualizar proyecto existente
@@ -253,11 +157,10 @@ export class ProjectGestionComponent implements OnInit {
           fecha_inicio: startDate.toISOString().split('T')[0],
           fecha_fin: endDate.toISOString().split('T')[0],
           estado: formValues.estado,
-          progreso: formValues.progress,
           gerente: formValues.manager,
           contrato_id: formValues.contrato_id,
           ubicacion: formValues.ubicacion,
-          descripcion: formValues.description, // CAMBIO: antes era 'description'
+          descripcion: formValues.description,
         };
 
         console.log('Datos a enviar al backend:', projectToUpdate);
@@ -282,15 +185,13 @@ export class ProjectGestionComponent implements OnInit {
           fecha_inicio: startDate.toISOString().split('T')[0],
           fecha_fin: endDate.toISOString().split('T')[0],
           estado: formValues.estado,
-          progreso: formValues.progress,
           gerente: formValues.manager,
           contrato_id: formValues.contrato_id,
           ubicacion: formValues.ubicacion,
-          descripcion: formValues.description, // CAMBIO: antes era 'description'
+          descripcion: formValues.description,
         };
 
         console.log('Datos a enviar al backend:', newProject);
-        console.log('Datos a enviar al backend (JSON):', JSON.stringify(newProject, null, 2));
 
         this.projectService.createProject(newProject).subscribe({
           next: () => {
@@ -308,7 +209,6 @@ export class ProjectGestionComponent implements OnInit {
       }
     } else {
       console.error('Formulario inválido:', this.projectForm.errors);
-      console.error('Estado de los campos:');
       Object.keys(this.projectForm.controls).forEach(key => {
         const control = this.projectForm.get(key);
         console.error(`- ${key}:`, {
@@ -337,7 +237,6 @@ export class ProjectGestionComponent implements OnInit {
       endDate: this.formatDateForInput(project.endDate),
       manager: project.manager,
       estado: project.estado,
-      progress: project.progress,
       ubicacion: project.ubicacion,
       contrato_id: project.contrato_id,
       description: project.description,
@@ -379,21 +278,6 @@ export class ProjectGestionComponent implements OnInit {
     }
   }
 
-  updateProjectProgress(project: Project, progress: number): void {
-    const projectToUpdate = { ...project, progress: Number(progress) };
-    
-    this.projectService.updateProject(projectToUpdate).subscribe({
-      next: () => {
-        this.loadProjects();
-        this.mostrarMensaje('Progreso actualizado correctamente');
-      },
-      error: (error) => {
-        console.error('Error al actualizar progreso:', error);
-        this.mostrarMensaje('Error al actualizar progreso');
-      }
-    });
-  }
-
   toggleProjectStatus(project: Project): void {
     const projectToUpdate = { ...project, estado: !project.estado };
     
@@ -413,7 +297,7 @@ export class ProjectGestionComponent implements OnInit {
     this.filteredProjects = this.projects.filter((project) => {
       // Filtrar por estado (activo/inactivo)
       if (this.filterStatus !== 'all') {
-        const estadoFilter = this.filterStatus === 'true'; // Convertir string a boolean
+        const estadoFilter = this.filterStatus === 'true';
         if (project.estado !== estadoFilter) {
           return false;
         }
@@ -470,13 +354,6 @@ export class ProjectGestionComponent implements OnInit {
 
   getStatusClass(status: boolean): string {
     return status ? 'status-active' : 'status-inactive';
-  }
-
-  getDaysPriorityClass(days: number): string {
-    if (days <= 0) return 'days-overdue';
-    if (days <= 7) return 'days-urgent';
-    if (days <= 30) return 'days-warning';
-    return 'days-normal';
   }
 
   getContratoNombre(contratoId: number): string {

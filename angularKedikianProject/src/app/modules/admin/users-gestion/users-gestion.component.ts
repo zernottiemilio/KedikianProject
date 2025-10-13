@@ -7,12 +7,8 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import { Observable } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
-import Modal from 'bootstrap/js/dist/modal';
 import { UserService, JornadaLaboral } from '../../../core/services/user.service';
 
-// Interfaz de Usuario
 interface User {
   id: number;
   nombre: string;
@@ -20,10 +16,9 @@ interface User {
   hash_contrasena?: string;
   estado: boolean;
   roles: ['ADMINISTRADOR'] | ['OPERARIO'];
-  fecha_creacion: Date;
+  fecha_creacion: Date | string; // Cambiado para aceptar ambos tipos
 }
 
-// Interfaz para filtros
 interface UserFilters {
   id: string;
   nombre: string;
@@ -40,16 +35,12 @@ interface UserFilters {
   styleUrls: ['./users-gestion.component.css'],
 })
 export class UsersGestionComponent implements OnInit {
-  // Usuarios
   users: User[] = [];
   filteredUsers: User[] = [];
-
-  // Formulario
   userForm: FormGroup;
   isEditMode = false;
   userToDelete: User | null = null;
-
-  // Filtros
+  
   searchTerm = '';
   filters: UserFilters = {
     id: '',
@@ -59,33 +50,27 @@ export class UsersGestionComponent implements OnInit {
     estado: '',
   };
 
-  // Paginación
   itemsPerPage = 10;
   currentPage = 1;
   totalPages = 1;
-  // Opciones de roles disponibles
   roleOptions = ['ADMINISTRADOR', 'OPERARIO'] as const;
 
-  // Ordenamiento
   sortColumn = 'id';
   sortDirection = 'asc';
 
-  // Modales
-  private userModal: any;
-  private deleteConfirmModal: any;
-  private jornadaModal: any;
   isEditModalOpen = false;
   isDeleteModalOpen = false;
   isJornadaModalOpen = false;
   modalOverlayActive = false;
   private originalUser: User | null = null;
 
-  // Jornadas Laborales
   jornadasLaborales: JornadaLaboral[] = [];
   selectedUser: User | null = null;
   loadingJornadas = false;
 
-  // Función para mapear roles al formato del backend
+  // Nueva propiedad para controlar si se debe cambiar la contraseña
+  changePassword = false;
+
   private mapRolesToBackend(roles: string[]): string[] {
     return roles.map(role => {
       switch (role.toUpperCase()) {
@@ -99,6 +84,20 @@ export class UsersGestionComponent implements OnInit {
     });
   }
 
+  private mapRolesFromBackend(role: string): 'ADMINISTRADOR' | 'OPERARIO' {
+    const cleanRole = (role || '').replace(/[{}\s]/g, '').toLowerCase();
+    switch (cleanRole) {
+      case 'admin':
+      case 'administrador':
+        return 'ADMINISTRADOR';
+      case 'user':
+      case 'operario':
+        return 'OPERARIO';
+      default:
+        return 'OPERARIO';
+    }
+  }
+
   constructor(
     private fb: FormBuilder,
     private userService: UserService
@@ -107,142 +106,40 @@ export class UsersGestionComponent implements OnInit {
       id: [null],
       nombre: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
-      hash_contrasena: ['', [Validators.minLength(8)]],
+      hash_contrasena: [''],
       roles: ['OPERARIO', [Validators.required]],
-      estado: [[true], [Validators.required]],
+      estado: [true, [Validators.required]],
       fecha_creacion: [''],
     });
   }
 
   ngOnInit(): void {
     this.loadUsers();
-
-    // Inicializar los modales de Bootstrap
-    this.initModals();
-  }
-
-  ngAfterViewInit(): void {
-    // Reinicializar modales después de que la vista se haya inicializado
-    this.initModals();
-  }
-
-  private initModals(): void {
-    setTimeout(() => {
-      try {
-        const userModalEl = document.getElementById('userModal');
-        const deleteModalEl = document.getElementById('deleteConfirmModal');
-        const jornadaModalEl = document.getElementById('jornadaModal');
-
-        if (userModalEl) {
-          this.userModal = new Modal(userModalEl);
-        }
-
-        if (deleteModalEl) {
-          this.deleteConfirmModal = new Modal(deleteModalEl);
-        }
-
-        if (jornadaModalEl) {
-          this.jornadaModal = new Modal(jornadaModalEl);
-        }
-      } catch (error) {
-        console.error('Error inicializando modales:', error);
-      }
-    }, 100);
   }
 
   private loadUsers(): void {
     this.userService.getUsers().subscribe({
       next: (users) => {
         this.users = users.map(user => {
-          // Normalizar el formato de roles
-          let role = Array.isArray(user.roles) ? user.roles[0] : user.roles;
-          // Limpiar el string de roles (quitar {}, espacios y otros caracteres)
-          role = (role || '').replace(/[{}\s]/g, '').toUpperCase();
-          
+          const role = Array.isArray(user.roles) ? user.roles[0] : user.roles;
           return {
             ...user,
-            roles: [role as 'ADMINISTRADOR' | 'OPERARIO']
+            roles: [this.mapRolesFromBackend(role as string)]
           };
         });
         this.applyFilters();
       },
       error: (err) => {
         console.error('Error al cargar usuarios:', err);
+        alert('Error al cargar usuarios: ' + err.message);
       },
     });
   }
 
-  // Método para cargar jornadas laborales
   private loadJornadasLaborales(usuarioId: number): void {
     this.loadingJornadas = true;
     this.jornadasLaborales = [];
     
-    // Datos de prueba - comentar/descomentar según necesites
-    setTimeout(() => {
-      this.jornadasLaborales = [
-        {
-          id: 1,
-          usuario_id: usuarioId,
-          fecha: '2024-01-15',
-          hora_inicio: '2024-01-15T08:00:00',
-          hora_fin: '2024-01-15T17:30:00',
-          tiempo_descanso: 60,
-          horas_regulares: 8.5,
-          horas_extras: 0,
-          total_horas: 8.5,
-          estado: 'completada',
-          es_feriado: false,
-          limite_regular_alcanzado: false,
-          overtime_confirmado: false,
-          is_active: false,
-          is_in_overtime: false,
-          puede_iniciar_overtime: false,
-          created: '2024-01-15T08:00:00'
-        },
-        {
-          id: 2,
-          usuario_id: usuarioId,
-          fecha: '2024-01-16',
-          hora_inicio: '2024-01-16T08:00:00',
-          hora_fin: '2024-01-16T19:00:00',
-          tiempo_descanso: 60,
-          horas_regulares: 9.0,
-          horas_extras: 2.0,
-          total_horas: 11.0,
-          estado: 'completada',
-          es_feriado: false,
-          limite_regular_alcanzado: true,
-          overtime_confirmado: true,
-          is_active: false,
-          is_in_overtime: false,
-          puede_iniciar_overtime: false,
-          created: '2024-01-16T08:00:00'
-        },
-        {
-          id: 3,
-          usuario_id: usuarioId,
-          fecha: '2024-01-17',
-          hora_inicio: '2024-01-17T08:00:00',
-          hora_fin: '2024-01-17T17:00:00',
-          tiempo_descanso: 60,
-          horas_regulares: 8.0,
-          horas_extras: 0,
-          total_horas: 8.0,
-          estado: 'completada',
-          es_feriado: true,
-          limite_regular_alcanzado: false,
-          overtime_confirmado: false,
-          is_active: false,
-          is_in_overtime: false,
-          puede_iniciar_overtime: false,
-          created: '2024-01-17T08:00:00'
-        }
-      ];
-      this.loadingJornadas = false;
-    }, 1000);
-
-    // Llamada real al servicio - comentar/descomentar según necesites
-    /*
     this.userService.getJornadasLaborales(usuarioId).subscribe({
       next: (jornadas) => {
         this.jornadasLaborales = jornadas;
@@ -254,10 +151,8 @@ export class UsersGestionComponent implements OnInit {
         this.loadingJornadas = false;
       }
     });
-    */
   }
 
-  // Método para abrir el modal de jornadas laborales
   openJornadaModal(user: User): void {
     this.selectedUser = user;
     this.isJornadaModalOpen = true;
@@ -265,7 +160,6 @@ export class UsersGestionComponent implements OnInit {
     this.loadJornadasLaborales(user.id);
   }
 
-  // Método para formatear tiempo de descanso
   formatTiempoDescanso(minutos: number): string {
     const horas = Math.floor(minutos / 60);
     const mins = minutos % 60;
@@ -275,7 +169,6 @@ export class UsersGestionComponent implements OnInit {
     return `${mins}m`;
   }
 
-  // Método para formatear fecha
   formatFecha(fechaStr: string): string {
     const fecha = new Date(fechaStr);
     return fecha.toLocaleDateString('es-ES', {
@@ -285,7 +178,6 @@ export class UsersGestionComponent implements OnInit {
     });
   }
 
-  // Método para obtener el color del badge del estado
   getEstadoBadgeClass(estado: string): string {
     switch (estado.toLowerCase()) {
       case 'activa':
@@ -301,11 +193,9 @@ export class UsersGestionComponent implements OnInit {
     }
   }
 
-  // Métodos de filtrado
   applyFilters(): void {
     let filtered = [...this.users];
 
-    // Filtrar por término de búsqueda rápida
     if (this.searchTerm) {
       const searchTermLower = this.searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -316,7 +206,6 @@ export class UsersGestionComponent implements OnInit {
       );
     }
 
-    // Filtrar por criterios específicos
     if (this.filters.id) {
       filtered = filtered.filter((user) =>
         user.id.toString().includes(this.filters.id)
@@ -347,10 +236,8 @@ export class UsersGestionComponent implements OnInit {
       filtered = filtered.filter((user) => user.estado === estadoBoolean);
     }
 
-    // Aplicar ordenamiento
     filtered = this.sortUsers(filtered);
 
-    // Aplicar paginación
     this.totalPages = Math.ceil(filtered.length / this.itemsPerPage);
 
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
@@ -359,7 +246,6 @@ export class UsersGestionComponent implements OnInit {
       startIndex + this.itemsPerPage
     );
 
-    // Asegurar que la página actual es válida
     if (this.currentPage > this.totalPages && this.totalPages > 0) {
       this.goToPage(this.totalPages);
     }
@@ -386,7 +272,9 @@ export class UsersGestionComponent implements OnInit {
           comparison = Number(a.estado) - Number(b.estado);
           break;
         case 'fecha_creacion':
-          comparison = a.fecha_creacion.getTime() - b.fecha_creacion.getTime();
+          const fechaA = new Date(a.fecha_creacion).getTime();
+          const fechaB = new Date(b.fecha_creacion).getTime();
+          comparison = fechaA - fechaB;
           break;
       }
 
@@ -401,8 +289,6 @@ export class UsersGestionComponent implements OnInit {
       this.sortColumn = column;
       this.sortDirection = 'asc';
     }
-
-    
     this.applyFilters();
   }
 
@@ -425,32 +311,11 @@ export class UsersGestionComponent implements OnInit {
     this.applyFilters();
   }
 
-  // Métodos de paginación
   goToPage(page: number): void {
     if (page >= 1 && page <= this.totalPages) {
       this.currentPage = page;
       this.applyFilters();
     }
-  }
-
-  // Modificar las funciones existentes para usar los nuevos estados
-  openEditUserModal(user: User): void {
-    this.isEditMode = true;
-    this.isEditModalOpen = true;
-    this.modalOverlayActive = true;
-    this.userForm.patchValue({
-      id: user.id,
-      nombre: user.nombre,
-      email: user.email,
-      roles: user.roles,
-      estado: user.estado,
-      fecha_creacion: typeof user.fecha_creacion === 'string'
-        ? user.fecha_creacion
-        : new Date(user.fecha_creacion).toISOString(),
-    });
-    this.userForm.get('hash_contrasena')?.clearValidators();
-    this.userForm.get('hash_contrasena')?.updateValueAndValidity();
-    this.originalUser = user;
   }
 
   openDeleteModal(user: User): void {
@@ -464,6 +329,7 @@ export class UsersGestionComponent implements OnInit {
     this.isDeleteModalOpen = false;
     this.isJornadaModalOpen = false;
     this.modalOverlayActive = false;
+    this.changePassword = false;
     this.userForm.reset();
     this.userToDelete = null;
     this.originalUser = null;
@@ -471,8 +337,25 @@ export class UsersGestionComponent implements OnInit {
     this.jornadasLaborales = [];
   }
 
+  toggleChangePassword(): void {
+    this.changePassword = !this.changePassword;
+    const passwordControl = this.userForm.get('hash_contrasena');
+    
+    if (this.changePassword && this.isEditMode) {
+      passwordControl?.setValidators([Validators.required, Validators.minLength(8)]);
+      passwordControl?.setValue('');
+    } else if (this.isEditMode) {
+      passwordControl?.clearValidators();
+      passwordControl?.setValue('');
+    }
+    passwordControl?.updateValueAndValidity();
+  }
+
   saveUser(): void {
-    if (this.userForm.invalid) return;
+    if (this.userForm.invalid) {
+      alert('Por favor, completa todos los campos requeridos correctamente.');
+      return;
+    }
 
     const userData = { ...this.userForm.value };
 
@@ -481,35 +364,28 @@ export class UsersGestionComponent implements OnInit {
       Array.isArray(userData.roles) ? userData.roles : [userData.roles]
     );
 
-    // Si es edición, enviar el valor original o la fecha actual si no existe
-    if (this.isEditMode && this.originalUser) {
-      let fechaCreacion: string = '';
-
-      // Prioridad: valor del formulario > valor original > fecha actual
-      if (typeof userData.fecha_creacion === 'string' && userData.fecha_creacion.trim() !== '') {
-        fechaCreacion = userData.fecha_creacion;
-      } else if (this.originalUser.fecha_creacion instanceof Date) {
-        fechaCreacion = this.originalUser.fecha_creacion.toISOString();
-      } else if (typeof this.originalUser.fecha_creacion === 'string') {
-        const fechaStr = this.originalUser.fecha_creacion as string;
-        if (fechaStr.trim() !== '') {
-          fechaCreacion = fechaStr;
-        } else {
-          fechaCreacion = new Date().toISOString();
-        }
-      } else {
-        fechaCreacion = new Date().toISOString();
+    // Manejar la contraseña
+    if (this.isEditMode) {
+      // Si está en modo edición y no se marcó cambiar contraseña, eliminar el campo
+      if (!this.changePassword || !userData.hash_contrasena || userData.hash_contrasena.trim() === '') {
+        userData.hash_contrasena = null;
       }
-
-      userData.fecha_creacion = fechaCreacion;
-    } else if (!this.isEditMode) {
+      
+      // Manejar fecha_creacion
+      if (this.originalUser) {
+        userData.fecha_creacion = this.originalUser.fecha_creacion instanceof Date
+          ? this.originalUser.fecha_creacion.toISOString()
+          : this.originalUser.fecha_creacion;
+      }
+    } else {
+      // En modo creación, la contraseña es obligatoria
+      if (!userData.hash_contrasena || userData.hash_contrasena.trim() === '') {
+        alert('La contraseña es requerida para crear un nuevo usuario.');
+        return;
+      }
       userData.fecha_creacion = new Date().toISOString();
     }
 
-    // Última defensa: nunca enviar fecha_creacion vacío
-    if (!userData.fecha_creacion || userData.fecha_creacion.trim() === '') {
-      userData.fecha_creacion = new Date().toISOString();
-    }
     console.log('Usuario a enviar:', userData);
 
     const operation = this.isEditMode
@@ -521,14 +397,14 @@ export class UsersGestionComponent implements OnInit {
         const message = this.isEditMode
           ? 'Usuario actualizado correctamente'
           : 'Usuario creado correctamente';
-        console.log(message);
+        alert(message);
         this.loadUsers();
         this.closeModals();
       },
       error: (err) => {
         const action = this.isEditMode ? 'actualizar' : 'crear';
         console.error(`Error al ${action} el usuario:`, err);
-        // Aquí podrías mostrar un mensaje de error al usuario usando un servicio de notificaciones
+        alert(`Error al ${action} el usuario: ${err.message}`);
       },
     });
   }
@@ -543,15 +419,19 @@ export class UsersGestionComponent implements OnInit {
       return;
     }
 
+    console.log('Intentando eliminar usuario:', this.userToDelete.id);
+
     this.userService.deleteUser(this.userToDelete.id).subscribe({
       next: () => {
         console.log('Usuario eliminado correctamente');
+        alert('Usuario eliminado correctamente');
         this.loadUsers();
         this.closeModals();
       },
       error: (err) => {
         console.error('Error al eliminar el usuario:', err);
-        // Aquí podrías mostrar un mensaje de error al usuario usando un servicio de notificaciones
+        alert(`Error al eliminar el usuario: ${err.message}\n\nEsto puede ocurrir si el usuario tiene registros asociados (jornadas laborales, etc.). Verifica que no tenga datos relacionados antes de eliminarlo.`);
+        this.closeModals();
       },
       complete: () => {
         this.userToDelete = null;
@@ -561,10 +441,11 @@ export class UsersGestionComponent implements OnInit {
 
   openAddUserModal(): void {
     this.isEditMode = false;
+    this.changePassword = false;
     this.isEditModalOpen = true;
     this.modalOverlayActive = true;
     this.userForm.reset({
-      roles: ['OPERARIO'],
+      roles: 'OPERARIO',
       estado: true,
     });
     this.userForm
@@ -575,33 +456,28 @@ export class UsersGestionComponent implements OnInit {
 
   editUser(user: User): void {
     this.isEditMode = true;
+    this.changePassword = false;
     this.isEditModalOpen = true;
     this.modalOverlayActive = true;
+    this.originalUser = { ...user };
+    
     this.userForm.patchValue({
       id: user.id,
       nombre: user.nombre,
       email: user.email,
-      roles: user.roles,
+      roles: user.roles[0],
       estado: user.estado,
     });
+    
     this.userForm.get('hash_contrasena')?.clearValidators();
+    this.userForm.get('hash_contrasena')?.setValue('');
     this.userForm.get('hash_contrasena')?.updateValueAndValidity();
   }
 
   getDisplayRole(role: string): string {
-    switch (role.toLowerCase()) {
-      case 'admin':
-      case 'administrador':
-        return 'ADMINISTRADOR';
-      case 'user':
-      case 'operario':
-        return 'OPERARIO';
-      default:
-        return role;
-    }
+    return this.mapRolesFromBackend(role);
   }
 
-  // Métodos para obtener estadísticas de jornadas
   getTotalHorasRegulares(): number {
     return this.jornadasLaborales.reduce((sum, j) => sum + j.horas_regulares, 0);
   }
@@ -614,7 +490,6 @@ export class UsersGestionComponent implements OnInit {
     return this.jornadasLaborales.filter(j => j.es_feriado).length;
   }
 
-  // Método para optimizar el rendimiento del ngFor
   trackByJornadaId(index: number, jornada: JornadaLaboral): number {
     return jornada.id;
   }

@@ -135,6 +135,17 @@
         <input type="password" id="hash_contrasena" formControlName="hash_contrasena" class="form-control" placeholder="Ingrese la contraseña">
       </div>
 
+      <div class="form-group" *ngIf="isEditMode">
+        <div class="checkbox-container">
+          <input type="checkbox" id="changePassword" [(ngModel)]="changePassword" [ngModelOptions]="{standalone: true}" (change)="toggleChangePassword()">
+          <label for="changePassword">Cambiar contraseña</label>
+        </div>
+        <div *ngIf="changePassword" class="password-field-container">
+          <input type="password" id="hash_contrasena_edit" formControlName="hash_contrasena" class="form-control" placeholder="Ingrese la nueva contraseña">
+          <small class="form-text text-muted">Mínimo 8 caracteres</small>
+        </div>
+      </div>
+
       <div class="form-group">
         <label for="roles">Rol</label>
         <select id="roles" formControlName="roles" class="form-control">
