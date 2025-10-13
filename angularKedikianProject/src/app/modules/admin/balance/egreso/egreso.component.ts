@@ -53,6 +53,7 @@ export class EgresoComponent implements OnInit {
     { value: 'servicio', label: 'Servicio' },
     { value: 'herramienta', label: 'Herramienta' },
     { value: 'mantenimiento', label: 'Mantenimiento' },
+    { value: 'combustible', label: 'Combustible' },
     { value: 'otro', label: 'Otro' },
   ];
 

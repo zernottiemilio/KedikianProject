@@ -281,6 +281,11 @@
   background-color: #1abc9c;
 }
 
+.tipo-badge.combustible {
+  background-color: #e67e22; /* naranja tipo combustible */
+}
+
+
 .tipo-badge.otro {
   background-color: #95a5a6;
 }
