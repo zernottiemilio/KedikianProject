@@ -188,7 +188,7 @@
   </div>
 </div>
 
-<!-- Modal de Jornadas Laborales -->
+<!-- Modal de Jornadas Laborales CON EDICIÓN -->
 <div class="modal-overlay" [class.active]="isJornadaModalOpen">
   <div class="modal-card modal-card-large">
     <div class="modal-header">
@@ -235,91 +235,162 @@
 
         <div class="jornadas-list">
           <div class="jornada-card" *ngFor="let jornada of jornadasLaborales; trackBy: trackByJornadaId">
-            <div class="jornada-header">
-              <div class="jornada-date">
-                <i class="fas fa-calendar-alt"></i>
-                {{ formatFecha(jornada.fecha) }}
-                <span *ngIf="jornada.es_feriado" class="badge badge-warning holiday-badge">
-                  <i class="fas fa-star"></i> Feriado
-                </span>
+            
+            <!-- ✅ MODO VISTA NORMAL -->
+            <div *ngIf="!isEditingJornada(jornada.id)">
+              <div class="jornada-header">
+                <div class="jornada-date">
+                  <i class="fas fa-calendar-alt"></i>
+                  {{ formatFecha(jornada.fecha) }}
+                  <span *ngIf="jornada.es_feriado" class="badge badge-warning holiday-badge">
+                    <i class="fas fa-star"></i> Feriado
+                  </span>
+                </div>
+                <div class="jornada-status">
+                  <span class="badge" [ngClass]="getEstadoBadgeClass(jornada.estado)">
+                    {{ jornada.estado | titlecase }}
+                  </span>
+                  <button class="btn btn-sm btn-warning ml-2" (click)="editJornada(jornada)" title="Editar Jornada">
+                    <i class="fas fa-edit"></i> Editar
+                  </button>
+                </div>
               </div>
-              <div class="jornada-status">
-                <span class="badge" [ngClass]="getEstadoBadgeClass(jornada.estado)">
-                  {{ jornada.estado | titlecase }}
-                </span>
+
+              <div class="jornada-details">
+                <div class="detail-row">
+                  <div class="detail-group">
+                    <div class="detail-item">
+                      <i class="fas fa-play-circle text-success"></i>
+                      <span class="detail-label">Inicio:</span>
+                      <span class="detail-value">{{ formatHora(jornada.hora_inicio) }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <i class="fas fa-stop-circle text-danger"></i>
+                      <span class="detail-label">Fin:</span>
+                      <span class="detail-value">{{ formatHora(jornada.hora_fin) }}</span>
+                    </div>
+                  </div>
+                  
+                  <div class="detail-group">
+                    <div class="detail-item">
+                      <i class="fas fa-coffee text-warning"></i>
+                      <span class="detail-label">Descanso:</span>
+                      <span class="detail-value">{{ formatTiempoDescanso(jornada.tiempo_descanso) }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <i class="fas fa-clock text-primary"></i>
+                      <span class="detail-label">Total:</span>
+                      <span class="detail-value">{{ jornada.total_horas.toFixed(1) }}h</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="hours-breakdown">
+                  <div class="hours-item regular">
+                    <div class="hours-icon">
+                      <i class="fas fa-business-time"></i>
+                    </div>
+                    <div class="hours-info">
+                      <span class="hours-label">Horas Regulares</span>
+                      <span class="hours-value">{{ jornada.horas_regulares.toFixed(1) }}h</span>
+                    </div>
+                  </div>
+
+                  <div class="hours-item extra" *ngIf="jornada.horas_extras > 0">
+                    <div class="hours-icon">
+                      <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="hours-info">
+                      <span class="hours-label">Horas Extras</span>
+                      <span class="hours-value">{{ jornada.horas_extras.toFixed(1) }}h</span>
+                    </div>
+                  </div>
+
+                  <div class="hours-item holiday" *ngIf="jornada.es_feriado">
+                    <div class="hours-icon">
+                      <i class="fas fa-star"></i>
+                    </div>
+                    <div class="hours-info">
+                      <span class="hours-label">Día Feriado</span>
+                      <span class="hours-value">Sí</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div *ngIf="jornada.notas_inicio || jornada.notas_fin" class="jornada-notes">
+                  <div *ngIf="jornada.notas_inicio" class="note-item">
+                    <strong>Notas de inicio:</strong> {{ jornada.notas_inicio }}
+                  </div>
+                  <div *ngIf="jornada.notas_fin" class="note-item">
+                    <strong>Notas de fin:</strong> {{ jornada.notas_fin }}
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="jornada-details">
-              <div class="detail-row">
-                <div class="detail-group">
-                  <div class="detail-item">
-                    <i class="fas fa-play-circle text-success"></i>
-                    <span class="detail-label">Inicio:</span>
-                    <span class="detail-value">{{ formatHora(jornada.hora_inicio) }}</span>
+            <!-- ✅ MODO EDICIÓN -->
+            <div *ngIf="isEditingJornada(jornada.id)" class="jornada-edit-mode">
+              <form [formGroup]="jornadaEditForm" class="jornada-edit-form">
+                <div class="form-row">
+                  <div class="form-group col-md-4">
+                    <label for="edit-fecha-{{jornada.id}}">Fecha</label>
+                    <input type="date" id="edit-fecha-{{jornada.id}}" formControlName="fecha" class="form-control">
                   </div>
-                  <div class="detail-item">
-                    <i class="fas fa-stop-circle text-danger"></i>
-                    <span class="detail-label">Fin:</span>
-                    <span class="detail-value">{{ formatHora(jornada.hora_fin) }}</span>
+                  <div class="form-group col-md-4">
+                    <label for="edit-hora-inicio-{{jornada.id}}">Hora Inicio</label>
+                    <input type="time" id="edit-hora-inicio-{{jornada.id}}" formControlName="hora_inicio" class="form-control">
                   </div>
-                </div>
-                
-                <div class="detail-group">
-                  <div class="detail-item">
-                    <i class="fas fa-coffee text-warning"></i>
-                    <span class="detail-label">Descanso:</span>
-                    <span class="detail-value">{{ formatTiempoDescanso(jornada.tiempo_descanso) }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <i class="fas fa-clock text-primary"></i>
-                    <span class="detail-label">Total:</span>
-                    <span class="detail-value">{{ jornada.total_horas.toFixed(1) }}h</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="hours-breakdown">
-                <div class="hours-item regular">
-                  <div class="hours-icon">
-                    <i class="fas fa-business-time"></i>
-                  </div>
-                  <div class="hours-info">
-                    <span class="hours-label">Horas Regulares</span>
-                    <span class="hours-value">{{ jornada.horas_regulares.toFixed(1) }}h</span>
+                  <div class="form-group col-md-4">
+                    <label for="edit-hora-fin-{{jornada.id}}">Hora Fin</label>
+                    <input type="time" id="edit-hora-fin-{{jornada.id}}" formControlName="hora_fin" class="form-control">
                   </div>
                 </div>
 
-                <div class="hours-item extra" *ngIf="jornada.horas_extras > 0">
-                  <div class="hours-icon">
-                    <i class="fas fa-clock"></i>
+                <div class="form-row">
+                  <div class="form-group col-md-4">
+                    <label for="edit-descanso-{{jornada.id}}">Descanso (minutos)</label>
+                    <input type="number" id="edit-descanso-{{jornada.id}}" formControlName="tiempo_descanso" class="form-control" min="0">
                   </div>
-                  <div class="hours-info">
-                    <span class="hours-label">Horas Extras</span>
-                    <span class="hours-value">{{ jornada.horas_extras.toFixed(1) }}h</span>
+                  <div class="form-group col-md-4">
+                    <label for="edit-estado-{{jornada.id}}">Estado</label>
+                    <select id="edit-estado-{{jornada.id}}" formControlName="estado" class="form-control">
+                      <option value="activa">Activa</option>
+                      <option value="pausada">Pausada</option>
+                      <option value="completada">Completada</option>
+                      <option value="cancelada">Cancelada</option>
+                    </select>
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label class="checkbox-label">
+                      <input type="checkbox" formControlName="es_feriado">
+                      Es Feriado
+                    </label>
                   </div>
                 </div>
 
-                <div class="hours-item holiday" *ngIf="jornada.es_feriado">
-                  <div class="hours-icon">
-                    <i class="fas fa-star"></i>
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label for="edit-notas-inicio-{{jornada.id}}">Notas de Inicio</label>
+                    <textarea id="edit-notas-inicio-{{jornada.id}}" formControlName="notas_inicio" class="form-control" rows="2"></textarea>
                   </div>
-                  <div class="hours-info">
-                    <span class="hours-label">Día Feriado</span>
-                    <span class="hours-value">Sí</span>
+                  <div class="form-group col-md-6">
+                    <label for="edit-notas-fin-{{jornada.id}}">Notas de Fin</label>
+                    <textarea id="edit-notas-fin-{{jornada.id}}" formControlName="notas_fin" class="form-control" rows="2"></textarea>
                   </div>
                 </div>
-              </div>
 
-              <div *ngIf="jornada.notas_inicio || jornada.notas_fin" class="jornada-notes">
-                <div *ngIf="jornada.notas_inicio" class="note-item">
-                  <strong>Notas de inicio:</strong> {{ jornada.notas_inicio }}
+                <div class="edit-actions">
+                  <button type="button" class="btn btn-secondary" (click)="cancelEditJornada()" [disabled]="savingJornada">
+                    <i class="fas fa-times"></i> Cancelar
+                  </button>
+                  <button type="button" class="btn btn-primary" (click)="saveJornada(jornada.id)" [disabled]="jornadaEditForm.invalid || savingJornada">
+                    <i class="fas" [ngClass]="savingJornada ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                    {{ savingJornada ? 'Guardando...' : 'Guardar Cambios' }}
+                  </button>
                 </div>
-                <div *ngIf="jornada.notas_fin" class="note-item">
-                  <strong>Notas de fin:</strong> {{ jornada.notas_fin }}
-                </div>
-              </div>
+              </form>
             </div>
+
           </div>
         </div>
       </div>

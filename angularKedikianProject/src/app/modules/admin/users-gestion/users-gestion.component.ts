@@ -7,7 +7,7 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import { UserService, JornadaLaboral } from '../../../core/services/user.service';
+import { UserService, JornadaLaboral, JornadaLaboralUpdate } from '../../../core/services/user.service';
 
 interface User {
   id: number;
@@ -16,7 +16,7 @@ interface User {
   hash_contrasena?: string;
   estado: boolean;
   roles: ['ADMINISTRADOR'] | ['OPERARIO'];
-  fecha_creacion: Date | string; // Cambiado para aceptar ambos tipos
+  fecha_creacion: Date | string;
 }
 
 interface UserFilters {
@@ -68,7 +68,11 @@ export class UsersGestionComponent implements OnInit {
   selectedUser: User | null = null;
   loadingJornadas = false;
 
-  // Nueva propiedad para controlar si se debe cambiar la contraseña
+  // ✅ NUEVAS PROPIEDADES para edición de jornadas
+  editingJornadaId: number | null = null;
+  jornadaEditForm: FormGroup;
+  savingJornada = false;
+
   changePassword = false;
 
   private mapRolesToBackend(roles: string[]): string[] {
@@ -110,6 +114,18 @@ export class UsersGestionComponent implements OnInit {
       roles: ['OPERARIO', [Validators.required]],
       estado: [true, [Validators.required]],
       fecha_creacion: [''],
+    });
+
+    // ✅ NUEVO: FormGroup para editar jornadas
+    this.jornadaEditForm = this.fb.group({
+      fecha: ['', [Validators.required]],
+      hora_inicio: ['', [Validators.required]],
+      hora_fin: [''],
+      tiempo_descanso: [0, [Validators.required, Validators.min(0)]],
+      es_feriado: [false],
+      notas_inicio: [''],
+      notas_fin: [''],
+      estado: ['completada', [Validators.required]]
     });
   }
 
@@ -153,10 +169,103 @@ export class UsersGestionComponent implements OnInit {
     });
   }
 
+  // ✅ NUEVO: Método para iniciar edición de jornada
+  editJornada(jornada: JornadaLaboral): void {
+    this.editingJornadaId = jornada.id;
+    
+    // Extraer fecha y hora de los campos datetime
+    const fecha = jornada.fecha.split('T')[0];
+    const horaInicio = this.extractTime(jornada.hora_inicio);
+    const horaFin = jornada.hora_fin ? this.extractTime(jornada.hora_fin) : '';
+    
+    this.jornadaEditForm.patchValue({
+      fecha: fecha,
+      hora_inicio: horaInicio,
+      hora_fin: horaFin,
+      tiempo_descanso: jornada.tiempo_descanso,
+      es_feriado: jornada.es_feriado,
+      notas_inicio: jornada.notas_inicio || '',
+      notas_fin: jornada.notas_fin || '',
+      estado: jornada.estado
+    });
+  }
+
+  // ✅ NUEVO: Método para cancelar edición
+  cancelEditJornada(): void {
+    this.editingJornadaId = null;
+    this.jornadaEditForm.reset();
+  }
+
+  // ✅ NUEVO: Método para guardar jornada editada
+  saveJornada(jornadaId: number): void {
+    if (this.jornadaEditForm.invalid) {
+      alert('Por favor, completa todos los campos requeridos correctamente.');
+      return;
+    }
+
+    this.savingJornada = true;
+    const formData = this.jornadaEditForm.value;
+
+    // Construir los datos para enviar al backend
+    const updateData: JornadaLaboralUpdate = {
+      fecha: formData.fecha,
+      hora_inicio: this.combineDateTime(formData.fecha, formData.hora_inicio),
+      hora_fin: formData.hora_fin ? this.combineDateTime(formData.fecha, formData.hora_fin) : null,
+      tiempo_descanso: formData.tiempo_descanso,
+      es_feriado: formData.es_feriado,
+      notas_inicio: formData.notas_inicio || undefined,
+      notas_fin: formData.notas_fin || undefined,
+      estado: formData.estado
+    };
+
+    console.log('Actualizando jornada:', updateData);
+
+    this.userService.updateJornadaLaboral(jornadaId, updateData).subscribe({
+      next: (response) => {
+        alert('Jornada actualizada correctamente');
+        this.editingJornadaId = null;
+        this.savingJornada = false;
+        // Recargar jornadas
+        if (this.selectedUser) {
+          this.loadJornadasLaborales(this.selectedUser.id);
+        }
+      },
+      error: (err) => {
+        console.error('Error al actualizar jornada:', err);
+        alert(`Error al actualizar la jornada: ${err.message}`);
+        this.savingJornada = false;
+      }
+    });
+  }
+
+  // ✅ NUEVO: Método auxiliar para extraer hora de un datetime
+  private extractTime(datetime: string): string {
+    if (!datetime) return '';
+    try {
+      if (datetime.includes('T')) {
+        return datetime.split('T')[1].substring(0, 5);
+      }
+      return datetime.substring(0, 5);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  // ✅ NUEVO: Método auxiliar para combinar fecha y hora
+  private combineDateTime(fecha: string, hora: string): string {
+    return `${fecha}T${hora}:00`;
+  }
+
+  // ✅ NUEVO: Verificar si una jornada está en modo edición
+  isEditingJornada(jornadaId: number): boolean {
+    return this.editingJornadaId === jornadaId;
+  }
+
   openJornadaModal(user: User): void {
     this.selectedUser = user;
     this.isJornadaModalOpen = true;
     this.modalOverlayActive = true;
+    this.editingJornadaId = null; // Resetear edición al abrir modal
     this.loadJornadasLaborales(user.id);
   }
 
@@ -170,42 +279,38 @@ export class UsersGestionComponent implements OnInit {
   }
 
   formatFecha(fechaStr: string): string {
-  if (!fechaStr) return '-';
-  
-  // Si la fecha viene en formato YYYY-MM-DD, parsearla directamente sin conversión de zona horaria
-  const partes = fechaStr.split('T')[0].split('-');
-  if (partes.length === 3) {
-    const [year, month, day] = partes;
-    return `${day}/${month}/${year}`;
-  }
-  
-  // Fallback al método anterior si el formato es diferente
-  const fecha = new Date(fechaStr);
-  return fecha.toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-}
-
-formatHora(horaStr: string | null): string {
-  if (!horaStr) return 'En curso';
-  try {
-    // Si viene en formato ISO completo
-    if (horaStr.includes('T')) {
-      const fecha = new Date(horaStr);
-      return fecha.toLocaleTimeString('es-ES', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
+    if (!fechaStr) return '-';
+    
+    const partes = fechaStr.split('T')[0].split('-');
+    if (partes.length === 3) {
+      const [year, month, day] = partes;
+      return `${day}/${month}/${year}`;
     }
-    // Si viene solo la hora (HH:mm:ss o HH:mm)
-    return horaStr.substring(0, 5);
-  } catch (e) {
-    return horaStr;
+    
+    const fecha = new Date(fechaStr);
+    return fecha.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   }
-}
+
+  formatHora(horaStr: string | null): string {
+    if (!horaStr) return 'En curso';
+    try {
+      if (horaStr.includes('T')) {
+        const fecha = new Date(horaStr);
+        return fecha.toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+      }
+      return horaStr.substring(0, 5);
+    } catch (e) {
+      return horaStr;
+    }
+  }
 
   getEstadoBadgeClass(estado: string): string {
     switch (estado.toLowerCase()) {
@@ -364,6 +469,8 @@ formatHora(horaStr: string | null): string {
     this.originalUser = null;
     this.selectedUser = null;
     this.jornadasLaborales = [];
+    this.editingJornadaId = null; // Resetear edición
+    this.jornadaEditForm.reset();
   }
 
   toggleChangePassword(): void {
@@ -381,62 +488,57 @@ formatHora(horaStr: string | null): string {
   }
 
   saveUser(): void {
-  if (this.userForm.invalid) {
-    alert('Por favor, completa todos los campos requeridos correctamente.');
-    return;
-  }
-
-  const userData = { ...this.userForm.value };
-
-  // Mapear roles al formato del backend
-  userData.roles = this.mapRolesToBackend(
-    Array.isArray(userData.roles) ? userData.roles : [userData.roles]
-  );
-
-  // Manejar la contraseña
-  if (this.isEditMode) {
-    // Si está en modo edición y no se marcó cambiar contraseña, enviar cadena vacía
-    if (!this.changePassword || !userData.hash_contrasena || userData.hash_contrasena.trim() === '') {
-      userData.hash_contrasena = ''; // Enviar cadena vacía en lugar de null o eliminar
-    }
-    
-    // Manejar fecha_creacion
-    if (this.originalUser) {
-      userData.fecha_creacion = this.originalUser.fecha_creacion instanceof Date
-        ? this.originalUser.fecha_creacion.toISOString()
-        : this.originalUser.fecha_creacion;
-    }
-  } else {
-    // En modo creación, la contraseña es obligatoria
-    if (!userData.hash_contrasena || userData.hash_contrasena.trim() === '') {
-      alert('La contraseña es requerida para crear un nuevo usuario.');
+    if (this.userForm.invalid) {
+      alert('Por favor, completa todos los campos requeridos correctamente.');
       return;
     }
-    userData.fecha_creacion = new Date().toISOString();
+
+    const userData = { ...this.userForm.value };
+
+    userData.roles = this.mapRolesToBackend(
+      Array.isArray(userData.roles) ? userData.roles : [userData.roles]
+    );
+
+    if (this.isEditMode) {
+      if (!this.changePassword || !userData.hash_contrasena || userData.hash_contrasena.trim() === '') {
+        userData.hash_contrasena = '';
+      }
+      
+      if (this.originalUser) {
+        userData.fecha_creacion = this.originalUser.fecha_creacion instanceof Date
+          ? this.originalUser.fecha_creacion.toISOString()
+          : this.originalUser.fecha_creacion;
+      }
+    } else {
+      if (!userData.hash_contrasena || userData.hash_contrasena.trim() === '') {
+        alert('La contraseña es requerida para crear un nuevo usuario.');
+        return;
+      }
+      userData.fecha_creacion = new Date().toISOString();
+    }
+
+    console.log('Usuario a enviar:', userData);
+
+    const operation = this.isEditMode
+      ? this.userService.updateUser(userData)
+      : this.userService.createUser(userData);
+
+    operation.subscribe({
+      next: (response) => {
+        const message = this.isEditMode
+          ? 'Usuario actualizado correctamente'
+          : 'Usuario creado correctamente';
+        alert(message);
+        this.loadUsers();
+        this.closeModals();
+      },
+      error: (err) => {
+        const action = this.isEditMode ? 'actualizar' : 'crear';
+        console.error(`Error al ${action} el usuario:`, err);
+        alert(`Error al ${action} el usuario: ${err.message}`);
+      },
+    });
   }
-
-  console.log('Usuario a enviar:', userData);
-
-  const operation = this.isEditMode
-    ? this.userService.updateUser(userData)
-    : this.userService.createUser(userData);
-
-  operation.subscribe({
-    next: (response) => {
-      const message = this.isEditMode
-        ? 'Usuario actualizado correctamente'
-        : 'Usuario creado correctamente';
-      alert(message);
-      this.loadUsers();
-      this.closeModals();
-    },
-    error: (err) => {
-      const action = this.isEditMode ? 'actualizar' : 'crear';
-      console.error(`Error al ${action} el usuario:`, err);
-      alert(`Error al ${action} el usuario: ${err.message}`);
-    },
-  });
-}
 
   deleteUser(user: User): void {
     this.userToDelete = user;

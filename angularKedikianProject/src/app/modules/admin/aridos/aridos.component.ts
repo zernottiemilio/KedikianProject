@@ -62,6 +62,14 @@ export class AridosComponent implements OnInit {
   aridos: Arido[] = [];
   operarios: Operario[] = [];
 
+  // Propiedades para filtros
+  filtroProyecto: string = '';
+  filtroArido: string = '';
+  filtroOperario: string = '';
+  filtroFechaDesde: string = '';
+  filtroFechaHasta: string = '';
+  mostrarFiltros: boolean = false;
+
   mostrarModal = false;
   mostrarModalConfirmacion = false;
   modoEdicion = false;
@@ -152,7 +160,7 @@ export class AridosComponent implements OnInit {
     this.aridosService.getRegistrosAridos().subscribe({
       next: (registrosBackend) => {
         this.registros = this.mapearRegistros(registrosBackend);
-        this.actualizarRegistrosFiltrados();
+        this.aplicarFiltros();
       },
       error: () => this.mostrarMensaje('Error al cargar registros')
     });
@@ -178,8 +186,69 @@ export class AridosComponent implements OnInit {
     });
   }
 
+  // Métodos de filtrado
+  toggleFiltros(): void {
+    this.mostrarFiltros = !this.mostrarFiltros;
+  }
+
+  aplicarFiltros(): void {
+    this.registrosFiltrados = this.registros.filter(registro => {
+      // Filtro por proyecto
+      if (this.filtroProyecto && registro.proyectoId.toString() !== this.filtroProyecto) {
+        return false;
+      }
+
+      // Filtro por árido
+      if (this.filtroArido && registro.aridoId.toString() !== this.filtroArido) {
+        return false;
+      }
+
+      // Filtro por operario
+      if (this.filtroOperario && !registro.operario.toLowerCase().includes(this.filtroOperario.toLowerCase())) {
+        return false;
+      }
+
+      // Filtro por fecha desde
+      if (this.filtroFechaDesde) {
+        const fechaDesde = new Date(this.filtroFechaDesde);
+        fechaDesde.setHours(0, 0, 0, 0);
+        const fechaRegistro = new Date(registro.fechaEntrega);
+        fechaRegistro.setHours(0, 0, 0, 0);
+        if (fechaRegistro < fechaDesde) {
+          return false;
+        }
+      }
+
+      // Filtro por fecha hasta
+      if (this.filtroFechaHasta) {
+        const fechaHasta = new Date(this.filtroFechaHasta);
+        fechaHasta.setHours(23, 59, 59, 999);
+        const fechaRegistro = new Date(registro.fechaEntrega);
+        if (fechaRegistro > fechaHasta) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  limpiarFiltros(): void {
+    this.filtroProyecto = '';
+    this.filtroArido = '';
+    this.filtroOperario = '';
+    this.filtroFechaDesde = '';
+    this.filtroFechaHasta = '';
+    this.aplicarFiltros();
+  }
+
+  hayFiltrosActivos(): boolean {
+    return !!(this.filtroProyecto || this.filtroArido || this.filtroOperario || 
+              this.filtroFechaDesde || this.filtroFechaHasta);
+  }
+
   actualizarRegistrosFiltrados(): void {
-    this.registrosFiltrados = [...this.registros];
+    this.aplicarFiltros();
   }
 
   abrirModalAgregar(): void {
@@ -317,4 +386,3 @@ export class AridosComponent implements OnInit {
     }, 3000);
   }
 }
-

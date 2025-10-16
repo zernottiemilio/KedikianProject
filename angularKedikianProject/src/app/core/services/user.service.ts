@@ -38,11 +38,23 @@ export interface JornadaLaboral {
   updated?: string;
 }
 
+export interface JornadaLaboralUpdate {
+  fecha?: string;
+  hora_inicio?: string;
+  hora_fin?: string | null;
+  tiempo_descanso?: number;
+  es_feriado?: boolean;
+  notas_inicio?: string;
+  notas_fin?: string;
+  estado?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
   private apiUrl = `${environment.apiUrl}/usuarios`;
+  private jornadasUrl = `${environment.apiUrl}/jornadas-laborales`;
 
   constructor(private http: HttpClient) {}
 
@@ -50,10 +62,8 @@ export class UserService {
     let errorMessage = 'Ocurrió un error desconocido';
     
     if (error.error instanceof ErrorEvent) {
-      // Error del cliente
       errorMessage = `Error: ${error.error.message}`;
     } else {
-      // Error del servidor
       errorMessage = `Código de error: ${error.status}\nMensaje: ${error.message}`;
       if (error.error && (error.error.detail !== undefined)) {
         const detail = Array.isArray(error.error.detail)
@@ -83,14 +93,23 @@ export class UserService {
 
   getJornadasLaborales(usuarioId: number): Observable<JornadaLaboral[]> {
     return this.http.get<JornadaLaboral[]>(
-      `${environment.apiUrl}/jornadas-laborales/usuario/${usuarioId}`
+      `${this.jornadasUrl}/usuario/${usuarioId}`
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // ✅ NUEVO: Método para actualizar jornada laboral
+  updateJornadaLaboral(jornadaId: number, jornada: JornadaLaboralUpdate): Observable<JornadaLaboral> {
+    return this.http.put<JornadaLaboral>(
+      `${this.jornadasUrl}/${jornadaId}`,
+      jornada
     ).pipe(
       catchError(this.handleError)
     );
   }
 
   createUser(user: Partial<User>): Observable<User> {
-    // Asegurar que la contraseña esté presente al crear
     if (!user.hash_contrasena) {
       return throwError(() => new Error('La contraseña es requerida'));
     }
@@ -101,8 +120,6 @@ export class UserService {
   }
 
   updateUser(user: Partial<User>): Observable<User> {
-    // Enviar el recurso completo por PUT. Si hash_contrasena es cadena vacía, eliminarla;
-    // si es null, mantenerla para cumplir validación de presencia del backend.
     const userToUpdate = { ...user } as any;
     if (userToUpdate.hash_contrasena === '') {
       delete userToUpdate.hash_contrasena;

@@ -16,7 +16,7 @@
           type="number" 
           [(ngModel)]="configuracion.horaNormal" 
           (change)="recalcularTodos()"
-          placeholder="Ej: 1500">
+          placeholder="Ej: 6500">
         <span class="currency">ARS</span>
       </div>
       <div class="config-item">
@@ -25,28 +25,37 @@
           type="number" 
           [(ngModel)]="configuracion.horaFeriado" 
           (change)="recalcularTodos()"
-          placeholder="Ej: 3000">
+          placeholder="Ej: 13000">
         <span class="currency">ARS</span>
       </div>
       <div class="config-item">
-        <label>Multiplicador Extra:</label>
+        <label>Precio Hora Extra:</label>
         <input 
           type="number" 
-          step="0.1"
-          [(ngModel)]="configuracion.multiplicadorExtra" 
+          [(ngModel)]="configuracion.horaExtra" 
           (change)="recalcularTodos()"
-          placeholder="Ej: 1.5">
-        <span class="currency">x</span>
+          placeholder="Ej: 9750">
+        <span class="currency">ARS</span>
       </div>
     </div>
   </div>
 
-  <!-- Errores -->
-  <div class="error-section" *ngIf="errorMessage">
-    <div class="error-alert">
+  <!-- Mensajes de Error y Éxito -->
+  <div class="messages-section">
+    <div class="success-alert" *ngIf="successMessage">
+      <span class="success-icon">✅</span>
+      <span>{{ successMessage }}</span>
+    </div>
+    <div class="error-alert" *ngIf="errorMessage">
       <span class="error-icon">⚠️</span>
       <span>{{ errorMessage }}</span>
     </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Procesando...</p>
   </div>
 
   <!-- Tabla de Operarios -->
@@ -55,10 +64,13 @@
       <h3>Lista de Operarios</h3>
       <div class="summary">
         <span class="summary-item">
-          <strong>Total Operarios:</strong> {{ operarios.length }}
+          <strong>Operarios en lista:</strong> {{ operarios.length }}
         </span>
         <span class="summary-item">
-          <strong>Total a Pagar:</strong> ${{ getTotalGeneral() | number:'1.2-2' }} ARS
+          <strong>Registros guardados:</strong> {{ resumenes.length }}
+        </span>
+        <span class="summary-item total-highlight">
+          <strong>Total General:</strong> ${{ getTotalGeneral() | number:'1.2-2' }} ARS
         </span>
       </div>
     </div>
@@ -75,44 +87,85 @@
             <th>Subtotal Normal</th>
             <th>Subtotal Feriado</th>
             <th>Subtotal Extra</th>
+            <th>Asist. Perfecta (20%)</th>
             <th class="total-column">Total</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           <!-- Filas de registros guardados del mes actual -->
-          <tr *ngFor="let resumen of resumenes; let i = index">
-            <td>{{ resumen.nombre }}</td>
+          <tr *ngFor="let resumen of resumenes; let i = index" class="saved-row">
+            <td class="name-cell"><strong>{{ resumen.nombre }}</strong></td>
             <td>{{ resumen.dni }}</td>
-            <td>{{ resumen.total_horas_normales }}</td>
-            <td>{{ resumen.total_horas_feriado }}</td>
-            <td>{{ resumen.total_horas_extras }}</td>
-            <td>${{ resumen.basico_remunerativo | number:'1.2-2' }}</td>
-            <td>${{ resumen.feriado_remunerativo | number:'1.2-2' }}</td>
-            <td>${{ resumen.extras_remunerativo | number:'1.2-2' }}</td>
-            <td><strong>${{ resumen.total_remunerativo | number:'1.2-2' }}</strong></td>
-            <td>
-              <button class="btn btn-warning btn-action" (click)="editarResumen(resumen)"><span class="btn-icon">✏️</span></button>
-              <button class="btn btn-danger btn-action" (click)="eliminarResumen(resumen)"><span class="btn-icon">🗑️</span></button>
+            <td class="hours-cell">{{ resumen.total_horas_normales }}</td>
+            <td class="hours-cell">{{ resumen.total_horas_feriado }}</td>
+            <td class="hours-cell">{{ resumen.total_horas_extras }}</td>
+            <td class="money-cell">${{ resumen.basico_remunerativo | number:'1.2-2' }}</td>
+            <td class="money-cell">${{ resumen.feriado_remunerativo | number:'1.2-2' }}</td>
+            <td class="money-cell">${{ resumen.extras_remunerativo | number:'1.2-2' }}</td>
+            <td class="money-cell highlight-cell">${{ resumen.asistencia_perfecta_remunerativo | number:'1.2-2' }}</td>
+            <td class="total-cell"><strong>${{ resumen.total_remunerativo | number:'1.2-2' }}</strong></td>
+            <td class="actions-cell">
+              <button class="btn btn-info btn-sm" (click)="exportarResumenIndividual(resumen)" title="Exportar Excel">
+                <span class="btn-icon">📊</span>
+              </button>
+              <button class="btn btn-warning btn-sm" (click)="editarResumen(resumen)" title="Editar">
+                <span class="btn-icon">✏️</span>
+              </button>
+              <button class="btn btn-danger btn-sm" (click)="eliminarResumen(resumen)" title="Eliminar">
+                <span class="btn-icon">🗑️</span>
+              </button>
             </td>
           </tr>
-          <!-- Fin filas registros guardados -->
+          
+          <!-- Separador visual si hay registros guardados -->
+          <tr *ngIf="resumenes.length > 0 && operarios.length > 0" class="separator-row">
+            <td colspan="11" class="separator-text">
+              <hr>
+              <span>Operarios pendientes de guardar</span>
+              <hr>
+            </td>
+          </tr>
+
+          <!-- Filas de operarios en edición -->
           <tr *ngFor="let operario of operarios; let i = index" 
-              [class.row-even]="i % 2 === 0">
+              [class.row-even]="i % 2 === 0"
+              [class.row-odd]="i % 2 !== 0">
             <td class="name-cell">
-              <input type="text" [(ngModel)]="operario.nombre" placeholder="Nombre">
+              <input type="text" 
+                     [(ngModel)]="operario.nombre" 
+                     placeholder="Nombre completo"
+                     class="input-full">
             </td>
             <td>
-              <input type="text" [(ngModel)]="operario.dni" placeholder="DNI">
+              <input type="text" 
+                     [(ngModel)]="operario.dni" 
+                     placeholder="DNI"
+                     class="input-full">
             </td>
             <td class="hours-cell">
-              <input type="number" [(ngModel)]="operario.horasNormales" (change)="operario.totalCalculado = calcularTotal(operario)">
+              <input type="number" 
+                     [(ngModel)]="operario.horasNormales" 
+                     (change)="operario.totalCalculado = calcularTotal(operario)"
+                     min="0"
+                     step="0.5"
+                     class="input-number">
             </td>
             <td class="hours-cell">
-              <input type="number" [(ngModel)]="operario.horasFeriado" (change)="operario.totalCalculado = calcularTotal(operario)">
+              <input type="number" 
+                     [(ngModel)]="operario.horasFeriado" 
+                     (change)="operario.totalCalculado = calcularTotal(operario)"
+                     min="0"
+                     step="0.5"
+                     class="input-number">
             </td>
             <td class="hours-cell">
-              <input type="number" [(ngModel)]="operario.horasExtras" (change)="operario.totalCalculado = calcularTotal(operario)">
+              <input type="number" 
+                     [(ngModel)]="operario.horasExtras" 
+                     (change)="operario.totalCalculado = calcularTotal(operario)"
+                     min="0"
+                     step="0.5"
+                     class="input-number">
             </td>
             <td class="money-cell">
               ${{ (operario.horasNormales * operario.precioHoraNormal) | number:'1.2-2' }}
@@ -123,13 +176,26 @@
             <td class="money-cell">
               ${{ (operario.horasExtras * operario.precioHoraExtra) | number:'1.2-2' }}
             </td>
-            <td class="total-cell">
-              ${{ operario.totalCalculado | number:'1.2-2' }}
+            <td class="money-cell highlight-cell">
+              ${{ ((operario.horasNormales * operario.precioHoraNormal) * 0.20) | number:'1.2-2' }}
             </td>
-            <td>
-              <button class="btn btn-danger" (click)="eliminarOperario(i)">
+            <td class="total-cell">
+              <strong>${{ operario.totalCalculado | number:'1.2-2' }}</strong>
+            </td>
+            <td class="actions-cell">
+              <button class="btn btn-info btn-sm" (click)="exportarOperarioIndividual(operario)" title="Exportar Excel">
+                <span class="btn-icon">📊</span>
+              </button>
+              <button class="btn btn-danger btn-sm" (click)="eliminarOperario(i)" title="Eliminar">
                 <span class="btn-icon">🗑️</span>
               </button>
+            </td>
+          </tr>
+
+          <!-- Mensaje cuando no hay datos -->
+          <tr *ngIf="operarios.length === 0 && resumenes.length === 0">
+            <td colspan="11" class="empty-message">
+              No hay operarios en la lista. Haz clic en "Agregar Operario" para comenzar o "Cargar Operarios" para importar desde la base de datos.
             </td>
           </tr>
         </tbody>
@@ -137,29 +203,47 @@
     </div>
   </div>
 
+  <!-- Campo de Observaciones -->
+  <div class="observaciones-section">
+    <label for="observaciones">Observaciones (opcional):</label>
+    <textarea 
+      id="observaciones"
+      [(ngModel)]="observaciones" 
+      placeholder="Ej: Pago correspondiente a mayo 2025, incluye bonificaciones especiales..."
+      rows="3"></textarea>
+  </div>
+
   <!-- Botones de Acción -->
   <div class="actions-section">
-    <button class="btn btn-primary" (click)="agregarOperario()">
+    <button class="btn btn-primary" (click)="agregarOperario()" [disabled]="isLoading">
       <span class="btn-icon">➕</span>
       Agregar Operario
     </button>
-    <button class="btn btn-success" (click)="exportarResultados()">
-      <span class="btn-icon">📊</span>
-      Exportar a Excel
+    
+    <button class="btn btn-info" (click)="cargarOperariosDesdeBackend()" [disabled]="isLoading">
+      <span class="btn-icon">📥</span>
+      Cargar Operarios
     </button>
-    <button class="btn btn-secondary" (click)="limpiarDatos()">
-      <span class="btn-icon">🗑️</span>
-      Limpiar Todo
-    </button>
-    <button class="btn btn-info" (click)="guardarResumenSueldo()">
+    
+    <button class="btn btn-success" (click)="guardarResumenSueldo()" [disabled]="isLoading || operarios.length === 0">
       <span class="btn-icon">💾</span>
-      Guardar
+      Guardar Registros
+    </button>
+    
+    <button class="btn btn-secondary" (click)="exportarResultados()" [disabled]="isLoading">
+      <span class="btn-icon">📊</span>
+      Exportar Excel
+    </button>
+    
+    <button class="btn btn-warning" (click)="limpiarDatos()" [disabled]="isLoading || operarios.length === 0">
+      <span class="btn-icon">🗑️</span>
+      Limpiar Lista
     </button>
   </div>
 
   <!-- Modal para editar registro de resumen -->
-  <div class="modal-backdrop" *ngIf="modalEditarResumenAbierto">
-    <div class="modal modal-edit-resumen">
+  <div class="modal-backdrop" *ngIf="modalEditarResumenAbierto" (click)="cerrarModalEditarResumen()">
+    <div class="modal modal-edit-resumen" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Editar Registro de Sueldo</h3>
         <button type="button" class="close-btn" (click)="cerrarModalEditarResumen()">&times;</button>
@@ -168,64 +252,136 @@
         <div class="modal-body">
           <div class="form-row">
             <div class="form-group">
-              <label>Nombre</label>
-              <input type="text" [(ngModel)]="resumenEditando.nombre" name="nombre" required>
+              <label>Nombre <span class="required">*</span></label>
+              <input type="text" 
+                     [(ngModel)]="resumenEditando!.nombre" 
+                     name="nombre" 
+                     required
+                     class="form-control">
             </div>
             <div class="form-group">
-              <label>DNI</label>
-              <input type="text" [(ngModel)]="resumenEditando.dni" name="dni" required>
+              <label>DNI <span class="required">*</span></label>
+              <input type="text" 
+                     [(ngModel)]="resumenEditando!.dni" 
+                     name="dni" 
+                     required
+                     class="form-control">
             </div>
           </div>
+          
           <div class="form-row">
             <div class="form-group">
               <label>Horas Normales</label>
-              <input type="number" [(ngModel)]="resumenEditando.total_horas_normales" name="total_horas_normales" required>
+              <input type="number" 
+                     [(ngModel)]="resumenEditando!.total_horas_normales" 
+                     name="total_horas_normales" 
+                     min="0"
+                     step="0.5"
+                     required
+                     class="form-control">
             </div>
             <div class="form-group">
               <label>Horas Feriado</label>
-              <input type="number" [(ngModel)]="resumenEditando.total_horas_feriado" name="total_horas_feriado" required>
+              <input type="number" 
+                     [(ngModel)]="resumenEditando!.total_horas_feriado" 
+                     name="total_horas_feriado" 
+                     min="0"
+                     step="0.5"
+                     required
+                     class="form-control">
             </div>
             <div class="form-group">
               <label>Horas Extras</label>
-              <input type="number" [(ngModel)]="resumenEditando.total_horas_extras" name="total_horas_extras" required>
+              <input type="number" 
+                     [(ngModel)]="resumenEditando!.total_horas_extras" 
+                     name="total_horas_extras" 
+                     min="0"
+                     step="0.5"
+                     required
+                     class="form-control">
             </div>
           </div>
+          
           <div class="form-row">
             <div class="form-group">
               <label>Básico Remunerativo</label>
-              <input type="number" [(ngModel)]="resumenEditando.basico_remunerativo" name="basico_remunerativo" required>
+              <input type="number" 
+                     [(ngModel)]="resumenEditando!.basico_remunerativo" 
+                     name="basico_remunerativo" 
+                     min="0"
+                     step="0.01"
+                     required
+                     class="form-control">
             </div>
             <div class="form-group">
-              <label>Asistencia Perfecta</label>
-              <input type="number" [(ngModel)]="resumenEditando.asistencia_perfecta_remunerativo" name="asistencia_perfecta_remunerativo" required>
+              <label>Asistencia Perfecta (20%)</label>
+              <input type="number" 
+                     [(ngModel)]="resumenEditando!.asistencia_perfecta_remunerativo" 
+                     name="asistencia_perfecta_remunerativo" 
+                     min="0"
+                     step="0.01"
+                     required
+                     class="form-control">
             </div>
           </div>
+          
           <div class="form-row">
             <div class="form-group">
               <label>Feriado Remunerativo</label>
-              <input type="number" [(ngModel)]="resumenEditando.feriado_remunerativo" name="feriado_remunerativo" required>
+              <input type="number" 
+                     [(ngModel)]="resumenEditando!.feriado_remunerativo" 
+                     name="feriado_remunerativo" 
+                     min="0"
+                     step="0.01"
+                     required
+                     class="form-control">
             </div>
             <div class="form-group">
               <label>Extras Remunerativo</label>
-              <input type="number" [(ngModel)]="resumenEditando.extras_remunerativo" name="extras_remunerativo" required>
+              <input type="number" 
+                     [(ngModel)]="resumenEditando!.extras_remunerativo" 
+                     name="extras_remunerativo" 
+                     min="0"
+                     step="0.01"
+                     required
+                     class="form-control">
             </div>
           </div>
+          
           <div class="form-row">
-            <div class="form-group">
-              <label>Total Remunerativo</label>
-              <input type="number" [(ngModel)]="resumenEditando.total_remunerativo" name="total_remunerativo" required>
+            <div class="form-group full-width">
+              <label>Total Remunerativo (calculado automáticamente)</label>
+              <input type="number" 
+                     [value]="(resumenEditando!.basico_remunerativo || 0) + 
+                              (resumenEditando!.asistencia_perfecta_remunerativo || 0) + 
+                              (resumenEditando!.feriado_remunerativo || 0) + 
+                              (resumenEditando!.extras_remunerativo || 0)"
+                     disabled
+                     class="form-control total-input">
             </div>
-            <div class="form-group" style="flex:2">
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group full-width">
               <label>Observaciones</label>
-              <textarea [(ngModel)]="resumenEditando.observaciones" name="observaciones" rows="2"></textarea>
+              <textarea [(ngModel)]="resumenEditando!.observaciones" 
+                        name="observaciones" 
+                        rows="3"
+                        class="form-control"></textarea>
             </div>
           </div>
         </div>
+        
         <div class="modal-actions">
-          <button type="submit" class="btn btn-success" [disabled]="editForm.invalid">Guardar</button>
-          <button type="button" class="btn btn-secondary" (click)="cerrarModalEditarResumen()">Cancelar</button>
+          <button type="submit" class="btn btn-success" [disabled]="editForm.invalid || isLoading">
+            <span class="btn-icon">💾</span>
+            Guardar Cambios
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="cerrarModalEditarResumen()" [disabled]="isLoading">
+            Cancelar
+          </button>
         </div>
       </form>
     </div>
   </div>
-</div> 
+</div>

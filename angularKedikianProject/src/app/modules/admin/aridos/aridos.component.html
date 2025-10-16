@@ -1,17 +1,106 @@
 <div class="aridos-container">
   <header class="aridos-header">
     <h1>Gestión de Áridos</h1>
-    <button class="btn btn-success" (click)="abrirModalAgregar()">
-      <i class="fas fa-plus"></i>
-      Nuevo Registro
-    </button>
+    <div class="header-buttons">
+      <button class="btn btn-info" (click)="toggleFiltros()">
+        <i class="fas fa-filter"></i>
+        {{ mostrarFiltros ? 'Ocultar Filtros' : 'Mostrar Filtros' }}
+      </button>
+      <button class="btn btn-success" (click)="abrirModalAgregar()">
+        <i class="fas fa-plus"></i>
+        Nuevo Registro
+      </button>
+    </div>
   </header>
+
+  <!-- Panel de Filtros -->
+  <div class="filtros-panel" *ngIf="mostrarFiltros">
+    <h3>
+      <i class="fas fa-filter"></i>
+      Filtros
+    </h3>
+    <div class="filtros-grid">
+      <div class="filtro-item">
+        <label for="filtroProyecto">Proyecto:</label>
+        <select 
+          id="filtroProyecto" 
+          [(ngModel)]="filtroProyecto" 
+          (ngModelChange)="aplicarFiltros()"
+          class="form-control">
+          <option value="">Todos los proyectos</option>
+          <option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+            {{ proyecto.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filtro-item">
+        <label for="filtroArido">Tipo de Árido:</label>
+        <select 
+          id="filtroArido" 
+          [(ngModel)]="filtroArido" 
+          (ngModelChange)="aplicarFiltros()"
+          class="form-control">
+          <option value="">Todos los áridos</option>
+          <option *ngFor="let arido of aridos" [value]="arido.id">
+            {{ arido.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filtro-item">
+        <label for="filtroOperario">Operario:</label>
+        <input 
+          type="text" 
+          id="filtroOperario" 
+          [(ngModel)]="filtroOperario" 
+          (ngModelChange)="aplicarFiltros()"
+          placeholder="Buscar por nombre..."
+          class="form-control">
+      </div>
+
+      <div class="filtro-item">
+        <label for="filtroFechaDesde">Fecha Desde:</label>
+        <input 
+          type="date" 
+          id="filtroFechaDesde" 
+          [(ngModel)]="filtroFechaDesde" 
+          (ngModelChange)="aplicarFiltros()"
+          class="form-control">
+      </div>
+
+      <div class="filtro-item">
+        <label for="filtroFechaHasta">Fecha Hasta:</label>
+        <input 
+          type="date" 
+          id="filtroFechaHasta" 
+          [(ngModel)]="filtroFechaHasta" 
+          (ngModelChange)="aplicarFiltros()"
+          class="form-control">
+      </div>
+
+      <div class="filtro-item filtro-acciones">
+        <button 
+          class="btn btn-secondary" 
+          (click)="limpiarFiltros()"
+          [disabled]="!hayFiltrosActivos()">
+          <i class="fas fa-times"></i>
+          Limpiar Filtros
+        </button>
+      </div>
+    </div>
+    
+    <div class="filtros-info" *ngIf="hayFiltrosActivos()">
+      <i class="fas fa-info-circle"></i>
+      Mostrando {{ registrosFiltrados.length }} de {{ registros.length }} registros
+    </div>
+  </div>
 
   <!-- Tabla de registros -->
   <div class="registros-tabla-container">
     <h2>Registros de Áridos</h2>
     <div *ngIf="registrosFiltrados.length === 0" class="no-registros">
-      No hay registros que coincidan con los criterios de búsqueda.
+      {{ hayFiltrosActivos() ? 'No hay registros que coincidan con los filtros seleccionados.' : 'No hay registros disponibles.' }}
     </div>
 
     <table *ngIf="registrosFiltrados.length > 0" class="tabla-registros">

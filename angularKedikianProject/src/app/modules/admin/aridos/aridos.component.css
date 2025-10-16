@@ -21,6 +21,16 @@ body {
   line-height: 1.6;
 }
 
+/* Panel de filtros */
+.filtros-panel {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 25px;
+  animation: slideDown 0.3s ease-out;
+}
+
 * {
   box-sizing: border-box;
 }
