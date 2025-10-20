@@ -678,6 +678,41 @@ table tbody tr:last-child td {
   letter-spacing: 0.5px;
 }
 
+/* Estilos para el modal de eliminación de jornada */
+.delete-jornada-info {
+  background-color: #f8f9fa;
+  border-left: 4px solid #dc3545;
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 4px;
+}
+
+.delete-jornada-info p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.delete-jornada-info i {
+  color: #6c757d;
+  margin-right: 8px;
+  width: 20px;
+}
+
+.text-danger {
+  color: #dc3545;
+  font-weight: 500;
+  margin-top: 15px;
+}
+
+.text-danger i {
+  margin-right: 5px;
+}
+
+/* Asegurar que el botón de eliminar tenga margen */
+.jornada-status .btn.ml-2 {
+  margin-left: 8px !important;
+}
+
 /* Transiciones suaves */
 .jornada-card {
   transition: all 0.3s ease;

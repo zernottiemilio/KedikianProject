@@ -68,10 +68,15 @@ export class UsersGestionComponent implements OnInit {
   selectedUser: User | null = null;
   loadingJornadas = false;
 
-  // ✅ NUEVAS PROPIEDADES para edición de jornadas
+  // Propiedades para edición de jornadas
   editingJornadaId: number | null = null;
   jornadaEditForm: FormGroup;
   savingJornada = false;
+
+  // ✅ NUEVAS: Propiedades para eliminación de jornadas
+  isDeleteJornadaModalOpen = false;
+  jornadaToDelete: JornadaLaboral | null = null;
+  deletingJornada = false;
 
   changePassword = false;
 
@@ -116,7 +121,6 @@ export class UsersGestionComponent implements OnInit {
       fecha_creacion: [''],
     });
 
-    // ✅ NUEVO: FormGroup para editar jornadas
     this.jornadaEditForm = this.fb.group({
       fecha: ['', [Validators.required]],
       hora_inicio: ['', [Validators.required]],
@@ -169,11 +173,9 @@ export class UsersGestionComponent implements OnInit {
     });
   }
 
-  // ✅ NUEVO: Método para iniciar edición de jornada
   editJornada(jornada: JornadaLaboral): void {
     this.editingJornadaId = jornada.id;
     
-    // Extraer fecha y hora de los campos datetime
     const fecha = jornada.fecha.split('T')[0];
     const horaInicio = this.extractTime(jornada.hora_inicio);
     const horaFin = jornada.hora_fin ? this.extractTime(jornada.hora_fin) : '';
@@ -190,13 +192,11 @@ export class UsersGestionComponent implements OnInit {
     });
   }
 
-  // ✅ NUEVO: Método para cancelar edición
   cancelEditJornada(): void {
     this.editingJornadaId = null;
     this.jornadaEditForm.reset();
   }
 
-  // ✅ NUEVO: Método para guardar jornada editada
   saveJornada(jornadaId: number): void {
     if (this.jornadaEditForm.invalid) {
       alert('Por favor, completa todos los campos requeridos correctamente.');
@@ -206,7 +206,6 @@ export class UsersGestionComponent implements OnInit {
     this.savingJornada = true;
     const formData = this.jornadaEditForm.value;
 
-    // Construir los datos para enviar al backend
     const updateData: JornadaLaboralUpdate = {
       fecha: formData.fecha,
       hora_inicio: this.combineDateTime(formData.fecha, formData.hora_inicio),
@@ -225,7 +224,6 @@ export class UsersGestionComponent implements OnInit {
         alert('Jornada actualizada correctamente');
         this.editingJornadaId = null;
         this.savingJornada = false;
-        // Recargar jornadas
         if (this.selectedUser) {
           this.loadJornadasLaborales(this.selectedUser.id);
         }
@@ -238,7 +236,51 @@ export class UsersGestionComponent implements OnInit {
     });
   }
 
-  // ✅ NUEVO: Método auxiliar para extraer hora de un datetime
+  // ✅ NUEVO: Abrir modal de confirmación de eliminación de jornada
+  openDeleteJornadaModal(jornada: JornadaLaboral): void {
+    this.jornadaToDelete = jornada;
+    this.isDeleteJornadaModalOpen = true;
+  }
+
+  // ✅ NUEVO: Cerrar modal de eliminación de jornada
+  closeDeleteJornadaModal(): void {
+    this.isDeleteJornadaModalOpen = false;
+    this.jornadaToDelete = null;
+  }
+
+  // ✅ NUEVO: Confirmar y ejecutar eliminación de jornada
+  confirmDeleteJornada(): void {
+    if (!this.jornadaToDelete) {
+      return;
+    }
+
+    this.deletingJornada = true;
+    const jornadaId = this.jornadaToDelete.id;
+
+    console.log('Intentando eliminar jornada:', jornadaId);
+
+    this.userService.deleteJornadaLaboral(jornadaId).subscribe({
+      next: () => {
+        console.log('Jornada eliminada correctamente');
+        alert('Jornada laboral eliminada correctamente');
+        
+        // Recargar jornadas del usuario
+        if (this.selectedUser) {
+          this.loadJornadasLaborales(this.selectedUser.id);
+        }
+        
+        this.closeDeleteJornadaModal();
+        this.deletingJornada = false;
+      },
+      error: (err) => {
+        console.error('Error al eliminar la jornada:', err);
+        alert(`Error al eliminar la jornada: ${err.message}`);
+        this.deletingJornada = false;
+        this.closeDeleteJornadaModal();
+      }
+    });
+  }
+
   private extractTime(datetime: string): string {
     if (!datetime) return '';
     try {
@@ -251,12 +293,10 @@ export class UsersGestionComponent implements OnInit {
     }
   }
 
-  // ✅ NUEVO: Método auxiliar para combinar fecha y hora
   private combineDateTime(fecha: string, hora: string): string {
     return `${fecha}T${hora}:00`;
   }
 
-  // ✅ NUEVO: Verificar si una jornada está en modo edición
   isEditingJornada(jornadaId: number): boolean {
     return this.editingJornadaId === jornadaId;
   }
@@ -265,7 +305,7 @@ export class UsersGestionComponent implements OnInit {
     this.selectedUser = user;
     this.isJornadaModalOpen = true;
     this.modalOverlayActive = true;
-    this.editingJornadaId = null; // Resetear edición al abrir modal
+    this.editingJornadaId = null;
     this.loadJornadasLaborales(user.id);
   }
 
@@ -469,8 +509,9 @@ export class UsersGestionComponent implements OnInit {
     this.originalUser = null;
     this.selectedUser = null;
     this.jornadasLaborales = [];
-    this.editingJornadaId = null; // Resetear edición
+    this.editingJornadaId = null;
     this.jornadaEditForm.reset();
+    this.closeDeleteJornadaModal();
   }
 
   toggleChangePassword(): void {

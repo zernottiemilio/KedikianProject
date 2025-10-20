@@ -253,6 +253,10 @@
                   <button class="btn btn-sm btn-warning ml-2" (click)="editJornada(jornada)" title="Editar Jornada">
                     <i class="fas fa-edit"></i> Editar
                   </button>
+                  <!-- ✅ NUEVO: Botón de eliminar -->
+                  <button class="btn btn-sm btn-danger ml-2" (click)="openDeleteJornadaModal(jornada)" title="Eliminar Jornada">
+                    <i class="fas fa-trash"></i> Eliminar
+                  </button>
                 </div>
               </div>
 
@@ -398,6 +402,34 @@
 
     <div class="modal-footer">
       <button type="button" class="btn btn-secondary" (click)="closeModals()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ NUEVO: Modal de Confirmación de Eliminación de Jornada -->
+<div class="modal-overlay" [class.active]="isDeleteJornadaModalOpen">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>Confirmar Eliminación de Jornada</h2>
+      <button class="modal-close" (click)="closeDeleteJornadaModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p><strong>¿Estás seguro de que deseas eliminar esta jornada laboral?</strong></p>
+      <div *ngIf="jornadaToDelete" class="delete-jornada-info">
+        <p><i class="fas fa-calendar-alt"></i> <strong>Fecha:</strong> {{ formatFecha(jornadaToDelete.fecha) }}</p>
+        <p><i class="fas fa-clock"></i> <strong>Horario:</strong> {{ formatHora(jornadaToDelete.hora_inicio) }} - {{ formatHora(jornadaToDelete.hora_fin) }}</p>
+        <p><i class="fas fa-business-time"></i> <strong>Total horas:</strong> {{ jornadaToDelete.total_horas.toFixed(1) }}h</p>
+      </div>
+      <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Esta acción no se puede deshacer.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeDeleteJornadaModal()" [disabled]="deletingJornada">
+        Cancelar
+      </button>
+      <button type="button" class="btn btn-danger" (click)="confirmDeleteJornada()" [disabled]="deletingJornada">
+        <i class="fas" [ngClass]="deletingJornada ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
+        {{ deletingJornada ? 'Eliminando...' : 'Eliminar Jornada' }}
+      </button>
     </div>
   </div>
 </div>

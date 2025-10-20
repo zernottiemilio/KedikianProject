@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { tap, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 interface User {
@@ -108,6 +108,23 @@ export class UserService {
       catchError(this.handleError)
     );
   }
+  
+  deleteJornadaLaboral(jornadaId: number): Observable<any> {
+    // ✅ CORRECCIÓN: Usar this.jornadasUrl en lugar de this.apiUrl
+    const url = `${this.jornadasUrl}/${jornadaId}`;
+    console.log(`Eliminando jornada laboral: ${url}`);
+    
+    return this.http.delete<any>(url).pipe(
+      tap((response: any) => {
+        console.log('Jornada eliminada exitosamente:', response);
+      }),
+      catchError((error: any) => {
+        console.error('Error al eliminar jornada:', error);
+        return throwError(() => new Error(error.error?.detail || 'Error al eliminar la jornada'));
+      })
+    );
+  }
+  
 
   createUser(user: Partial<User>): Observable<User> {
     if (!user.hash_contrasena) {
