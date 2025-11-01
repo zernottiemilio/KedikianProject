@@ -1,0 +1,1266 @@
+/* =========================
+   CONTENEDOR PRINCIPAL
+   ========================= */
+.container {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 32px 24px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(44, 62, 80, 0.08);
+}
+
+/* =========================
+   TITULOS Y SECCIONES
+   ========================= */
+h2 {
+  margin-bottom: 32px;
+  color: #222b45;
+  border-bottom: 1.5px solid #e3e6ed;
+  padding-bottom: 12px;
+  font-weight: 700;
+  font-size: 2.1rem;
+  letter-spacing: 0.5px;
+  position: relative;
+}
+
+h2:after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 48px;
+  height: 3px;
+  background: #2563eb;
+  border-radius: 2px;
+}
+
+/* =========================
+   BARRA DE ACCIONES Y FILTROS
+   ========================= */
+.actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 28px;
+  padding: 18px 20px;
+  background: #f4f6fb;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.04);
+}
+
+.actions-bar .btn-primary {
+  background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 10px 28px;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.actions-bar .btn-primary:hover,
+.actions-bar .btn-primary:focus {
+  background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.13);
+}
+
+/* =========================
+   FILTROS
+   ========================= */
+.filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  border-top: 1px solid #e3e6ed;
+  padding-top: 18px;
+  margin-bottom: 18px;
+}
+
+.search-box {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 10px 40px 10px 16px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 15px;
+  background: #f9fafb;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.13);
+}
+
+.search-box i {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 18px;
+}
+
+.advanced-filters {
+  background: #f4f6fb;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.filter-item {
+  min-width: 160px;
+  flex: 1 1 180px;
+  margin-left: 10px;
+  left: 10px;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+/* =========================
+   TABLA DE USUARIOS
+   ========================= */
+.table-responsive {
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.04);
+  margin-bottom: 24px;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 15px;
+  background: #fff;
+}
+
+table th,
+table td {
+  padding: 14px 12px;
+  border-bottom: 1.5px solid #f1f3f7;
+  vertical-align: middle;
+}
+
+table th {
+  background: #f4f6fb;
+  color: #222b45;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+}
+
+table th:first-child {
+  border-top-left-radius: 10px;
+}
+
+table th:last-child {
+  border-top-right-radius: 10px;
+}
+
+table th:hover {
+  background: #e0e7ef;
+}
+
+table th i {
+  margin-left: 6px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+table tbody tr {
+  transition: background 0.18s;
+}
+
+table tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+table tbody tr:hover {
+  background: #e8f0fe;
+}
+
+table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  display: inline-block;
+  min-width: 80px;
+  text-align: center;
+}
+
+.badge-success {
+  background: rgba(34, 197, 94, 0.13);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.22);
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.13);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.22);
+}
+
+.badge-info {
+  background: rgba(59, 130, 246, 0.13);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.22);
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.13);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.22);
+}
+
+.badge-secondary {
+  background: rgba(100, 116, 139, 0.13);
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.22);
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: center;
+}
+
+.actions button {
+  margin-right: 8px;
+  border-radius: 5px;
+  padding: 7px 14px;
+  font-size: 15px;
+  border: none;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.18s;
+}
+
+.actions button i {
+  font-size: 15px;
+}
+
+.actions button:last-child {
+  margin-right: 0;
+}
+
+.actions button.btn-info {
+  background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+  color: #fff;
+  font-weight: 600;
+}
+
+.actions button.btn-info:hover {
+  background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.13);
+}
+
+.actions button.btn-success {
+  background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+  color: #fff;
+  font-weight: 600;
+}
+
+.actions button.btn-success:hover {
+  background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 3px 8px rgba(34, 197, 94, 0.13);
+}
+
+.actions button.btn-danger {
+  background: linear-gradient(90deg, #ef4444 0%, #b91c1c 100%);
+  color: #fff;
+  font-weight: 600;
+}
+
+.actions button.btn-danger:hover {
+  background: linear-gradient(90deg, #b91c1c 0%, #ef4444 100%);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 3px 8px rgba(239, 68, 68, 0.13);
+}
+
+/* =========================
+   MENSAJE DE NO RESULTADOS
+   ========================= */
+.no-results {
+  text-align: center;
+  padding: 48px 20px;
+  background: #f4f6fb;
+  border-radius: 10px;
+  box-shadow: 0 1px 5px rgba(44, 62, 80, 0.04);
+}
+
+.no-results p {
+  color: #64748b;
+  font-size: 17px;
+  font-style: italic;
+  margin: 0;
+}
+
+.no-results p:before {
+  content: '\f119';
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+  margin-right: 10px;
+  font-size: 22px;
+  opacity: 0.6;
+}
+
+/* =========================
+   PAGINACIÓN
+   ========================= */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 28px;
+  padding: 12px;
+  background: #f4f6fb;
+  border-radius: 10px;
+  box-shadow: 0 1px 5px rgba(44, 62, 80, 0.04);
+}
+
+.pagination-controls button {
+  margin: 0 10px;
+  background: #e0e7ef;
+  border: none;
+  color: #222b45;
+  padding: 8px 16px;
+  border-radius: 5px;
+  font-size: 15px;
+  transition: background 0.18s, color 0.18s, transform 0.18s;
+}
+
+.pagination-controls button:hover:not([disabled]) {
+  background: #2563eb;
+  color: #fff;
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.13);
+}
+
+.pagination-controls button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-controls button i {
+  font-size: 13px;
+}
+
+.pagination-controls span {
+  color: #222b45;
+  font-weight: 600;
+  padding: 0 12px;
+}
+
+/* =========================
+   MODALES Y FORMULARIOS
+   ========================= */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(44, 62, 80, 0.18);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-card {
+  background: #fff;
+  padding: 2.2rem 2rem;
+  border-radius: 12px;
+  width: 95%;
+  max-width: 480px;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(44, 62, 80, 0.13);
+  transform: translateY(-20px);
+  opacity: 0;
+  transition: all 0.3s;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-card-large {
+  max-width: 900px;
+  width: 95%;
+}
+
+.modal-overlay.active .modal-card {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+  border-bottom: 1px solid #e3e6ed;
+  padding-bottom: 1rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: #64748b;
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: #222b45;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  border-top: 1px solid #e3e6ed;
+  padding-top: 1rem;
+}
+
+.modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* =========================
+   ESTILOS PARA JORNADAS LABORALES
+   ========================= */
+
+/* Contenedor del formulario de edición */
+.jornada-edit-mode {
+  background-color: #f8f9fa;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 10px;
+}
+
+.jornada-edit-form {
+  width: 100%;
+}
+
+.jornada-edit-form .form-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.jornada-edit-form .form-group {
+  flex: 1;
+  min-width: 200px;
+  margin-bottom: 0;
+}
+
+.jornada-edit-form label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
+
+.jornada-edit-form .form-control {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.jornada-edit-form .form-control:focus {
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.jornada-edit-form textarea.form-control {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.jornada-edit-form .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding-top: 30px;
+  font-weight: 600;
+}
+
+.jornada-edit-form .checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* Botones de acción en modo edición */
+.edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #dee2e6;
+}
+
+.edit-actions .btn {
+  padding: 8px 20px;
+  font-weight: 600;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-actions .btn i {
+  font-size: 0.9rem;
+}
+
+.edit-actions .btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
+.edit-actions .btn-secondary:hover:not(:disabled) {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
+.edit-actions .btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+.edit-actions .btn-primary:hover:not(:disabled) {
+  background-color: #0069d9;
+  border-color: #0062cc;
+}
+
+.edit-actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Botón de editar en el header de la jornada */
+.jornada-status .btn-warning {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.jornada-status .btn-warning:hover {
+  background-color: #e0a800;
+  border-color: #d39e00;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.jornada-status .ml-2 {
+  margin-left: 10px;
+}
+
+/* Animación de spinner para guardar */
+.fa-spinner.fa-spin {
+  animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive design para formularios */
+@media (max-width: 768px) {
+  .jornada-edit-form .form-row {
+    flex-direction: column;
+  }
+  
+  .jornada-edit-form .form-group {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .edit-actions {
+    flex-direction: column;
+  }
+  
+  .edit-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Mejoras visuales para inputs con error */
+.jornada-edit-form .form-control.ng-invalid.ng-touched {
+  border-color: #dc3545;
+}
+
+.jornada-edit-form .form-control.ng-valid.ng-touched {
+  border-color: #28a745;
+}
+
+/* Estilo para destacar que está en modo edición */
+.jornada-edit-mode::before {
+  content: "✏️ MODO EDICIÓN";
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #007bff;
+  text-transform: uppercase;
+  margin-bottom: 15px;
+  letter-spacing: 0.5px;
+}
+
+/* Estilos para el modal de eliminación de jornada */
+.delete-jornada-info {
+  background-color: #f8f9fa;
+  border-left: 4px solid #dc3545;
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 4px;
+}
+
+.delete-jornada-info p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.delete-jornada-info i {
+  color: #6c757d;
+  margin-right: 8px;
+  width: 20px;
+}
+
+.text-danger {
+  color: #dc3545;
+  font-weight: 500;
+  margin-top: 15px;
+}
+
+.text-danger i {
+  margin-right: 5px;
+}
+
+/* Asegurar que el botón de eliminar tenga margen */
+.jornada-status .btn.ml-2 {
+  margin-left: 8px !important;
+}
+
+/* Transiciones suaves */
+.jornada-card {
+  transition: all 0.3s ease;
+}
+
+.jornada-edit-mode {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilos para el estado de guardado */
+.btn i.fa-save {
+  color: inherit;
+}
+
+.btn i.fa-spinner {
+  color: inherit;
+}
+
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+}
+
+.loading-spinner {
+  font-size: 2rem;
+  color: #2563eb;
+  margin-bottom: 1rem;
+}
+
+.loading-spinner i {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.jornadas-container {
+  padding: 1rem 0;
+}
+
+.jornadas-summary {
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.summary-card h4 {
+  margin: 0 0 1rem 0;
+  color: #222b45;
+  font-size: 1.2rem;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.stat-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.stat-value {
+  color: #222b45;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.jornadas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.jornada-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.jornada-card:hover {
+  box-shadow: 0 4px 12px rgba(44, 62, 80, 0.08);
+  transform: translateY(-2px);
+}
+
+.jornada-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.jornada-date {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #222b45;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.jornada-date i {
+  color: #2563eb;
+}
+
+.holiday-badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+}
+
+.jornada-status {
+  display: flex;
+  align-items: center;
+}
+
+.jornada-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.detail-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.detail-item i {
+  width: 16px;
+  text-align: center;
+}
+
+.detail-label {
+  color: #64748b;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.detail-value {
+  color: #222b45;
+  font-weight: 600;
+}
+
+.hours-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.hours-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.hours-item.regular {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border: 1px solid #0ea5e9;
+}
+
+.hours-item.extra {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+}
+
+.hours-item.holiday {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+  border: 1px solid #ec4899;
+}
+
+.hours-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.hours-item.regular .hours-icon {
+  color: #0ea5e9;
+}
+
+.hours-item.extra .hours-icon {
+  color: #f59e0b;
+}
+
+.hours-item.holiday .hours-icon {
+  color: #ec4899;
+}
+
+.hours-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.hours-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.hours-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #222b45;
+}
+
+.jornada-notes {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.note-item {
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.9rem;
+}
+
+.note-item strong {
+  color: #92400e;
+}
+
+/* Text utilities */
+.text-success {
+  color: #22c55e !important;
+}
+
+.text-danger {
+  color: #ef4444 !important;
+}
+
+.text-warning {
+  color: #f59e0b !important;
+}
+
+.text-primary {
+  color: #2563eb !important;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #222b45;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #222b45;
+  background: #f9fafb;
+  border: 1.5px solid #d1d5db;
+  border-radius: 0.3rem;
+  transition: border 0.15s, box-shadow 0.15s;
+}
+
+.form-control:focus {
+  border-color: #2563eb;
+  outline: 0;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.13);
+}
+
+select.form-control {
+  appearance: none;
+  padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23222b45' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+}
+
+.btn {
+  display: inline-block;
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
+  user-select: none;
+  padding: 0.4rem 1.1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  border-radius: 0.3rem;
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.btn-primary {
+  color: #fff;
+  background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+  border: none;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%);
+}
+
+.btn-secondary {
+  color: #fff;
+  background: #64748b;
+  border: none;
+}
+
+.btn-secondary:hover {
+  background: #222b45;
+}
+
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.text-danger {
+  color: #ef4444;
+  font-size: 0.9rem;
+  margin-top: 6px;
+  padding-left: 5px;
+  display: block;
+}
+
+.text-danger:before {
+  content: '\f071';
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+  margin-right: 5px;
+  font-size: 0.9rem;
+}
+
+/* =========================
+   RESPONSIVE DESIGN
+   ========================= */
+@media (max-width: 1100px) {
+  .container {
+    padding: 18px 6px;
+  }
+  
+  .modal-card-large {
+    max-width: 95%;
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .actions-bar, .filter-controls, .advanced-filters, .filter-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .container {
+    padding: 10px 2px;
+  }
+  
+  .detail-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .summary-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .hours-breakdown {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-responsive {
+    overflow-x: auto;
+  }
+  table {
+    min-width: 700px;
+  }
+  .modal-card {
+    padding: 1.2rem 0.5rem;
+  }
+  
+  .modal-card-large {
+    padding: 1rem;
+  }
+  
+  .jornada-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .hours-item {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  h2 {
+    font-size: 1.3rem;
+    padding-bottom: 8px;
+  }
+  .container {
+    padding: 4px 0;
+  }
+  
+  .modal-body {
+    max-height: 60vh;
+  }
+  
+  .jornada-card {
+    padding: 1rem;
+  }
+  
+  .summary-card {
+    padding: 1rem;
+  }
+}
+
+/* =========================
+   ANIMACIONES
+   ========================= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-controls, .modal-card, .table-responsive {
+  animation: fadeIn 0.3s ease;
+}
+
+.jornada-card {
+  animation: slideInUp 0.3s ease;
+}
+
+.jornada-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.jornada-card:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.jornada-card:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+/* =========================
+   UTILIDADES ADICIONALES
+   ========================= */
+.titlecase {
+  text-transform: capitalize;
+}
+
+
+/* Smooth scrolling para el modal */
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

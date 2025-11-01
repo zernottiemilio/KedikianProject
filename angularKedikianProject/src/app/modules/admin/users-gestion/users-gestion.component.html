@@ -1,0 +1,434 @@
+<div class="container">
+  <h2>Gestión de Usuarios</h2>
+
+  <div class="actions-bar">
+    <button class="btn btn-primary" (click)="openAddUserModal()">
+      <i class="fas fa-plus"></i> Nuevo Usuario
+    </button>
+    <div class="filter-controls">
+      <div class="search-box">
+        <input type="text" placeholder="Búsqueda rápida..." [(ngModel)]="searchTerm" (input)="applyFilters()">
+        <i class="fas fa-search"></i>
+      </div>
+      <div class="advanced-filters">
+        <div class="filter-row">
+          <div class="filter-item">
+            <label for="filter-id">ID</label>
+            <input type="text" class="form-control form-control-sm" id="filter-id" [(ngModel)]="filters.id"
+              (input)="applyFilters()">
+          </div>
+          <div class="filter-item">
+            <label for="filter-nombre">Nombre</label>
+            <input type="text" class="form-control form-control-sm" id="filter-nombre" [(ngModel)]="filters.nombre"
+              (input)="applyFilters()">
+          </div>
+          <div class="filter-item">
+            <label for="filter-email">Email</label>
+            <input type="text" class="form-control form-control-sm" id="filter-email" [(ngModel)]="filters.email"
+              (input)="applyFilters()">
+          </div>
+          <div class="filter-item ml-auto">
+            <label for="filter-roles">Rol</label>
+            <select class="form-select form-select-sm" id="filter-roles" [(ngModel)]="filters.roles"
+              (change)="applyFilters()">
+              <option value="">Todos</option>
+              <option value="administrador">Administrador</option>
+              <option value="operario">Operario</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label for="filter-estado">Estado</label>
+            <select class="form-select form-select-sm" id="filter-estado" [(ngModel)]="filters.estado"
+              (change)="applyFilters()">
+              <option value="">Todos</option>
+              <option [ngValue]="true">Activo</option>
+              <option [ngValue]="false">Inactivo</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <button class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
+              <i class="fas fa-times"></i> Limpiar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th (click)="sortBy('id')">#ID <i class="fas" [ngClass]="getSortIcon('id')"></i></th>
+          <th (click)="sortBy('nombre')">Nombre <i class="fas" [ngClass]="getSortIcon('nombre')"></i></th>
+          <th (click)="sortBy('email')">Email <i class="fas" [ngClass]="getSortIcon('email')"></i></th>
+          <th (click)="sortBy('roles')">Roles <i class="fas" [ngClass]="getSortIcon('roles')"></i></th>
+          <th (click)="sortBy('estado')">Estado <i class="fas" [ngClass]="getSortIcon('estado')"></i></th>
+          <th (click)="sortBy('fecha_creacion')">Fecha Creación <i class="fas"
+              [ngClass]="getSortIcon('fecha_creacion')"></i></th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of filteredUsers">
+          <td>{{ user.id }}</td>
+          <td>{{ user.nombre }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ getDisplayRole(user.roles[0]) }}</td>
+          <td>
+            <span class="badge" [ngClass]="user.estado ? 'badge-success' : 'badge-danger'">
+              {{ user.estado ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+          <td>{{ user.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td class="actions">
+            <button class="btn btn-sm btn-info" (click)="editUser(user)" title="Editar">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-success" (click)="openJornadaModal(user)" title="Ver Jornadas Laborales">
+              <i class="fas fa-clock"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="deleteUser(user)" title="Eliminar">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="filteredUsers.length === 0" class="no-results">
+    <p>No se encontraron usuarios.</p>
+  </div>
+
+  <div class="pagination-controls" *ngIf="totalPages > 1">
+    <button class="btn btn-sm" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <span>Página {{ currentPage }} de {{ totalPages }}</span>
+    <button class="btn btn-sm" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Modal de Edición -->
+<div class="modal-overlay" [class.active]="isEditModalOpen">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>{{ isEditMode ? 'Editar Usuario' : 'Nuevo Usuario' }}</h2>
+      <button class="modal-close" (click)="closeModals()">&times;</button>
+    </div>
+    <form [formGroup]="userForm" (ngSubmit)="saveUser()">
+      <div class="form-group">
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" formControlName="nombre" class="form-control" placeholder="Ingrese el nombre">
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" formControlName="email" class="form-control" placeholder="Ingrese el email">
+      </div>
+
+      <div class="form-group" *ngIf="!isEditMode">
+        <label for="hash_contrasena">Contraseña</label>
+        <input type="password" id="hash_contrasena" formControlName="hash_contrasena" class="form-control" placeholder="Ingrese la contraseña">
+      </div>
+
+      <div class="form-group" *ngIf="isEditMode">
+        <div class="checkbox-container">
+          <input type="checkbox" id="changePassword" [(ngModel)]="changePassword" [ngModelOptions]="{standalone: true}" (change)="toggleChangePassword()">
+          <label for="changePassword">Cambiar contraseña</label>
+        </div>
+        <div *ngIf="changePassword" class="password-field-container">
+          <input type="password" id="hash_contrasena_edit" formControlName="hash_contrasena" class="form-control" placeholder="Ingrese la nueva contraseña">
+          <small class="form-text text-muted">Mínimo 8 caracteres</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="roles">Rol</label>
+        <select id="roles" formControlName="roles" class="form-control">
+          <option *ngFor="let role of roleOptions" [value]="role">
+            {{role === 'ADMINISTRADOR' ? 'Administrador' : 'Operario'}}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="estado">Estado</label>
+        <select id="estado" formControlName="estado" class="form-control">
+          <option [ngValue]="true">Activo</option>
+          <option [ngValue]="false">Inactivo</option>
+        </select>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModals()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="userForm.invalid">
+          {{ isEditMode ? 'Guardar Cambios' : 'Crear Usuario' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal-overlay" [class.active]="isDeleteModalOpen">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>Confirmar Eliminación</h2>
+      <button class="modal-close" (click)="closeModals()">&times;</button>
+    </div>
+    <p>¿Estás seguro de que deseas eliminar al usuario "{{ userToDelete?.nombre }}"?</p>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModals()">Cancelar</button>
+      <button type="button" class="btn btn-danger" (click)="confirmDelete()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Jornadas Laborales CON EDICIÓN -->
+<div class="modal-overlay" [class.active]="isJornadaModalOpen">
+  <div class="modal-card modal-card-large">
+    <div class="modal-header">
+      <h2>Jornadas Laborales - {{ selectedUser?.nombre }}</h2>
+      <button class="modal-close" (click)="closeModals()">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <div *ngIf="loadingJornadas" class="loading-container">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <p>Cargando jornadas laborales...</p>
+      </div>
+
+      <div *ngIf="!loadingJornadas && jornadasLaborales.length === 0" class="no-results">
+        <p>No se encontraron jornadas laborales para este usuario.</p>
+      </div>
+
+      <div *ngIf="!loadingJornadas && jornadasLaborales.length > 0" class="jornadas-container">
+        <div class="jornadas-summary">
+          <div class="summary-card">
+            <h4>Resumen</h4>
+            <div class="summary-stats">
+              <div class="stat-item">
+                <span class="stat-label">Total Jornadas:</span>
+                <span class="stat-value">{{ jornadasLaborales.length }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Horas Regulares Total:</span>
+                <span class="stat-value">{{ formatHorasDecimales(getTotalHorasRegulares()) }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Horas Extras Total:</span>
+                <span class="stat-value">{{ formatHorasDecimales(getTotalHorasExtras()) }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Días Feriados:</span>
+                <span class="stat-value">{{ getTotalDiasFeriados() }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="jornadas-list">
+          <div class="jornada-card" *ngFor="let jornada of jornadasLaborales; trackBy: trackByJornadaId">
+            
+            <!-- ✅ MODO VISTA NORMAL -->
+            <div *ngIf="!isEditingJornada(jornada.id)">
+              <div class="jornada-header">
+                <div class="jornada-date">
+                  <i class="fas fa-calendar-alt"></i>
+                  {{ formatFecha(jornada.fecha) }}
+                  <span *ngIf="jornada.es_feriado" class="badge badge-warning holiday-badge">
+                    <i class="fas fa-star"></i> Feriado
+                  </span>
+                </div>
+                <div class="jornada-status">
+                  <span class="badge" [ngClass]="getEstadoBadgeClass(jornada.estado)">
+                    {{ jornada.estado | titlecase }}
+                  </span>
+                  <button class="btn btn-sm btn-warning ml-2" (click)="editJornada(jornada)" title="Editar Jornada">
+                    <i class="fas fa-edit"></i> Editar
+                  </button>
+                  <button class="btn btn-sm btn-danger ml-2" (click)="openDeleteJornadaModal(jornada)" title="Eliminar Jornada">
+                    <i class="fas fa-trash"></i> Eliminar
+                  </button>
+                </div>
+              </div>
+
+              <div class="jornada-details">
+                <div class="detail-row">
+                  <div class="detail-group">
+                    <div class="detail-item">
+                      <i class="fas fa-play-circle text-success"></i>
+                      <span class="detail-label">Inicio:</span>
+                      <span class="detail-value">{{ formatHora(jornada.hora_inicio) }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <i class="fas fa-stop-circle text-danger"></i>
+                      <span class="detail-label">Fin:</span>
+                      <span class="detail-value">{{ formatHora(jornada.hora_fin) }}</span>
+                    </div>
+                  </div>
+                  
+                  <div class="detail-group">
+                    <div class="detail-item">
+                      <i class="fas fa-coffee text-warning"></i>
+                      <span class="detail-label">Descanso:</span>
+                      <span class="detail-value">{{ formatTiempoDescanso(jornada.tiempo_descanso) }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <i class="fas fa-clock text-primary"></i>
+                      <span class="detail-label">Total:</span>
+                      <span class="detail-value">{{ formatHorasDecimales(jornada.total_horas) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="hours-breakdown">
+                  <div class="hours-item regular">
+                    <div class="hours-icon">
+                      <i class="fas fa-business-time"></i>
+                    </div>
+                    <div class="hours-info">
+                      <span class="hours-label">Horas Regulares</span>
+                      <span class="hours-value">{{ formatHorasDecimales(jornada.horas_regulares) }}</span>
+                    </div>
+                  </div>
+
+                  <div class="hours-item extra" *ngIf="jornada.horas_extras > 0">
+                    <div class="hours-icon">
+                      <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="hours-info">
+                      <span class="hours-label">Horas Extras</span>
+                      <span class="hours-value">{{ formatHorasDecimales(jornada.horas_extras) }}</span>
+                    </div>
+                  </div>
+
+                  <div class="hours-item holiday" *ngIf="jornada.es_feriado">
+                    <div class="hours-icon">
+                      <i class="fas fa-star"></i>
+                    </div>
+                    <div class="hours-info">
+                      <span class="hours-label">Día Feriado</span>
+                      <span class="hours-value">Sí</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div *ngIf="jornada.notas_inicio || jornada.notas_fin" class="jornada-notes">
+                  <div *ngIf="jornada.notas_inicio" class="note-item">
+                    <strong>Notas de inicio:</strong> {{ jornada.notas_inicio }}
+                  </div>
+                  <div *ngIf="jornada.notas_fin" class="note-item">
+                    <strong>Notas de fin:</strong> {{ jornada.notas_fin }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ✅ MODO EDICIÓN -->
+            <div *ngIf="isEditingJornada(jornada.id)" class="jornada-edit-mode">
+              <form [formGroup]="jornadaEditForm" class="jornada-edit-form">
+                <div class="form-row">
+                  <div class="form-group col-md-4">
+                    <label for="edit-fecha-{{jornada.id}}">Fecha</label>
+                    <input type="date" id="edit-fecha-{{jornada.id}}" formControlName="fecha" class="form-control">
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label for="edit-hora-inicio-{{jornada.id}}">Hora Inicio</label>
+                    <input type="time" id="edit-hora-inicio-{{jornada.id}}" formControlName="hora_inicio" class="form-control">
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label for="edit-hora-fin-{{jornada.id}}">Hora Fin</label>
+                    <input type="time" id="edit-hora-fin-{{jornada.id}}" formControlName="hora_fin" class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-md-4">
+                    <label for="edit-descanso-{{jornada.id}}">Descanso (minutos)</label>
+                    <input type="number" id="edit-descanso-{{jornada.id}}" formControlName="tiempo_descanso" class="form-control" min="0">
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label for="edit-estado-{{jornada.id}}">Estado</label>
+                    <select id="edit-estado-{{jornada.id}}" formControlName="estado" class="form-control">
+                      <option value="activa">Activa</option>
+                      <option value="pausada">Pausada</option>
+                      <option value="completada">Completada</option>
+                      <option value="cancelada">Cancelada</option>
+                    </select>
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label class="checkbox-label">
+                      <input type="checkbox" formControlName="es_feriado">
+                      Es Feriado
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label for="edit-notas-inicio-{{jornada.id}}">Notas de Inicio</label>
+                    <textarea id="edit-notas-inicio-{{jornada.id}}" formControlName="notas_inicio" class="form-control" rows="2"></textarea>
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="edit-notas-fin-{{jornada.id}}">Notas de Fin</label>
+                    <textarea id="edit-notas-fin-{{jornada.id}}" formControlName="notas_fin" class="form-control" rows="2"></textarea>
+                  </div>
+                </div>
+
+                <div class="edit-actions">
+                  <button type="button" class="btn btn-secondary" (click)="cancelEditJornada()" [disabled]="savingJornada">
+                    <i class="fas fa-times"></i> Cancelar
+                  </button>
+                  <button type="button" class="btn btn-primary" (click)="saveJornada(jornada.id)" [disabled]="jornadaEditForm.invalid || savingJornada">
+                    <i class="fas" [ngClass]="savingJornada ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                    {{ savingJornada ? 'Guardando...' : 'Guardar Cambios' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModals()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Confirmación de Eliminación de Jornada -->
+<div class="modal-overlay" [class.active]="isDeleteJornadaModalOpen">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>Confirmar Eliminación de Jornada</h2>
+      <button class="modal-close" (click)="closeDeleteJornadaModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p><strong>¿Estás seguro de que deseas eliminar esta jornada laboral?</strong></p>
+      <div *ngIf="jornadaToDelete" class="delete-jornada-info">
+        <p><i class="fas fa-calendar-alt"></i> <strong>Fecha:</strong> {{ formatFecha(jornadaToDelete.fecha) }}</p>
+        <p><i class="fas fa-clock"></i> <strong>Horario:</strong> {{ formatHora(jornadaToDelete.hora_inicio) }} - {{ formatHora(jornadaToDelete.hora_fin) }}</p>
+        <p><i class="fas fa-business-time"></i> <strong>Total horas:</strong> {{ formatHorasDecimales(jornadaToDelete.total_horas) }}</p>
+      </div>
+      <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Esta acción no se puede deshacer.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeDeleteJornadaModal()" [disabled]="deletingJornada">
+        Cancelar
+      </button>
+      <button type="button" class="btn btn-danger" (click)="confirmDeleteJornada()" [disabled]="deletingJornada">
+        <i class="fas" [ngClass]="deletingJornada ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
+        {{ deletingJornada ? 'Eliminando...' : 'Eliminar Jornada' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,96 @@
+<div class="balance-container">
+  <!-- Indicador de carga -->
+  <div *ngIf="isLoading" class="loading-indicator">
+    <div class="spinner"></div>
+    <p>Cargando datos...</p>
+  </div>
+
+  <!-- Mensaje de error -->
+  <div *ngIf="errorMessage" class="error-message">
+    <p>{{ errorMessage }}</p>
+    <button (click)="reintentar()" class="retry-btn">Reintentar</button>
+  </div>
+
+  <!-- Contenido principal - solo mostrar cuando no está cargando y no hay errores -->
+  <div *ngIf="!isLoading && !errorMessage" class="balance-content">
+    <div class="header">
+      <h1>Balance del Sistema</h1>
+      <div class="periodo-selector">
+        <button [class.active]="periodoSeleccionado === 'hoy'" (click)="setFechasPeriodo('hoy')">Hoy</button>
+        <button [class.active]="periodoSeleccionado === 'semana'" (click)="setFechasPeriodo('semana')">Esta
+          Semana</button>
+        <button [class.active]="periodoSeleccionado === 'mes'" (click)="setFechasPeriodo('mes')">Este Mes</button>
+        <button [class.active]="periodoSeleccionado === 'año'" (click)="setFechasPeriodo('año')">Este Año</button>
+      </div>
+      <div class="custom-dates">
+        <div class="date-inputs">
+          <div class="date-field">
+            <label for="fechaInicio">Desde:</label>
+            <input type="date" id="fechaInicio" [ngModel]="fechaInicioStr" (ngModelChange)="onFechaInicioChange($event)"
+              name="fechaInicio">
+          </div>
+          <div class="date-field">
+            <label for="fechaFin">Hasta:</label>
+            <input type="date" id="fechaFin" [ngModel]="fechaFinStr" (ngModelChange)="onFechaFinChange($event)"
+              name="fechaFin">
+          </div>
+        </div>
+        <button class="search-btn" (click)="buscarPorFechas()">
+          <i class="fas fa-search"></i> Buscar
+        </button>
+      </div>
+    </div>
+
+    <div class="summary-cards">
+      <div class="card ingreso">
+        <div class="card-header">
+          <h2>Total Ingresos</h2>
+          <span class="material-icons"></span>
+        </div>
+        <div class="card-body">
+          <span class="amount">{{ totalIngresos | currency }}</span>
+        </div>
+      </div>
+
+      <div class="card egreso">
+        <div class="card-header">
+          <h2>Total Egresos</h2>
+          <span class="material-icons"></span>
+        </div>
+        <div class="card-body">
+          <span class="amount">{{ totalEgresos | currency }}</span>
+        </div>
+      </div>
+
+      <div class="card balance" [ngClass]="{'positive': balance >= 0, 'negative': balance < 0}">
+        <div class="card-header">
+          <h2>Balance Total</h2>
+          <span class="material-icons"></span>
+        </div>
+        <div class="card-body">
+          <span class="amount">{{ balance | currency }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabset">
+      <ul class="nav nav-tabs">
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="tabActiva === 'ingresos'" (click)="cambiarTab('ingresos')">Ingresos</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="tabActiva === 'egresos'" (click)="cambiarTab('egresos')">Egresos</a>
+        </li>
+      </ul>
+
+      <div class="tab-content">
+        <div *ngIf="tabActiva === 'ingresos'" class="tab-pane active show">
+          <app-ingreso [pagos]="pagos" (actualizarBalance)="cargarDatos()"></app-ingreso>
+        </div>
+        <div *ngIf="tabActiva === 'egresos'" class="tab-pane active show">
+          <app-egreso [gastos]="gastos" (actualizarBalance)="cargarDatos()"></app-egreso>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,166 @@
+
+<div class="egreso-container">
+  <div class="actions">
+    <div class="search-container">
+      <input type="text" class="search-input" placeholder="Buscar egresos..." [(ngModel)]="filtroTexto">
+      <span class="material-icons"></span>
+    </div>
+    <button class="add-btn" (click)="toggleFormulario()">
+      <span class="material-icons">{{ mostrarFormulario ? '' : '' }}</span>
+      {{ mostrarFormulario ? 'Cancelar' : 'Nuevo Egreso' }}
+    </button>
+  </div>
+
+  <div class="form-container" *ngIf="mostrarFormulario">
+    <form [formGroup]="gastoForm" (ngSubmit)="guardarGasto()">
+      <h3>{{ modoEdicion ? 'Editar Egreso' : 'Nuevo Egreso' }}</h3>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="usuario">Usuario:</label>
+          <select id="usuario" formControlName="usuario_id">
+            <option value="">Seleccione un usuario</option>
+            <option *ngFor="let usuario of usuarios" [value]="usuario.id">{{ usuario.nombre }}</option>
+          </select>
+          <div class="error-message"
+            *ngIf="gastoForm.get('usuario_id')?.touched && gastoForm.get('usuario_id')?.invalid">
+            Usuario es requerido
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="maquina">Máquina (opcional):</label>
+          <select id="maquina" formControlName="maquina_id">
+            <option value="">Sin máquina asociada</option>
+            <option *ngFor="let maquina of maquinas" [value]="maquina.id">{{ maquina.nombre }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="tipo">Tipo de Gasto:</label>
+          <select id="tipo" formControlName="tipo">
+            <option value="">Seleccione un tipo</option>
+            <option *ngFor="let tipo of tiposGasto" [value]="tipo.value">{{ tipo.label }}</option>
+          </select>
+          <div class="error-message" *ngIf="gastoForm.get('tipo')?.touched && gastoForm.get('tipo')?.invalid">
+            Tipo es requerido
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="importe">Importe Total:</label>
+          <input type="number" id="importe" formControlName="importe_total" placeholder="0.00">
+          <div class="error-message"
+            *ngIf="gastoForm.get('importe_total')?.touched && gastoForm.get('importe_total')?.invalid">
+            Importe es requerido y debe ser mayor que 0
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fecha">Fecha:</label>
+          <input type="date" id="fecha" formControlName="fecha">
+          <div class="error-message" *ngIf="gastoForm.get('fecha')?.touched && gastoForm.get('fecha')?.invalid">
+            Fecha es requerida
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" formControlName="descripcion" rows="3"
+          placeholder="Descripción (opcional)"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="imagen">Comprobante (imagen):</label>
+        <div class="file-input-container">
+          <input type="file" id="imagen" (change)="onImagenChange($event)" accept="image/*">
+          <label for="imagen" class="file-input-label">
+            <span class="material-icons"></span>
+            <span>{{ imagenSeleccionada ? imagenSeleccionada.name : 'Seleccionar archivo' }}</span>
+          </label>
+        </div>
+
+        <div class="image-preview" *ngIf="previewURL">
+          <img [src]="previewURL" alt="Vista previa">
+          <button type="button" class="remove-image" (click)="previewURL = null; imagenSeleccionada = null;">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" (click)="toggleFormulario()">Cancelar</button>
+        <button type="submit" class="save-btn" [disabled]="gastoForm.invalid">{{ modoEdicion ? 'Actualizar' : 'Guardar'
+          }}</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table" *ngIf="gastosFiltrados.length > 0">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Máquina</th>
+          <th>Tipo</th>
+          <th>Importe</th>
+          <th>Fecha</th>
+          <th>Descripción</th>
+          <th>Comprobante</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let gasto of gastosFiltrados">
+          <td>{{ getNombreUsuario(gasto.usuario_id) }}</td>
+          <td>{{ getNombreMaquina(gasto.maquina_id) }}</td>
+          <td><span class="tipo-badge {{ gasto.tipo }}">{{ getTipoLabel(gasto.tipo) }}</span></td>
+          <td class="importe">{{ gasto.importe_total | currency }}</td>
+          <td>{{ gasto.fecha | date:'dd/MM/yyyy' }}</td>
+          <td>{{ gasto.descripcion }}</td>
+          <td>
+            <img *ngIf="gasto.imagen" 
+                 [src]="getImagenSrc(gasto.imagen)" 
+                 alt="Comprobante" 
+                 style="max-width: 100px; max-height: 100px; cursor: pointer;" 
+                 (click)="abrirModalImagen(gasto.imagen)"
+                 class="comprobante-thumbnail" />
+            <span *ngIf="!gasto.imagen">-</span>
+          </td>
+          <td class="actions-cell">
+            <button class="btn btn-sm btn-info" (click)="editarGasto(gasto)" title="Editar">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="eliminarGasto(gasto.id)" title="Eliminar">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="no-data" *ngIf="gastosFiltrados.length === 0">
+      <span class="material-icons">info</span>
+      <p>No hay egresos registrados en este período</p>
+    </div>
+  </div>
+
+  <!-- Modal para mostrar imagen en tamaño grande -->
+  <div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Comprobante</h3>
+        <button class="modal-close" (click)="cerrarModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <img [src]="getImagenSrc(imagenModal)" alt="Comprobante" class="modal-image" />
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Backend Endpoints</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .endpoint-test {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .log {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test de Endpoints del Backend</h1>
+        <p>Esta herramienta te ayudará a encontrar el endpoint correcto de tu backend.</p>
+        
+        <div>
+            <label for="baseUrl">URL Base del Backend:</label>
+            <input type="text" id="baseUrl" value="http://localhost:8000" style="width: 300px; padding: 8px;">
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="testAllEndpoints()">🧪 Probar Todos los Endpoints</button>
+            <button onclick="clearLog()">🗑️ Limpiar Log</button>
+        </div>
+        
+        <div id="results"></div>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        const endpoints = [
+            '/api/v1/login',
+            '/api/v1/auth/login',
+            '/login',
+            '/auth/login',
+            '/api/login',
+            '/api/auth/login',
+            '/api/v1/token',
+            '/api/v1/auth/token',
+            '/token',
+            '/auth/token'
+        ];
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testEndpoint(url, method = 'GET') {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'endpoint-test loading';
+            resultDiv.innerHTML = `<strong>${method} ${url}</strong> - Probando...`;
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                log(`🔍 Probando: ${method} ${url}`);
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: method === 'POST' ? 'username=YWRtaW4=&password=MTIzNDU2' : undefined
+                });
+
+                if (response.ok) {
+                    resultDiv.className = 'endpoint-test success';
+                    resultDiv.innerHTML = `<strong>✅ ${method} ${url}</strong> - Status: ${response.status}`;
+                    log(`✅ ÉXITO: ${method} ${url} - Status: ${response.status}`);
+                } else {
+                    resultDiv.className = 'endpoint-test error';
+                    resultDiv.innerHTML = `<strong>❌ ${method} ${url}</strong> - Status: ${response.status} ${response.statusText}`;
+                    log(`❌ ERROR: ${method} ${url} - Status: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                resultDiv.className = 'endpoint-test error';
+                resultDiv.innerHTML = `<strong>❌ ${method} ${url}</strong> - Error: ${error.message}`;
+                log(`💥 EXCEPCIÓN: ${method} ${url} - ${error.message}`);
+            }
+        }
+
+        async function testAllEndpoints() {
+            clearLog();
+            const baseUrl = document.getElementById('baseUrl').value;
+            log(`🚀 Iniciando pruebas con base URL: ${baseUrl}`);
+            
+            for (const endpoint of endpoints) {
+                const fullUrl = baseUrl + endpoint;
+                await testEndpoint(fullUrl, 'POST');
+                await new Promise(resolve => setTimeout(resolve, 500)); // Pausa entre requests
+            }
+            
+            log(`✅ Pruebas completadas`);
+        }
+
+        // Probar también con GET para ver si el servidor responde
+        async function testServerConnection() {
+            const baseUrl = document.getElementById('baseUrl').value;
+            log(`🔍 Verificando conexión al servidor: ${baseUrl}`);
+            
+            try {
+                const response = await fetch(baseUrl);
+                log(`✅ Servidor responde: ${response.status} ${response.statusText}`);
+            } catch (error) {
+                log(`❌ No se puede conectar al servidor: ${error.message}`);
+            }
+        }
+
+        // Auto-test al cargar la página
+        window.onload = function() {
+            testServerConnection();
+        };
+    </script>
+</body>
+</html> 

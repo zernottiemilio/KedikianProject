@@ -1,0 +1,219 @@
+.main-content {
+  padding: 20px;
+  background-color: #f5f7fa;
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.dashboard-header h1 {
+  color: #2c3e50;
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 25px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.project-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #e1e8ed;
+}
+
+.project-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #ecf0f1;
+}
+
+.card-header h2 {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  flex: 1;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-badge.completed {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-badge.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.description-section h3,
+.machines-section h3,
+.location-section h3,
+.materials-section h3 {
+  color: #34495e;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+}
+
+.description-section p {
+  color: #5a6c7d;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.machines-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.machine-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #3498db;
+}
+
+.machine-name {
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.machine-hours {
+  color: #3498db;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.total-hours {
+  padding: 10px 12px;
+  background-color: #e8f4fd;
+  border-radius: 6px;
+  text-align: center;
+  color: #2980b9;
+}
+
+.dates-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.date-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.date-label {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.date-value {
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.location {
+  color: #5a6c7d;
+  margin: 0;
+  font-weight: 500;
+}
+
+.materials-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.material-tag {
+  background-color: #e74c3c;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 15px;
+  }
+
+  .projects-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 2rem;
+  }
+
+  .dates-section {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .project-card {
+    padding: 15px;
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .card-header h2 {
+    font-size: 1.2rem;
+  }
+}

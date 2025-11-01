@@ -1,0 +1,289 @@
+<div class="inventario-container">
+  <!-- Mensaje de éxito -->
+  <div *ngIf="mensajeExito" class="alert alert-success">
+    <i class="fas fa-check-circle"></i> {{ mensajeExito }}
+  </div>
+
+  <!-- Modal de confirmación para eliminar -->
+  <div *ngIf="mostrarConfirmacionEliminar" class="modal-backdrop" (click)="cancelarEliminarProducto()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5><i class="fas fa-exclamation-triangle"></i> Confirmar eliminación</h5>
+          <button class="close" (click)="cancelarEliminarProducto()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>¿Estás seguro de que deseas eliminar el producto <strong>"{{ productoAEliminar?.nombre }}"</strong>?</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="cancelarEliminarProducto()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button class="btn btn-danger" (click)="confirmarEliminarProducto()">
+            <i class="fas fa-trash"></i> Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <h1><i class="fas fa-boxes"></i> Gestión de Inventario</h1>
+      <div class="header-actions">
+        <button class="btn btn-primary" (click)="abrirModalNuevoProducto()">
+          <i class="fas fa-plus"></i> Nuevo Producto
+        </button>
+        <button class="btn btn-secondary" (click)="exportarInventarioCSV()">
+          <i class="fas fa-file-export"></i> Exportar
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Búsqueda -->
+  <div class="search-panel">
+    <form [formGroup]="busquedaForm">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" class="form-control" placeholder="Buscar productos..." formControlName="termino">
+      </div>
+    </form>
+  </div>
+
+  <!-- Tabla de productos -->
+  <div class="productos-panel">
+    <table class="tabla-productos">
+      <thead>
+        <tr>
+          <th>Nombre del Producto</th>
+          <th class="text-center">Stock</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let producto of obtenerProductosPaginados()">
+          <td>{{ producto.nombre }}</td>
+          <td class="text-center">
+            <span class="badge" 
+              [class.badge-danger]="producto.inventario < 5"
+              [class.badge-warning]="producto.inventario >= 5 && producto.inventario < 10"
+              [class.badge-success]="producto.inventario >= 10">
+              {{ producto.inventario }} unidades
+            </span>
+          </td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-primary" (click)="abrirModalEditar(producto)" title="Editar">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="eliminarProducto(producto, $event)" title="Eliminar">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="productosFiltrados.length === 0">
+          <td colspan="3" class="text-center empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No se encontraron productos</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Paginación -->
+    <div *ngIf="productosFiltrados.length > 0" class="pagination-container">
+      <div class="pagination-info">
+        Mostrando {{ (paginaActual - 1) * itemsPorPagina + 1 }} - 
+        {{ Math?.min(paginaActual * itemsPorPagina, totalItems) }}
+        de {{ totalItems }} productos
+      </div>
+      <ul class="pagination">
+        <li [class.disabled]="paginaActual === 1">
+          <button (click)="cambiarPagina(paginaActual - 1)">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+        </li>
+        <li *ngFor="let pagina of [].constructor(obtenerTotalPaginas()); let i = index" 
+            [class.active]="paginaActual === i + 1">
+          <button (click)="cambiarPagina(i + 1)">{{ i + 1 }}</button>
+        </li>
+        <li [class.disabled]="paginaActual === obtenerTotalPaginas()">
+          <button (click)="cambiarPagina(paginaActual + 1)">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Modal para nuevo producto -->
+  <div *ngIf="mostrarModalNuevoProducto" class="modal-backdrop" (click)="cerrarModalNuevoProducto()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5><i class="fas fa-plus-circle"></i> Agregar Nuevo Producto</h5>
+          <button class="close" (click)="cerrarModalNuevoProducto()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form [formGroup]="productoForm">
+            <div class="form-group">
+              <label>Nombre del producto</label>
+              <input type="text" class="form-control" formControlName="nombre" placeholder="Ej: Monitor Samsung 32'">
+              <div *ngIf="productoForm.get('nombre')!.invalid && productoForm.get('nombre')!.touched" class="error-message">
+                El nombre es obligatorio (mínimo 3 caracteres)
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Código del producto</label>
+              <div class="input-with-button">
+                <input type="text" class="form-control" formControlName="codigo_producto" placeholder="Ej: MON-123">
+                <button type="button" class="btn btn-secondary" (click)="generarCodigoProducto()">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+              </div>
+              <small>Formato: XXX-123</small>
+              <div *ngIf="productoForm.get('codigo_producto')!.invalid && productoForm.get('codigo_producto')!.touched" class="error-message">
+                El código es obligatorio (formato XXX-123)
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Inventario inicial</label>
+              <input type="number" class="form-control" formControlName="inventario" min="0" placeholder="0">
+              <div *ngIf="productoForm.get('inventario')!.invalid && productoForm.get('inventario')!.touched" class="error-message">
+                El inventario no puede ser negativo
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Imagen del producto</label>
+              <input type="file" class="form-control" (change)="onFileSelected($event)" accept="image/*">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="cerrarModalNuevoProducto()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button class="btn btn-primary" [disabled]="productoForm.invalid" (click)="agregarNuevoProducto()">
+            <i class="fas fa-save"></i> Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para editar producto -->
+  <div *ngIf="mostrarModalEditar" class="modal-backdrop" (click)="cerrarModalEditar()">
+    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5><i class="fas fa-edit"></i> Editar Producto: {{ productoSeleccionado?.nombre }}</h5>
+          <button class="close" (click)="cerrarModalEditar()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <!-- Información del producto -->
+          <div class="producto-info">
+            <div class="info-item">
+              <label>Código:</label>
+              <span>{{ productoSeleccionado?.codigo_producto }}</span>
+            </div>
+            <div class="info-item">
+              <label>Stock actual:</label>
+              <span class="badge" 
+                [class.badge-danger]="productoSeleccionado!.inventario < 5"
+                [class.badge-warning]="productoSeleccionado!.inventario >= 5 && productoSeleccionado!.inventario < 10"
+                [class.badge-success]="productoSeleccionado!.inventario >= 10">
+                {{ productoSeleccionado!.inventario }} unidades
+              </span>
+            </div>
+          </div>
+
+          <!-- Formulario de movimiento -->
+          <div class="movimiento-section">
+            <h6><i class="fas fa-exchange-alt"></i> Registrar Movimiento</h6>
+            <form [formGroup]="movimientoForm">
+              <div class="form-group">
+                <label>Tipo de movimiento</label>
+                <div class="radio-group">
+                  <label class="radio-button" [class.active]="movimientoForm.value.tipo_transaccion === 'entrada'">
+                    <input type="radio" formControlName="tipo_transaccion" value="entrada">
+                    <span><i class="fas fa-arrow-down"></i> Entrada</span>
+                  </label>
+                  <label class="radio-button" [class.active]="movimientoForm.value.tipo_transaccion === 'salida'">
+                    <input type="radio" formControlName="tipo_transaccion" value="salida">
+                    <span><i class="fas fa-arrow-up"></i> Salida</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label>Cantidad</label>
+                <input type="number" class="form-control" formControlName="cantidad" min="1" placeholder="Ingrese la cantidad">
+                <div *ngIf="movimientoForm.get('cantidad')!.invalid && movimientoForm.get('cantidad')!.touched" class="error-message">
+                  La cantidad debe ser mayor a 0
+                </div>
+              </div>
+              
+              <button type="button" class="btn btn-primary btn-block" [disabled]="movimientoForm.invalid" (click)="registrarMovimiento()">
+                <i class="fas fa-check"></i> 
+                Registrar {{ movimientoForm.value.tipo_transaccion === 'entrada' ? 'Entrada' : 'Salida' }}
+              </button>
+            </form>
+          </div>
+
+          <!-- Historial de movimientos -->
+          <div class="historial-section">
+            <div class="historial-header">
+              <h6><i class="fas fa-history"></i> Historial de Movimientos</h6>
+              <button class="btn-toggle" (click)="mostrarHistorial = !mostrarHistorial">
+                {{ mostrarHistorial ? 'Ocultar' : 'Mostrar' }}
+              </button>
+            </div>
+
+            <div *ngIf="mostrarHistorial" class="historial-content">
+              <table class="tabla-historial">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let mov of obtenerMovimientosProducto(productoSeleccionado?.id || 0)">
+                    <td>{{ formatearFecha(mov.fecha) }}</td>
+                    <td>
+                      <span class="badge" 
+                        [class.badge-success]="mov.tipo_transaccion === 'entrada'"
+                        [class.badge-danger]="mov.tipo_transaccion === 'salida'">
+                        <i class="fas" 
+                           [class.fa-arrow-down]="mov.tipo_transaccion === 'entrada'"
+                           [class.fa-arrow-up]="mov.tipo_transaccion === 'salida'"></i>
+                        {{ mov.tipo_transaccion === 'entrada' ? 'Entrada' : 'Salida' }}
+                      </span>
+                    </td>
+                    <td><strong>{{ mov.cantidad }}</strong></td>
+                  </tr>
+                  <tr *ngIf="obtenerMovimientosProducto(productoSeleccionado?.id || 0).length === 0">
+                    <td colspan="3" class="text-center empty-state">
+                      <i class="fas fa-inbox"></i>
+                      <p>No hay movimientos registrados</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="cerrarModalEditar()">
+            <i class="fas fa-times"></i> Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
