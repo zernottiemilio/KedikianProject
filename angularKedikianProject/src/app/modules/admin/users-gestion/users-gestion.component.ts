@@ -73,7 +73,7 @@ export class UsersGestionComponent implements OnInit {
   jornadaEditForm: FormGroup;
   savingJornada = false;
 
-  // ✅ NUEVAS: Propiedades para eliminación de jornadas
+  // Propiedades para eliminación de jornadas
   isDeleteJornadaModalOpen = false;
   jornadaToDelete: JornadaLaboral | null = null;
   deletingJornada = false;
@@ -236,19 +236,16 @@ export class UsersGestionComponent implements OnInit {
     });
   }
 
-  // ✅ NUEVO: Abrir modal de confirmación de eliminación de jornada
   openDeleteJornadaModal(jornada: JornadaLaboral): void {
     this.jornadaToDelete = jornada;
     this.isDeleteJornadaModalOpen = true;
   }
 
-  // ✅ NUEVO: Cerrar modal de eliminación de jornada
   closeDeleteJornadaModal(): void {
     this.isDeleteJornadaModalOpen = false;
     this.jornadaToDelete = null;
   }
 
-  // ✅ NUEVO: Confirmar y ejecutar eliminación de jornada
   confirmDeleteJornada(): void {
     if (!this.jornadaToDelete) {
       return;
@@ -264,7 +261,6 @@ export class UsersGestionComponent implements OnInit {
         console.log('Jornada eliminada correctamente');
         alert('Jornada laboral eliminada correctamente');
         
-        // Recargar jornadas del usuario
         if (this.selectedUser) {
           this.loadJornadasLaborales(this.selectedUser.id);
         }
@@ -350,6 +346,21 @@ export class UsersGestionComponent implements OnInit {
     } catch (e) {
       return horaStr;
     }
+  }
+
+  formatHorasDecimales(horasDecimales: number): string {
+    const horas = Math.floor(horasDecimales);
+    const minutos = Math.round((horasDecimales - horas) * 60);
+    
+    if (horas === 0) {
+      return `${minutos}m`;
+    }
+    
+    if (minutos === 0) {
+      return `${horas}h`;
+    }
+    
+    return `${horas}h ${minutos}m`;
   }
 
   getEstadoBadgeClass(estado: string): string {

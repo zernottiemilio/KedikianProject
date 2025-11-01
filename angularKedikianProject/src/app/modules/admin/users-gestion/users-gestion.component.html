@@ -219,11 +219,11 @@
               </div>
               <div class="stat-item">
                 <span class="stat-label">Horas Regulares Total:</span>
-                <span class="stat-value">{{ getTotalHorasRegulares().toFixed(1) }}h</span>
+                <span class="stat-value">{{ formatHorasDecimales(getTotalHorasRegulares()) }}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Horas Extras Total:</span>
-                <span class="stat-value">{{ getTotalHorasExtras().toFixed(1) }}h</span>
+                <span class="stat-value">{{ formatHorasDecimales(getTotalHorasExtras()) }}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Días Feriados:</span>
@@ -253,7 +253,6 @@
                   <button class="btn btn-sm btn-warning ml-2" (click)="editJornada(jornada)" title="Editar Jornada">
                     <i class="fas fa-edit"></i> Editar
                   </button>
-                  <!-- ✅ NUEVO: Botón de eliminar -->
                   <button class="btn btn-sm btn-danger ml-2" (click)="openDeleteJornadaModal(jornada)" title="Eliminar Jornada">
                     <i class="fas fa-trash"></i> Eliminar
                   </button>
@@ -284,7 +283,7 @@
                     <div class="detail-item">
                       <i class="fas fa-clock text-primary"></i>
                       <span class="detail-label">Total:</span>
-                      <span class="detail-value">{{ jornada.total_horas.toFixed(1) }}h</span>
+                      <span class="detail-value">{{ formatHorasDecimales(jornada.total_horas) }}</span>
                     </div>
                   </div>
                 </div>
@@ -296,7 +295,7 @@
                     </div>
                     <div class="hours-info">
                       <span class="hours-label">Horas Regulares</span>
-                      <span class="hours-value">{{ jornada.horas_regulares.toFixed(1) }}h</span>
+                      <span class="hours-value">{{ formatHorasDecimales(jornada.horas_regulares) }}</span>
                     </div>
                   </div>
 
@@ -306,7 +305,7 @@
                     </div>
                     <div class="hours-info">
                       <span class="hours-label">Horas Extras</span>
-                      <span class="hours-value">{{ jornada.horas_extras.toFixed(1) }}h</span>
+                      <span class="hours-value">{{ formatHorasDecimales(jornada.horas_extras) }}</span>
                     </div>
                   </div>
 
@@ -406,7 +405,7 @@
   </div>
 </div>
 
-<!-- ✅ NUEVO: Modal de Confirmación de Eliminación de Jornada -->
+<!-- Modal de Confirmación de Eliminación de Jornada -->
 <div class="modal-overlay" [class.active]="isDeleteJornadaModalOpen">
   <div class="modal-card">
     <div class="modal-header">
@@ -418,7 +417,7 @@
       <div *ngIf="jornadaToDelete" class="delete-jornada-info">
         <p><i class="fas fa-calendar-alt"></i> <strong>Fecha:</strong> {{ formatFecha(jornadaToDelete.fecha) }}</p>
         <p><i class="fas fa-clock"></i> <strong>Horario:</strong> {{ formatHora(jornadaToDelete.hora_inicio) }} - {{ formatHora(jornadaToDelete.hora_fin) }}</p>
-        <p><i class="fas fa-business-time"></i> <strong>Total horas:</strong> {{ jornadaToDelete.total_horas.toFixed(1) }}h</p>
+        <p><i class="fas fa-business-time"></i> <strong>Total horas:</strong> {{ formatHorasDecimales(jornadaToDelete.total_horas) }}</p>
       </div>
       <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Esta acción no se puede deshacer.</p>
     </div>
