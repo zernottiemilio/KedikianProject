@@ -59,6 +59,7 @@ export class AridosComponent implements OnInit {
   registros: RegistroArido[] = [];
   registrosFiltrados: RegistroArido[] = [];
   proyectos: Proyecto[] = [];
+  proyectosActivos: Proyecto[] = [];
   aridos: Arido[] = [];
   operarios: Operario[] = [];
 
@@ -105,11 +106,26 @@ export class AridosComponent implements OnInit {
   cargarDatosReales(): void {
     forkJoin({
       proyectos: this.aridosService.getProyectos(),
-      aridos: this.aridosService.getAridos()
+      aridos: this.aridosService.getAridos(),
+      usuarios: this.userService.getUsers()
     }).subscribe({
-      next: ({ proyectos, aridos }) => {
+      next: ({ proyectos, aridos, usuarios }) => {
+        // Cargar proyectos
         this.proyectos = proyectos;
-
+        
+        // Debug: ver qué estados vienen del backend
+        console.log('Proyectos recibidos:', proyectos);
+        console.log('Estados de proyectos:', proyectos.map(p => ({ id: p.id, nombre: p.nombre, estado: p.estado })));
+        
+        // Filtrar solo proyectos activos para el formulario (más flexible)
+        this.proyectosActivos = proyectos.filter(p => {
+          const estado = p.estado?.toString().toLowerCase();
+          return estado === 'activo' || estado === 'active' || estado === '1' || estado === 'true';
+        });
+        
+        console.log('Proyectos activos filtrados:', this.proyectosActivos);
+  
+        // Cargar áridos con valores por defecto
         const aridosPorDefecto: Arido[] = [
           { id: 1, nombre: 'Arena Fina', tipo: 'árido', unidadMedida: 'm3' },
           { id: 2, nombre: 'Granza', tipo: 'árido', unidadMedida: 'm3' },
@@ -121,23 +137,36 @@ export class AridosComponent implements OnInit {
           { id: 8, nombre: 'Blinder', tipo: 'árido', unidadMedida: 'm3' },
           { id: 9, nombre: 'Arena Lavada', tipo: 'árido', unidadMedida: 'm3' },
         ];
-
+  
         aridosPorDefecto.forEach(defecto => {
           if (!aridos.some(a => a.id === defecto.id)) {
             aridos.push(defecto);
           }
         });
         this.aridos = aridos;
-
-        this.userService.getUsers().subscribe({
-          next: (usuarios) => {
-            this.procesarUsuarios(usuarios);
-            this.cargarRegistros();
-          },
-          error: () => this.mostrarMensaje('Error al cargar usuarios del servidor')
-        });
+  
+        // Procesar usuarios/operarios
+        this.procesarUsuarios(usuarios);
+  
+        // Ahora sí cargar los registros, con todos los datos disponibles
+        this.cargarRegistros();
       },
       error: () => this.mostrarMensaje('Error al cargar datos iniciales')
+    });
+  }
+  
+  private cargarRegistros(): void {
+    this.aridosService.getRegistrosAridos().subscribe({
+      next: (registrosBackend) => {
+        this.registros = this.mapearRegistros(registrosBackend);
+        // Ordenar por ID descendente (últimos registros primero)
+        this.registros.sort((a, b) => b.id - a.id);
+        // IMPORTANTE: Inicializar registrosFiltrados con todos los registros
+        this.registrosFiltrados = [...this.registros];
+        // Aplicar filtros si hay alguno activo
+        this.aplicarFiltros();
+      },
+      error: () => this.mostrarMensaje('Error al cargar registros')
     });
   }
 
@@ -156,29 +185,19 @@ export class AridosComponent implements OnInit {
     }));
   }
 
-  private cargarRegistros(): void {
-    this.aridosService.getRegistrosAridos().subscribe({
-      next: (registrosBackend) => {
-        this.registros = this.mapearRegistros(registrosBackend);
-        this.aplicarFiltros();
-      },
-      error: () => this.mostrarMensaje('Error al cargar registros')
-    });
-  }
-
   private mapearRegistros(registrosBackend: any[]): RegistroArido[] {
     return registrosBackend.map(registro => {
       const proyecto = this.proyectos.find(p => p.id === registro.proyecto_id);
       const operario = this.operarios.find(o => o.id === registro.usuario_id);
-      const arido = this.aridos.find(a => a.nombre.toLowerCase() === registro.tipo_arido.toLowerCase());
+      const arido = this.aridos.find(a => a.nombre.toLowerCase() === registro.tipo_arido?.toLowerCase());
 
       return {
         id: registro.id,
-        proyectoId: registro.proyecto_id,
+        proyectoId: registro.proyecto_id || 0,
         proyectoNombre: proyecto ? proyecto.nombre : 'Proyecto no encontrado',
         aridoId: arido ? arido.id : 1,
-        aridoNombre: arido ? arido.nombre : registro.tipo_arido,
-        cantidad: registro.cantidad,
+        aridoNombre: arido ? arido.nombre : registro.tipo_arido || 'Árido desconocido',
+        cantidad: registro.cantidad || 0,
         fechaEntrega: new Date(registro.fecha_entrega),
         operario: operario ? operario.nombre : 'Operario no encontrado',
         observaciones: registro.observaciones || ''
@@ -194,17 +213,17 @@ export class AridosComponent implements OnInit {
   aplicarFiltros(): void {
     this.registrosFiltrados = this.registros.filter(registro => {
       // Filtro por proyecto
-      if (this.filtroProyecto && registro.proyectoId.toString() !== this.filtroProyecto) {
+      if (this.filtroProyecto && registro.proyectoId?.toString() !== this.filtroProyecto) {
         return false;
       }
 
       // Filtro por árido
-      if (this.filtroArido && registro.aridoId.toString() !== this.filtroArido) {
+      if (this.filtroArido && registro.aridoId?.toString() !== this.filtroArido) {
         return false;
       }
 
       // Filtro por operario
-      if (this.filtroOperario && !registro.operario.toLowerCase().includes(this.filtroOperario.toLowerCase())) {
+      if (this.filtroOperario && !registro.operario?.toLowerCase().includes(this.filtroOperario.toLowerCase())) {
         return false;
       }
 
@@ -245,10 +264,6 @@ export class AridosComponent implements OnInit {
   hayFiltrosActivos(): boolean {
     return !!(this.filtroProyecto || this.filtroArido || this.filtroOperario || 
               this.filtroFechaDesde || this.filtroFechaHasta);
-  }
-
-  actualizarRegistrosFiltrados(): void {
-    this.aplicarFiltros();
   }
 
   abrirModalAgregar(): void {
