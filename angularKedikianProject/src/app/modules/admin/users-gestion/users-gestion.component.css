@@ -245,6 +245,54 @@ table tbody tr:last-child td {
   border: 1px solid rgba(59, 130, 246, 0.22);
 }
 
+/* Selector de mes */
+.month-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.month-selector label {
+  font-weight: 600;
+  color: #495057;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.month-selector .form-select {
+  flex: 1;
+  max-width: 300px;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.month-selector .form-select:hover {
+  border-color: #80bdff;
+}
+
+.month-selector .form-select:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Ajuste al resumen para que se vea mejor con el selector */
+.jornadas-summary {
+  margin-top: 0;
+}
+
 .badge-warning {
   background: rgba(245, 158, 11, 0.13);
   color: #f59e0b;

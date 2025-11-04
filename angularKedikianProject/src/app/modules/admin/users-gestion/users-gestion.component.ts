@@ -65,8 +65,14 @@ export class UsersGestionComponent implements OnInit {
   private originalUser: User | null = null;
 
   jornadasLaborales: JornadaLaboral[] = [];
+  jornadasFiltradasPorMes: JornadaLaboral[] = []; // 🆕 Jornadas filtradas por mes
   selectedUser: User | null = null;
   loadingJornadas = false;
+
+  // 🆕 Propiedades para el filtro de mes
+  selectedMonth: number;
+  selectedYear: number;
+  availableMonths: { month: number; year: number; label: string }[] = [];
 
   // Propiedades para edición de jornadas
   editingJornadaId: number | null = null;
@@ -111,6 +117,11 @@ export class UsersGestionComponent implements OnInit {
     private fb: FormBuilder,
     private userService: UserService
   ) {
+    // 🆕 Inicializar con el mes y año actual
+    const now = new Date();
+    this.selectedMonth = now.getMonth() + 1; // 1-12
+    this.selectedYear = now.getFullYear();
+
     this.userForm = this.fb.group({
       id: [null],
       nombre: ['', [Validators.required]],
@@ -159,18 +170,79 @@ export class UsersGestionComponent implements OnInit {
   private loadJornadasLaborales(usuarioId: number): void {
     this.loadingJornadas = true;
     this.jornadasLaborales = [];
+    this.jornadasFiltradasPorMes = [];
     
     this.userService.getJornadasLaborales(usuarioId).subscribe({
       next: (jornadas) => {
         this.jornadasLaborales = jornadas;
         this.loadingJornadas = false;
+        
+        // 🆕 Generar lista de meses disponibles
+        this.generateAvailableMonths();
+        
+        // 🆕 Aplicar filtro inicial al mes actual
+        this.filterJornadasByMonth();
       },
       error: (err) => {
         console.error('Error al cargar jornadas laborales:', err);
         this.jornadasLaborales = [];
+        this.jornadasFiltradasPorMes = [];
         this.loadingJornadas = false;
       }
     });
+  }
+
+  // 🆕 Generar lista de meses disponibles según las jornadas
+  private generateAvailableMonths(): void {
+    const monthsSet = new Set<string>();
+    
+    this.jornadasLaborales.forEach(jornada => {
+      const fecha = new Date(jornada.fecha);
+      const month = fecha.getMonth() + 1;
+      const year = fecha.getFullYear();
+      monthsSet.add(`${year}-${month}`);
+    });
+
+    this.availableMonths = Array.from(monthsSet)
+      .map(key => {
+        const [year, month] = key.split('-').map(Number);
+        return {
+          month,
+          year,
+          label: this.getMonthLabel(month, year)
+        };
+      })
+      .sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year;
+        return b.month - a.month;
+      });
+  }
+
+  // 🆕 Obtener etiqueta del mes (público para usar en el template)
+  getMonthLabel(month: number, year: number): string {
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return `${monthNames[month - 1]} ${year}`;
+  }
+
+  // 🆕 Filtrar jornadas por mes seleccionado
+  filterJornadasByMonth(): void {
+    this.jornadasFiltradasPorMes = this.jornadasLaborales.filter(jornada => {
+      const fecha = new Date(jornada.fecha);
+      const month = fecha.getMonth() + 1;
+      const year = fecha.getFullYear();
+      return month === this.selectedMonth && year === this.selectedYear;
+    });
+  }
+
+  // 🆕 Cambiar mes seleccionado
+  onMonthChange(monthYear: string): void {
+    const [year, month] = monthYear.split('-').map(Number);
+    this.selectedYear = year;
+    this.selectedMonth = month;
+    this.filterJornadasByMonth();
   }
 
   editJornada(jornada: JornadaLaboral): void {
@@ -217,8 +289,6 @@ export class UsersGestionComponent implements OnInit {
       estado: formData.estado
     };
 
-    console.log('Actualizando jornada:', updateData);
-
     this.userService.updateJornadaLaboral(jornadaId, updateData).subscribe({
       next: (response) => {
         alert('Jornada actualizada correctamente');
@@ -254,11 +324,8 @@ export class UsersGestionComponent implements OnInit {
     this.deletingJornada = true;
     const jornadaId = this.jornadaToDelete.id;
 
-    console.log('Intentando eliminar jornada:', jornadaId);
-
     this.userService.deleteJornadaLaboral(jornadaId).subscribe({
       next: () => {
-        console.log('Jornada eliminada correctamente');
         alert('Jornada laboral eliminada correctamente');
         
         if (this.selectedUser) {
@@ -302,6 +369,12 @@ export class UsersGestionComponent implements OnInit {
     this.isJornadaModalOpen = true;
     this.modalOverlayActive = true;
     this.editingJornadaId = null;
+    
+    // 🆕 Resetear al mes actual cuando se abre el modal
+    const now = new Date();
+    this.selectedMonth = now.getMonth() + 1;
+    this.selectedYear = now.getFullYear();
+    
     this.loadJornadasLaborales(user.id);
   }
 
@@ -520,6 +593,7 @@ export class UsersGestionComponent implements OnInit {
     this.originalUser = null;
     this.selectedUser = null;
     this.jornadasLaborales = [];
+    this.jornadasFiltradasPorMes = [];
     this.editingJornadaId = null;
     this.jornadaEditForm.reset();
     this.closeDeleteJornadaModal();
@@ -569,8 +643,6 @@ export class UsersGestionComponent implements OnInit {
       userData.fecha_creacion = new Date().toISOString();
     }
 
-    console.log('Usuario a enviar:', userData);
-
     const operation = this.isEditMode
       ? this.userService.updateUser(userData)
       : this.userService.createUser(userData);
@@ -602,11 +674,8 @@ export class UsersGestionComponent implements OnInit {
       return;
     }
 
-    console.log('Intentando eliminar usuario:', this.userToDelete.id);
-
     this.userService.deleteUser(this.userToDelete.id).subscribe({
       next: () => {
-        console.log('Usuario eliminado correctamente');
         alert('Usuario eliminado correctamente');
         this.loadUsers();
         this.closeModals();
@@ -661,16 +730,17 @@ export class UsersGestionComponent implements OnInit {
     return this.mapRolesFromBackend(role);
   }
 
+  // 🆕 Calcular totales SOLO del mes seleccionado
   getTotalHorasRegulares(): number {
-    return this.jornadasLaborales.reduce((sum, j) => sum + j.horas_regulares, 0);
+    return this.jornadasFiltradasPorMes.reduce((sum, j) => sum + j.horas_regulares, 0);
   }
 
   getTotalHorasExtras(): number {
-    return this.jornadasLaborales.reduce((sum, j) => sum + j.horas_extras, 0);
+    return this.jornadasFiltradasPorMes.reduce((sum, j) => sum + j.horas_extras, 0);
   }
 
   getTotalDiasFeriados(): number {
-    return this.jornadasLaborales.filter(j => j.es_feriado).length;
+    return this.jornadasFiltradasPorMes.filter(j => j.es_feriado).length;
   }
 
   trackByJornadaId(index: number, jornada: JornadaLaboral): number {
