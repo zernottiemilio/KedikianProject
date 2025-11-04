@@ -155,7 +155,8 @@
           <label for="proyectoId">Proyecto:</label>
           <select id="proyectoId" formControlName="proyectoId" class="form-control" required>
             <option value="">Seleccione un proyecto</option>
-            <option *ngFor="let proyecto of proyectos" [value]="proyecto.id">{{ proyecto.nombre }}</option>
+            <!-- CAMBIO: Usar proyectosActivos en lugar de proyectos -->
+            <option *ngFor="let proyecto of proyectosActivos" [value]="proyecto.id">{{ proyecto.nombre }}</option>
           </select>
           <div *ngIf="registroForm.get('proyectoId')?.invalid && registroForm.get('proyectoId')?.touched" class="error-message">
             El proyecto es obligatorio

@@ -20,15 +20,23 @@ interface ReporteLaboral {
 interface Maquina {
   id?: number;
   nombre: string;
-  horasAcumuladas?: number; // Horas totales de reportes laborales
+  horasAcumuladas?: number;
   [key: string]: any;
+}
+
+// Nueva interfaz para áridos agrupados
+interface AridoAgrupado {
+  nombre: string;
+  cantidad: number; // en m³
+  registros: number; // cantidad de veces que se registró
 }
 
 interface ProyectoExtendido extends Omit<Project, 'startDate' | 'endDate'> {
   maquinas: Maquina[];
   aridos: any[];
+  aridosAgrupados: AridoAgrupado[]; // Nueva propiedad
   fechaInicio: Date;
-  fechaFin?: Date; // Hacer opcional ya que no siempre existe
+  fechaFin?: Date;
   descripcion: string;
 }
 
@@ -54,7 +62,6 @@ export class MainContentComponent implements OnInit {
       next: (projects: Project[]) => {
         console.log('📋 Proyectos obtenidos:', projects);
         
-        // Para cada proyecto, obtener máquinas, áridos y reportes laborales
         const proyectosExtendidos$ = projects.map((project) => {
           return Promise.all([
             this.projectService.getMaquinasPorProyecto(project.id).toPromise(),
@@ -66,11 +73,13 @@ export class MainContentComponent implements OnInit {
             console.log('  - Áridos:', aridos);
             console.log('  - Reportes:', reportes);
             
-            // Calcular horas acumuladas por máquina
             const maquinasConHoras = this.calcularHorasPorMaquina(
               maquinas || [],
               reportes || []
             );
+            
+            // Agrupar áridos por tipo y sumar cantidades
+            const aridosAgrupados = this.agruparAridos(aridos || []);
             
             return {
               ...project,
@@ -80,6 +89,7 @@ export class MainContentComponent implements OnInit {
               descripcion: project.description ?? project.descripcion,
               maquinas: maquinasConHoras,
               aridos: aridos || [],
+              aridosAgrupados: aridosAgrupados,
             };
           });
         });
@@ -99,6 +109,106 @@ export class MainContentComponent implements OnInit {
   }
 
   /**
+   * Agrupa los áridos por tipo y suma las cantidades en m³
+   */
+  private agruparAridos(aridos: any[]): AridoAgrupado[] {
+    console.log('📦 Agrupando áridos:', aridos);
+    
+    const aridosMap = new Map<string, AridoAgrupado>();
+    
+    aridos.forEach((arido, index) => {
+      // Obtener el nombre del árido
+      const nombre = this.extractAridoName(arido, index);
+      
+      // Obtener la cantidad en m³
+      const cantidad = this.extractAridoCantidad(arido);
+      
+      console.log(`  - Procesando: ${nombre}, cantidad: ${cantidad} m³`);
+      
+      // Si ya existe este tipo de árido, sumar la cantidad
+      if (aridosMap.has(nombre)) {
+        const existente = aridosMap.get(nombre)!;
+        existente.cantidad += cantidad;
+        existente.registros += 1;
+      } else {
+        // Si es nuevo, crear la entrada
+        aridosMap.set(nombre, {
+          nombre: nombre,
+          cantidad: cantidad,
+          registros: 1,
+        });
+      }
+    });
+    
+    // Convertir el Map a array y ordenar por nombre
+    const resultado = Array.from(aridosMap.values()).sort((a, b) => 
+      a.nombre.localeCompare(b.nombre)
+    );
+    
+    console.log('✅ Áridos agrupados:', resultado);
+    return resultado;
+  }
+
+  /**
+   * Extrae el nombre del árido desde diferentes posibles estructuras
+   */
+  private extractAridoName(arido: any, index: number): string {
+    if (typeof arido === 'string') {
+      return arido;
+    }
+    
+    if (typeof arido === 'object' && arido !== null) {
+      const possibleNames = [
+        'nombre', 
+        'tipo', 
+        'tipo_arido', 
+        'name', 
+        'type', 
+        'descripcion', 
+        'description'
+      ];
+      
+      for (const prop of possibleNames) {
+        if (arido[prop] && typeof arido[prop] === 'string') {
+          return arido[prop];
+        }
+      }
+    }
+    
+    return `Árido ${index + 1}`;
+  }
+
+  /**
+   * Extrae la cantidad en m³ del árido
+   */
+  private extractAridoCantidad(arido: any): number {
+    if (typeof arido === 'object' && arido !== null) {
+      const possibleProps = [
+        'cantidad',
+        'cantidad_m3',
+        'volumen',
+        'volumen_m3',
+        'm3',
+        'metros_cubicos',
+        'cantidadM3',
+        'volume'
+      ];
+      
+      for (const prop of possibleProps) {
+        if (arido[prop] !== undefined && arido[prop] !== null) {
+          const valor = parseFloat(arido[prop]);
+          if (!isNaN(valor)) {
+            return valor;
+          }
+        }
+      }
+    }
+    
+    console.warn('⚠️ No se encontró cantidad para árido:', arido);
+    return 0;
+  }
+
+  /**
    * Calcula las horas acumuladas por máquina desde los reportes laborales
    */
   private calcularHorasPorMaquina(
@@ -106,12 +216,10 @@ export class MainContentComponent implements OnInit {
     reportes: ReporteLaboral[]
   ): Maquina[] {
     return maquinas.map((maquina) => {
-      // Filtrar reportes de esta máquina
       const reportesMaquina = reportes.filter(
         (reporte) => reporte.maquina_id === maquina.id
       );
       
-      // Sumar todas las horas_turno
       const horasAcumuladas = reportesMaquina.reduce(
         (total, reporte) => total + (reporte.horas_turno || 0),
         0
@@ -139,6 +247,13 @@ export class MainContentComponent implements OnInit {
   }
 
   /**
+   * Calcula el total de m³ de áridos en un proyecto
+   */
+  getTotalAridos(aridosAgrupados: AridoAgrupado[]): number {
+    return aridosAgrupados.reduce((total, arido) => total + arido.cantidad, 0);
+  }
+
+  /**
    * Determina el estado del proyecto basado en las fechas
    */
   getProjectStatus(fechaInicio: Date, fechaFin?: Date): string {
@@ -155,7 +270,6 @@ export class MainContentComponent implements OnInit {
         return 'Completado';
       }
     } else {
-      // Si no hay fecha de fin, siempre está en progreso después del inicio
       return 'En Progreso';
     }
   }
@@ -186,29 +300,9 @@ export class MainContentComponent implements OnInit {
   }
 
   /**
-   * Obtiene el nombre de visualización para un árido
+   * Formatea la cantidad de áridos con 2 decimales
    */
-  getAridoDisplayName(arido: any, index: number): string {
-    console.log(`🔍 Árido ${index}:`, arido);
-    
-    if (typeof arido === 'string') {
-      return arido;
-    }
-    
-    if (typeof arido === 'object' && arido !== null) {
-      const possibleNames = ['nombre', 'tipo', 'tipo_arido', 'name', 'type', 'descripcion', 'description'];
-      
-      for (const prop of possibleNames) {
-        if (arido[prop] && typeof arido[prop] === 'string') {
-          console.log(`✅ Árido ${index} - usando propiedad '${prop}': ${arido[prop]}`);
-          return arido[prop];
-        }
-      }
-      
-      console.log(`⚠️ Árido ${index} - propiedades disponibles:`, Object.keys(arido));
-      return `Árido ${index + 1}`;
-    }
-    
-    return 'Árido desconocido';
+  formatCantidad(cantidad: number): string {
+    return cantidad.toFixed(2);
   }
 }

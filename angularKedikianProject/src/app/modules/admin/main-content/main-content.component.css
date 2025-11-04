@@ -16,6 +16,95 @@
   margin: 0;
 }
 
+/* Estilos para la sección de áridos */
+.materials-section {
+  margin-top: 1.5rem;
+}
+
+.materials-list-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.arido-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-left: 3px solid #007bff;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.arido-item:hover {
+  background-color: #e9ecef;
+}
+
+.arido-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+  gap: 1rem;
+}
+
+.arido-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.arido-cantidad {
+  font-weight: 600;
+  color: #007bff;
+  font-size: 1.1rem;
+}
+
+.arido-registros {
+  font-size: 0.85rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.total-aridos {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #e7f3ff;
+  border-radius: 4px;
+  text-align: right;
+  border-top: 2px solid #007bff;
+}
+
+.total-aridos strong {
+  color: #0056b3;
+  font-size: 1.1rem;
+}
+
+.no-aridos {
+  padding: 1rem;
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .arido-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .arido-cantidad {
+    font-size: 1rem;
+  }
+}
+
 .projects-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));

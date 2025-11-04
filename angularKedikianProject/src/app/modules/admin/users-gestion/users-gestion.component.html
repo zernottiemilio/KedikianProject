@@ -188,7 +188,7 @@
   </div>
 </div>
 
-<!-- Modal de Jornadas Laborales CON EDICIÓN -->
+<!-- Modal de Jornadas Laborales CON FILTRO MENSUAL -->
 <div class="modal-overlay" [class.active]="isJornadaModalOpen">
   <div class="modal-card modal-card-large">
     <div class="modal-header">
@@ -197,6 +197,24 @@
     </div>
     
     <div class="modal-body">
+      <!-- 🆕 SELECTOR DE MES -->
+      <div class="month-selector" *ngIf="!loadingJornadas && jornadasLaborales.length > 0">
+        <label for="month-filter">
+          <i class="fas fa-calendar-alt"></i> Filtrar por mes:
+        </label>
+        <select 
+          id="month-filter" 
+          class="form-select" 
+          [value]="selectedYear + '-' + selectedMonth"
+          (change)="onMonthChange($any($event.target).value)">
+          <option 
+            *ngFor="let monthData of availableMonths" 
+            [value]="monthData.year + '-' + monthData.month">
+            {{ monthData.label }}
+          </option>
+        </select>
+      </div>
+
       <div *ngIf="loadingJornadas" class="loading-container">
         <div class="loading-spinner">
           <i class="fas fa-spinner fa-spin"></i>
@@ -208,14 +226,20 @@
         <p>No se encontraron jornadas laborales para este usuario.</p>
       </div>
 
-      <div *ngIf="!loadingJornadas && jornadasLaborales.length > 0" class="jornadas-container">
+      <!-- 🆕 Mostrar mensaje si no hay jornadas en el mes seleccionado -->
+      <div *ngIf="!loadingJornadas && jornadasLaborales.length > 0 && jornadasFiltradasPorMes.length === 0" class="no-results">
+        <p>No hay jornadas registradas en el mes seleccionado.</p>
+      </div>
+
+      <div *ngIf="!loadingJornadas && jornadasFiltradasPorMes.length > 0" class="jornadas-container">
+        <!-- 🆕 RESUMEN DEL MES SELECCIONADO -->
         <div class="jornadas-summary">
           <div class="summary-card">
-            <h4>Resumen</h4>
+            <h4>Resumen de {{ getMonthLabel(selectedMonth, selectedYear) }}</h4>
             <div class="summary-stats">
               <div class="stat-item">
                 <span class="stat-label">Total Jornadas:</span>
-                <span class="stat-value">{{ jornadasLaborales.length }}</span>
+                <span class="stat-value">{{ jornadasFiltradasPorMes.length }}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Horas Regulares Total:</span>
@@ -233,10 +257,11 @@
           </div>
         </div>
 
+        <!-- 🆕 Lista de jornadas filtradas por mes -->
         <div class="jornadas-list">
-          <div class="jornada-card" *ngFor="let jornada of jornadasLaborales; trackBy: trackByJornadaId">
+          <div class="jornada-card" *ngFor="let jornada of jornadasFiltradasPorMes; trackBy: trackByJornadaId">
             
-            <!-- ✅ MODO VISTA NORMAL -->
+            <!-- MODO VISTA NORMAL -->
             <div *ngIf="!isEditingJornada(jornada.id)">
               <div class="jornada-header">
                 <div class="jornada-date">
@@ -331,7 +356,7 @@
               </div>
             </div>
 
-            <!-- ✅ MODO EDICIÓN -->
+            <!-- MODO EDICIÓN -->
             <div *ngIf="isEditingJornada(jornada.id)" class="jornada-edit-mode">
               <form [formGroup]="jornadaEditForm" class="jornada-edit-form">
                 <div class="form-row">
