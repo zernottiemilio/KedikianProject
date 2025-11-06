@@ -119,20 +119,28 @@ export class IngresoComponent implements OnInit {
   }
 
   get pagosFiltrados(): Pago[] {
-    if (!this.filtroTexto.trim()) return this.pagos;
-
-    const filtro = this.filtroTexto.toLowerCase();
-    return this.pagos.filter(pago => {
-      const proyectoNombre = this.getNombreProyecto(pago.proyecto_id).toLowerCase();
-      const descripcion = pago.descripcion?.toLowerCase() || '';
-      const fecha = new Date(pago.fecha).toLocaleDateString();
-
-      return (
-        proyectoNombre.includes(filtro) ||
-        descripcion.includes(filtro) ||
-        fecha.includes(filtro) ||
-        pago.importe_total.toString().includes(filtro)
-      );
+    let pagosFiltrados = [...this.pagos]; // Crear copia
+  
+    // Aplicar filtro de texto
+    if (this.filtroTexto.trim()) {
+      const filtro = this.filtroTexto.toLowerCase();
+      pagosFiltrados = pagosFiltrados.filter(pago => {
+        const proyectoNombre = this.getNombreProyecto(pago.proyecto_id).toLowerCase();
+        const descripcion = pago.descripcion?.toLowerCase() || '';
+        const fecha = new Date(pago.fecha).toLocaleDateString();
+  
+        return (
+          proyectoNombre.includes(filtro) ||
+          descripcion.includes(filtro) ||
+          fecha.includes(filtro) ||
+          pago.importe_total.toString().includes(filtro)
+        );
+      });
+    }
+  
+    // Ordenar por fecha (más recientes primero)
+    return pagosFiltrados.sort((a, b) => {
+      return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
     });
   }
 }

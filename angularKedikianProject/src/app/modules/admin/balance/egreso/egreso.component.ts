@@ -264,22 +264,31 @@ export class EgresoComponent implements OnInit {
   }
 
   get gastosFiltrados(): Gasto[] {
-    if (!this.filtroTexto.trim()) return this.gastos;
-    const filtro = this.filtroTexto.toLowerCase();
-    return this.gastos.filter((gasto) => {
-      const usuarioNombre = this.getNombreUsuario(gasto.usuario_id).toLowerCase();
-      const maquinaNombre = this.getNombreMaquina(gasto.maquina_id)?.toLowerCase() || '';
-      const tipo = this.getTipoLabel(gasto.tipo).toLowerCase();
-      const descripcion = gasto.descripcion?.toLowerCase() || '';
-      const fecha = new Date(gasto.fecha).toLocaleDateString();
-      return (
-        usuarioNombre.includes(filtro) ||
-        maquinaNombre.includes(filtro) ||
-        tipo.includes(filtro) ||
-        descripcion.includes(filtro) ||
-        fecha.includes(filtro) ||
-        gasto.importe_total.toString().includes(filtro)
-      );
+    let gastosFiltrados = [...this.gastos]; // Crear copia para no mutar el original
+  
+    // Aplicar filtro de texto
+    if (this.filtroTexto.trim()) {
+      const filtro = this.filtroTexto.toLowerCase();
+      gastosFiltrados = gastosFiltrados.filter((gasto) => {
+        const usuarioNombre = this.getNombreUsuario(gasto.usuario_id).toLowerCase();
+        const maquinaNombre = this.getNombreMaquina(gasto.maquina_id)?.toLowerCase() || '';
+        const tipo = this.getTipoLabel(gasto.tipo).toLowerCase();
+        const descripcion = gasto.descripcion?.toLowerCase() || '';
+        const fecha = new Date(gasto.fecha).toLocaleDateString();
+        return (
+          usuarioNombre.includes(filtro) ||
+          maquinaNombre.includes(filtro) ||
+          tipo.includes(filtro) ||
+          descripcion.includes(filtro) ||
+          fecha.includes(filtro) ||
+          gasto.importe_total.toString().includes(filtro)
+        );
+      });
+    }
+  
+    // Ordenar por fecha (más recientes primero)
+    return gastosFiltrados.sort((a, b) => {
+      return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
     });
   }
 }
