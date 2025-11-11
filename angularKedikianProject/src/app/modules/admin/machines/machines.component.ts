@@ -4,6 +4,7 @@ import {
   MachinesService,
   Maquina,
   RegistroHoras,
+  NotaMaquina,
 } from '../../../core/services/machines.service';
 import {
   FormBuilder,
@@ -14,14 +15,6 @@ import {
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { MantenimientosService, Mantenimiento } from '../../../core/services/mantenimientos.service';
-
-interface NotaMaquina {
-  id: number;
-  maquina_id: number;
-  texto: string;
-  fecha: string;
-  usuario: string;
-}
 
 // 🆕 Extender la interfaz Maquina con horómetro inicial
 interface MaquinaExtendida extends Maquina {
@@ -95,8 +88,6 @@ export class MaquinariaComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.cargarProximosMantenimientos();
-    this.cargarNotas();
     this.loadData();
   }
 
@@ -312,9 +303,15 @@ export class MaquinariaComponent implements OnInit {
   }
 
   getProximoMantenimiento(maquina: MaquinaExtendida): number {
+    // Prioridad 1: Valor personalizado del backend
+    if (maquina.proximo_mantenimiento !== null && maquina.proximo_mantenimiento !== undefined) {
+      return maquina.proximo_mantenimiento;
+    }
+    // Prioridad 2: Valor del cache local (para ediciones no guardadas)
     if (this.proximoMantenimientoPorMaquina[maquina.id]) {
       return this.proximoMantenimientoPorMaquina[maquina.id];
     }
+    // Prioridad 3: Cálculo automático por defecto
     const horasUltimoMant = this.getUltimoMantenimiento(maquina);
     return horasUltimoMant + 250;
   }
@@ -401,39 +398,31 @@ export class MaquinariaComponent implements OnInit {
 
     const nuevasHorasProxMant = this.horasMantenimientoForm.value.horas_proximo_mantenimiento;
     const horasActuales = this.maquinaSeleccionada.horas_uso || 0;
-    
+
     if (nuevasHorasProxMant <= horasActuales) {
       this.mostrarMensaje('El próximo mantenimiento debe ser mayor a las horas actuales de la máquina');
       return;
     }
-    
-    this.proximoMantenimientoPorMaquina[this.maquinaSeleccionada.id] = nuevasHorasProxMant;
-    this.guardarProximosMantenimientos();
-    
-    const horasRestantes = nuevasHorasProxMant - horasActuales;
-    this.mostrarMensaje(`Próximo mantenimiento actualizado a ${nuevasHorasProxMant} horas (faltan ${horasRestantes} hs)`);
-    this.cerrarModalEditarHorasMantenimiento();
-    this.filtrarMaquinas();
-  }
 
-  private guardarProximosMantenimientos(): void {
-    try {
-      localStorage.setItem('proximos_mantenimientos', JSON.stringify(this.proximoMantenimientoPorMaquina));
-    } catch (error) {
-      console.error('Error al guardar próximos mantenimientos:', error);
-    }
-  }
+    // Actualizar en el backend
+    this.machinesService.actualizarProximoMantenimiento(this.maquinaSeleccionada.id, nuevasHorasProxMant).subscribe({
+      next: (maquinaActualizada) => {
+        // Actualizar la máquina en el array local
+        const index = this.maquinas.findIndex(m => m.id === this.maquinaSeleccionada!.id);
+        if (index !== -1) {
+          this.maquinas[index] = { ...this.maquinas[index], proximo_mantenimiento: maquinaActualizada.proximo_mantenimiento };
+          this.filtrarMaquinas();
+        }
 
-  private cargarProximosMantenimientos(): void {
-    try {
-      const guardado = localStorage.getItem('proximos_mantenimientos');
-      if (guardado) {
-        this.proximoMantenimientoPorMaquina = JSON.parse(guardado);
+        const horasRestantes = nuevasHorasProxMant - horasActuales;
+        this.mostrarMensaje(`Próximo mantenimiento actualizado a ${nuevasHorasProxMant} horas (faltan ${horasRestantes} hs)`);
+        this.cerrarModalEditarHorasMantenimiento();
+      },
+      error: (error) => {
+        console.error('Error al actualizar próximo mantenimiento:', error);
+        this.mostrarMensaje('Error al actualizar el próximo mantenimiento');
       }
-    } catch (error) {
-      console.error('Error al cargar próximos mantenimientos:', error);
-      this.proximoMantenimientoPorMaquina = {};
-    }
+    });
   }
 
   // ========== MÉTODOS DE MANTENIMIENTO ==========
@@ -596,7 +585,20 @@ export class MaquinariaComponent implements OnInit {
     this.notaForm.reset({
       texto: ''
     });
-    this.modalNotasVisible = true;
+
+    // Cargar notas desde el backend
+    this.machinesService.obtenerNotasMaquina(maquina.id).subscribe({
+      next: (notas) => {
+        this.notasPorMaquina[maquina.id] = notas;
+        this.modalNotasVisible = true;
+      },
+      error: (error) => {
+        console.error('Error al cargar notas:', error);
+        // Aún así abrir el modal, pero sin notas
+        this.notasPorMaquina[maquina.id] = [];
+        this.modalNotasVisible = true;
+      }
+    });
   }
 
   cerrarModalNotas(): void {
@@ -611,59 +613,51 @@ export class MaquinariaComponent implements OnInit {
       return;
     }
 
-    const nuevaNota: NotaMaquina = {
-      id: Date.now(),
-      maquina_id: this.maquinaSeleccionada.id,
-      texto: this.notaForm.value.texto,
-      fecha: new Date().toISOString(),
-      usuario: 'Usuario'
-    };
+    const texto = this.notaForm.value.texto;
 
-    if (!this.notasPorMaquina[this.maquinaSeleccionada.id]) {
-      this.notasPorMaquina[this.maquinaSeleccionada.id] = [];
-    }
+    // Crear nota en el backend
+    this.machinesService.crearNota(this.maquinaSeleccionada.id, texto).subscribe({
+      next: (notaCreada) => {
+        // Actualizar el array local con la nota creada por el backend
+        if (!this.notasPorMaquina[this.maquinaSeleccionada!.id]) {
+          this.notasPorMaquina[this.maquinaSeleccionada!.id] = [];
+        }
+        this.notasPorMaquina[this.maquinaSeleccionada!.id].unshift(notaCreada);
 
-    this.notasPorMaquina[this.maquinaSeleccionada.id].unshift(nuevaNota);
-    this.guardarNotas();
-    this.mostrarMensaje('Nota agregada correctamente');
-    this.notaForm.reset({ texto: '' });
+        this.mostrarMensaje('Nota agregada correctamente');
+        this.notaForm.reset({ texto: '' });
+      },
+      error: (error) => {
+        console.error('Error al crear nota:', error);
+        this.mostrarMensaje('Error al agregar la nota');
+      }
+    });
   }
 
   eliminarNota(notaId: number): void {
     if (!this.maquinaSeleccionada) return;
-    
+
     if (confirm('¿Está seguro que desea eliminar esta nota?')) {
-      const maquinaId = this.maquinaSeleccionada.id;
-      this.notasPorMaquina[maquinaId] = this.notasPorMaquina[maquinaId].filter(
-        nota => nota.id !== notaId
-      );
-      this.guardarNotas();
-      this.mostrarMensaje('Nota eliminada correctamente');
+      // Eliminar nota en el backend
+      this.machinesService.eliminarNota(notaId).subscribe({
+        next: () => {
+          // Actualizar el array local solo si la eliminación fue exitosa
+          const maquinaId = this.maquinaSeleccionada!.id;
+          this.notasPorMaquina[maquinaId] = this.notasPorMaquina[maquinaId].filter(
+            nota => nota.id !== notaId
+          );
+          this.mostrarMensaje('Nota eliminada correctamente');
+        },
+        error: (error) => {
+          console.error('Error al eliminar nota:', error);
+          this.mostrarMensaje('Error al eliminar la nota');
+        }
+      });
     }
   }
 
   getNotasMaquina(maquinaId: number): NotaMaquina[] {
     return this.notasPorMaquina[maquinaId] || [];
-  }
-
-  private guardarNotas(): void {
-    try {
-      localStorage.setItem('notas_maquinas', JSON.stringify(this.notasPorMaquina));
-    } catch (error) {
-      console.error('Error al guardar notas:', error);
-    }
-  }
-
-  private cargarNotas(): void {
-    try {
-      const guardado = localStorage.getItem('notas_maquinas');
-      if (guardado) {
-        this.notasPorMaquina = JSON.parse(guardado);
-      }
-    } catch (error) {
-      console.error('Error al cargar notas:', error);
-      this.notasPorMaquina = {};
-    }
   }
 
   // ========== UTILIDADES ==========
