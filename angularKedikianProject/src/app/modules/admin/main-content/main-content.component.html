@@ -7,7 +7,7 @@
   </div>
   <div *ngIf="!loading && !error">
     <div class="projects-grid">
-      <ng-container *ngFor="let proyecto of proyectos">
+      <ng-container *ngFor="let proyecto of proyectos; trackBy: trackByProyectoId">
         <div class="project-card" *ngIf="proyecto.estado">
           <div class="card-header">
             <h2>{{ proyecto.nombre }}</h2>
@@ -25,7 +25,7 @@
             <div class="machines-section">
               <h3>Máquinas Asignadas</h3>
               <div class="machines-list">
-                <div class="machine-item" *ngFor="let maquina of proyecto.maquinas">
+                <div class="machine-item" *ngFor="let maquina of proyecto.maquinas; trackBy: trackByMaquinaId">
                   <span class="machine-name">{{ maquina.nombre }}</span>
                   <span class="machine-hours">{{ getMaquinaHours(maquina) }}h</span>
                 </div>
@@ -50,7 +50,7 @@
             <div class="materials-section">
               <h3>Áridos Utilizados</h3>
               <div class="materials-list-grid">
-                <div class="arido-item" *ngFor="let arido of proyecto.aridosAgrupados">
+                <div class="arido-item" *ngFor="let arido of proyecto.aridosAgrupados; trackBy: trackByAridoNombre">
                   <div class="arido-info">
                     <span class="arido-name">{{ arido.nombre }}</span>
                     <span class="arido-cantidad">{{ formatCantidad(arido.cantidad) }} m³</span>

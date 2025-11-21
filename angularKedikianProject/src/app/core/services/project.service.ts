@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { HttpClient, HttpErrorResponse, HttpParams, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { catchError, tap, map } from 'rxjs/operators';
+import { catchError, tap, map, timeout, retry, shareReplay } from 'rxjs/operators';
 
 export interface Project {
   id: number;
@@ -46,11 +46,56 @@ export interface ProyectosPaginadosResponse {
   count?: number;
 }
 
+// Interfaces para datos detallados optimizados
+export interface MaquinaConHoras {
+  id: number;
+  nombre: string;
+  numero_serie?: string;
+  tipo?: string;
+  horas_totales?: number;
+  horas_trabajadas?: number; // Mantener compatibilidad con versiones antiguas
+}
+
+export interface UsuarioDetallado {
+  id: number;
+  nombre: string;
+  apellido: string;
+  email: string;
+}
+
+export interface AridoDetallado {
+  id: number;
+  tipo?: string;
+  tipo_arido?: string;
+  nombre?: string;
+  cantidad: number;
+  unidad: string;
+  fecha: string;
+}
+
+export interface ReporteLaboralDetallado {
+  id: number;
+  fecha: string;
+  descripcion?: string;
+  horas_trabajadas?: number;
+  usuario?: UsuarioDetallado;
+}
+
+export interface ProyectoConDetalles extends Project {
+  maquinas: MaquinaConHoras[];
+  aridos: AridoDetallado[];
+  reportes_laborales: ReporteLaboralDetallado[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class ProjectService {
   private apiUrl = `${environment.apiUrl}/proyectos`;
+
+  // Cache para los endpoints optimizados
+  private proyectosConDetallesCache$?: Observable<ProyectoConDetalles[]>;
+  private proyectoConDetallesCache = new Map<number, Observable<ProyectoConDetalles>>();
 
   constructor(private http: HttpClient) {}
 
@@ -254,5 +299,78 @@ export class ProjectService {
         });
       })
     );
+  }
+
+  /**
+   * MÉTODOS OPTIMIZADOS - Reducen 31+ llamadas HTTP a 1 sola
+   */
+
+  /**
+   * Obtener todos los proyectos con sus detalles en una sola llamada
+   * Implementa caching, timeout y retry
+   */
+  getProyectosConDetalles(soloActivos: boolean = true): Observable<ProyectoConDetalles[]> {
+    // Si ya existe en cache, retornar el cached observable
+    if (this.proyectosConDetallesCache$) {
+      return this.proyectosConDetallesCache$;
+    }
+
+    // Crear el observable con todas las optimizaciones
+    this.proyectosConDetallesCache$ = this.http
+      .get<ProyectoConDetalles[]>(`${this.apiUrl}/con-detalles`, {
+        params: { solo_activos: soloActivos.toString() }
+      })
+      .pipe(
+        timeout(15000), // Timeout de 15 segundos
+        retry(2), // Reintentar hasta 2 veces si falla
+        shareReplay(1), // Cachear el resultado para suscriptores futuros
+        catchError((error: HttpErrorResponse) => {
+          console.error('❌ Error al obtener proyectos con detalles:', error);
+          // Limpiar cache en caso de error
+          this.proyectosConDetallesCache$ = undefined;
+          return throwError(() => error);
+        })
+      );
+
+    return this.proyectosConDetallesCache$;
+  }
+
+  /**
+   * Obtener un proyecto específico con sus detalles
+   * Implementa caching por ID, timeout y retry
+   */
+  getProyectoConDetalles(id: number): Observable<ProyectoConDetalles> {
+    // Si ya existe en cache, retornar el cached observable
+    if (this.proyectoConDetallesCache.has(id)) {
+      return this.proyectoConDetallesCache.get(id)!;
+    }
+
+    // Crear el observable con todas las optimizaciones
+    const observable$ = this.http
+      .get<ProyectoConDetalles>(`${this.apiUrl}/${id}/con-detalles`)
+      .pipe(
+        timeout(15000), // Timeout de 15 segundos
+        retry(2), // Reintentar hasta 2 veces si falla
+        shareReplay(1), // Cachear el resultado para suscriptores futuros
+        catchError((error: HttpErrorResponse) => {
+          console.error(`❌ Error al obtener proyecto ${id} con detalles:`, error);
+          // Limpiar cache en caso de error
+          this.proyectoConDetallesCache.delete(id);
+          return throwError(() => error);
+        })
+      );
+
+    // Guardar en cache
+    this.proyectoConDetallesCache.set(id, observable$);
+    return observable$;
+  }
+
+  /**
+   * Limpiar cache de proyectos con detalles
+   * Útil después de crear, actualizar o eliminar un proyecto
+   */
+  limpiarCacheProyectosConDetalles(): void {
+    this.proyectosConDetallesCache$ = undefined;
+    this.proyectoConDetallesCache.clear();
   }
 }

@@ -10,6 +10,15 @@ export interface Maquina {
   codigo: string;
   nombre: string;
   horas_uso: number;
+  proximo_mantenimiento?: number | null;
+}
+
+export interface NotaMaquina {
+  id: number;
+  maquina_id: number;
+  texto: string;
+  fecha: string;
+  usuario: string;
 }
 
 export interface RegistroHoras {
@@ -150,6 +159,57 @@ export class MachinesService {
       tap((response: any) => console.log('✅ Horómetro actualizado:', response)),
       catchError((error: any) => {
         console.error('❌ Error al actualizar horómetro:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // ========== GESTIÓN DE NOTAS ==========
+  obtenerNotasMaquina(maquinaId: number): Observable<NotaMaquina[]> {
+    const url = `${this.apiUrl}/${maquinaId}/notas`;
+    return this.http.get<NotaMaquina[]>(url).pipe(
+      tap(response => console.log(`📝 Notas de máquina ${maquinaId} cargadas:`, response)),
+      catchError(error => {
+        console.error(`Error al obtener notas de máquina ${maquinaId}:`, error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  crearNota(maquinaId: number, texto: string): Observable<NotaMaquina> {
+    const url = `${this.apiUrl}/${maquinaId}/notas`;
+    const body = { texto };
+    console.log('📝 Creando nota en:', url, 'con texto:', texto);
+    return this.http.post<NotaMaquina>(url, body).pipe(
+      tap(response => console.log('✅ Nota creada:', response)),
+      catchError(error => {
+        console.error('❌ Error al crear nota:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  eliminarNota(notaId: number): Observable<void> {
+    const url = `${this.apiUrl}/notas/${notaId}`;
+    console.log('🗑️ Eliminando nota:', notaId);
+    return this.http.delete<void>(url).pipe(
+      tap(() => console.log('✅ Nota eliminada:', notaId)),
+      catchError(error => {
+        console.error('❌ Error al eliminar nota:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // ========== GESTIÓN DE PRÓXIMO MANTENIMIENTO ==========
+  actualizarProximoMantenimiento(maquinaId: number, horas: number): Observable<Maquina> {
+    const url = `${this.apiUrl}/${maquinaId}/proximo-mantenimiento`;
+    const body = { horas };
+    console.log('🔧 Actualizando próximo mantenimiento en:', url, 'con horas:', horas);
+    return this.http.put<Maquina>(url, body).pipe(
+      tap(response => console.log('✅ Próximo mantenimiento actualizado:', response)),
+      catchError(error => {
+        console.error('❌ Error al actualizar próximo mantenimiento:', error);
         return throwError(() => error);
       })
     );
