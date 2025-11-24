@@ -7,7 +7,7 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import { UserService, JornadaLaboral, JornadaLaboralUpdate } from '../../../core/services/user.service';
+import { UserService, JornadaLaboral, JornadaLaboralUpdate, JornadaLaboralCreate } from '../../../core/services/user.service';
 
 interface User {
   id: number;
@@ -61,6 +61,7 @@ export class UsersGestionComponent implements OnInit {
   isEditModalOpen = false;
   isDeleteModalOpen = false;
   isJornadaModalOpen = false;
+  isCreateJornadaModalOpen = false;
   modalOverlayActive = false;
   private originalUser: User | null = null;
 
@@ -78,6 +79,10 @@ export class UsersGestionComponent implements OnInit {
   editingJornadaId: number | null = null;
   jornadaEditForm: FormGroup;
   savingJornada = false;
+
+  // Propiedades para creación de jornadas
+  jornadaCreateForm: FormGroup;
+  savingNewJornada = false;
 
   // Propiedades para eliminación de jornadas
   isDeleteJornadaModalOpen = false;
@@ -133,6 +138,17 @@ export class UsersGestionComponent implements OnInit {
     });
 
     this.jornadaEditForm = this.fb.group({
+      fecha: ['', [Validators.required]],
+      hora_inicio: ['', [Validators.required]],
+      hora_fin: [''],
+      tiempo_descanso: [0, [Validators.required, Validators.min(0)]],
+      es_feriado: [false],
+      notas_inicio: [''],
+      notas_fin: [''],
+      estado: ['completada', [Validators.required]]
+    });
+
+    this.jornadaCreateForm = this.fb.group({
       fecha: ['', [Validators.required]],
       hora_inicio: ['', [Validators.required]],
       hora_fin: [''],
@@ -369,13 +385,87 @@ export class UsersGestionComponent implements OnInit {
     this.isJornadaModalOpen = true;
     this.modalOverlayActive = true;
     this.editingJornadaId = null;
-    
+
     // 🆕 Resetear al mes actual cuando se abre el modal
     const now = new Date();
     this.selectedMonth = now.getMonth() + 1;
     this.selectedYear = now.getFullYear();
-    
+
     this.loadJornadasLaborales(user.id);
+  }
+
+  openCreateJornadaModal(): void {
+    if (!this.selectedUser) {
+      alert('Error: No hay usuario seleccionado');
+      return;
+    }
+
+    this.isCreateJornadaModalOpen = true;
+
+    // Establecer fecha actual por defecto
+    const now = new Date();
+    const fechaActual = now.toISOString().split('T')[0];
+
+    this.jornadaCreateForm.reset({
+      fecha: fechaActual,
+      hora_inicio: '',
+      hora_fin: '',
+      tiempo_descanso: 0,
+      es_feriado: false,
+      notas_inicio: '',
+      notas_fin: '',
+      estado: 'completada'
+    });
+  }
+
+  closeCreateJornadaModal(): void {
+    this.isCreateJornadaModalOpen = false;
+    this.jornadaCreateForm.reset();
+  }
+
+  saveNewJornada(): void {
+    if (this.jornadaCreateForm.invalid) {
+      alert('Por favor, completa todos los campos requeridos correctamente.');
+      return;
+    }
+
+    if (!this.selectedUser) {
+      alert('Error: No hay usuario seleccionado');
+      return;
+    }
+
+    this.savingNewJornada = true;
+    const formData = this.jornadaCreateForm.value;
+
+    const newJornada: JornadaLaboralCreate = {
+      usuario_id: this.selectedUser.id,
+      fecha: formData.fecha,
+      hora_inicio: this.combineDateTime(formData.fecha, formData.hora_inicio),
+      hora_fin: formData.hora_fin ? this.combineDateTime(formData.fecha, formData.hora_fin) : null,
+      tiempo_descanso: formData.tiempo_descanso,
+      es_feriado: formData.es_feriado,
+      notas_inicio: formData.notas_inicio || undefined,
+      notas_fin: formData.notas_fin || undefined,
+      estado: formData.estado
+    };
+
+    this.userService.createJornadaLaboral(newJornada).subscribe({
+      next: (response) => {
+        alert('Jornada creada correctamente');
+        this.closeCreateJornadaModal();
+        this.savingNewJornada = false;
+
+        // Recargar las jornadas del usuario
+        if (this.selectedUser) {
+          this.loadJornadasLaborales(this.selectedUser.id);
+        }
+      },
+      error: (err) => {
+        console.error('Error al crear jornada:', err);
+        alert(`Error al crear la jornada: ${err.message}`);
+        this.savingNewJornada = false;
+      }
+    });
   }
 
   formatTiempoDescanso(minutos: number): string {
@@ -586,6 +676,7 @@ export class UsersGestionComponent implements OnInit {
     this.isEditModalOpen = false;
     this.isDeleteModalOpen = false;
     this.isJornadaModalOpen = false;
+    this.isCreateJornadaModalOpen = false;
     this.modalOverlayActive = false;
     this.changePassword = false;
     this.userForm.reset();
@@ -596,6 +687,7 @@ export class UsersGestionComponent implements OnInit {
     this.jornadasFiltradasPorMes = [];
     this.editingJornadaId = null;
     this.jornadaEditForm.reset();
+    this.jornadaCreateForm.reset();
     this.closeDeleteJornadaModal();
   }
 

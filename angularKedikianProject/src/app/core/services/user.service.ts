@@ -49,6 +49,18 @@ export interface JornadaLaboralUpdate {
   estado?: string;
 }
 
+export interface JornadaLaboralCreate {
+  usuario_id: number;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin?: string | null;
+  tiempo_descanso: number;
+  es_feriado: boolean;
+  notas_inicio?: string;
+  notas_fin?: string;
+  estado: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -103,6 +115,16 @@ export class UserService {
   updateJornadaLaboral(jornadaId: number, jornada: JornadaLaboralUpdate): Observable<JornadaLaboral> {
     return this.http.put<JornadaLaboral>(
       `${this.jornadasUrl}/${jornadaId}`,
+      jornada
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // ✅ NUEVO: Método para crear jornada laboral
+  createJornadaLaboral(jornada: JornadaLaboralCreate): Observable<JornadaLaboral> {
+    return this.http.post<JornadaLaboral>(
+      this.jornadasUrl,
       jornada
     ).pipe(
       catchError(this.handleError)
