@@ -193,7 +193,12 @@
   <div class="modal-card modal-card-large">
     <div class="modal-header">
       <h2>Jornadas Laborales - {{ selectedUser?.nombre }}</h2>
-      <button class="modal-close" (click)="closeModals()">&times;</button>
+      <div class="modal-header-actions">
+        <button class="btn btn-sm btn-success" (click)="openCreateJornadaModal()" title="Agregar Nueva Jornada">
+          <i class="fas fa-plus"></i> Nueva Jornada
+        </button>
+        <button class="modal-close" (click)="closeModals()">&times;</button>
+      </div>
     </div>
     
     <div class="modal-body">
@@ -453,6 +458,80 @@
       <button type="button" class="btn btn-danger" (click)="confirmDeleteJornada()" [disabled]="deletingJornada">
         <i class="fas" [ngClass]="deletingJornada ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
         {{ deletingJornada ? 'Eliminando...' : 'Eliminar Jornada' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Creación de Nueva Jornada -->
+<div class="modal-overlay" [class.active]="isCreateJornadaModalOpen">
+  <div class="modal-card modal-card-large">
+    <div class="modal-header">
+      <h2><i class="fas fa-plus-circle"></i> Nueva Jornada Laboral - {{ selectedUser?.nombre }}</h2>
+      <button class="modal-close" (click)="closeCreateJornadaModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form [formGroup]="jornadaCreateForm" class="jornada-create-form">
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label for="create-fecha"><i class="fas fa-calendar-alt"></i> Fecha *</label>
+            <input type="date" id="create-fecha" formControlName="fecha" class="form-control">
+          </div>
+          <div class="form-group col-md-4">
+            <label for="create-hora-inicio"><i class="fas fa-play-circle"></i> Hora Inicio *</label>
+            <input type="time" id="create-hora-inicio" formControlName="hora_inicio" class="form-control">
+          </div>
+          <div class="form-group col-md-4">
+            <label for="create-hora-fin"><i class="fas fa-stop-circle"></i> Hora Fin</label>
+            <input type="time" id="create-hora-fin" formControlName="hora_fin" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label for="create-descanso"><i class="fas fa-coffee"></i> Descanso (minutos) *</label>
+            <input type="number" id="create-descanso" formControlName="tiempo_descanso" class="form-control" min="0" placeholder="0">
+          </div>
+          <div class="form-group col-md-4">
+            <label for="create-estado"><i class="fas fa-info-circle"></i> Estado *</label>
+            <select id="create-estado" formControlName="estado" class="form-control">
+              <option value="activa">Activa</option>
+              <option value="pausada">Pausada</option>
+              <option value="completada">Completada</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+          </div>
+          <div class="form-group col-md-4">
+            <label class="checkbox-label" style="margin-top: 30px;">
+              <input type="checkbox" formControlName="es_feriado">
+              <i class="fas fa-star"></i> Es Feriado
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="create-notas-inicio"><i class="fas fa-sticky-note"></i> Notas de Inicio</label>
+            <textarea id="create-notas-inicio" formControlName="notas_inicio" class="form-control" rows="3" placeholder="Ingrese notas opcionales al inicio de la jornada"></textarea>
+          </div>
+          <div class="form-group col-md-6">
+            <label for="create-notas-fin"><i class="fas fa-sticky-note"></i> Notas de Fin</label>
+            <textarea id="create-notas-fin" formControlName="notas_fin" class="form-control" rows="3" placeholder="Ingrese notas opcionales al finalizar la jornada"></textarea>
+          </div>
+        </div>
+
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i> Los campos marcados con * son obligatorios.
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeCreateJornadaModal()" [disabled]="savingNewJornada">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+      <button type="button" class="btn btn-success" (click)="saveNewJornada()" [disabled]="jornadaCreateForm.invalid || savingNewJornada">
+        <i class="fas" [ngClass]="savingNewJornada ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+        {{ savingNewJornada ? 'Guardando...' : 'Crear Jornada' }}
       </button>
     </div>
   </div>
