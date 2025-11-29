@@ -219,20 +219,10 @@
       <span class="btn-icon">➕</span>
       Agregar Operario
     </button>
-    
-    <button class="btn btn-info" (click)="cargarOperariosDesdeBackend()" [disabled]="isLoading">
-      <span class="btn-icon">📥</span>
-      Cargar Operarios
-    </button>
-    
+  
     <button class="btn btn-success" (click)="guardarResumenSueldo()" [disabled]="isLoading || operarios.length === 0">
       <span class="btn-icon">💾</span>
       Guardar Registros
-    </button>
-    
-    <button class="btn btn-secondary" (click)="exportarResultados()" [disabled]="isLoading">
-      <span class="btn-icon">📊</span>
-      Exportar Excel
     </button>
     
     <button class="btn btn-warning" (click)="limpiarDatos()" [disabled]="isLoading || operarios.length === 0">
