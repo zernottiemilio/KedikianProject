@@ -80,6 +80,7 @@ export class ExcelImportComponent implements OnInit {
 
   ngOnInit() {
     this.calcularPrecioHoraExtra();
+    this.cargarConfiguracion();
     this.cargarResumenes();
   }
 
@@ -171,13 +172,16 @@ export class ExcelImportComponent implements OnInit {
 
   recalcularTodos() {
     // Ya no se calcula el precio extra automáticamente
-    
+
     this.operarios.forEach(operario => {
       operario.precioHoraNormal = this.configuracion.horaNormal;
       operario.precioHoraFeriado = this.configuracion.horaFeriado;
       operario.precioHoraExtra = this.configuracion.horaExtra;
       operario.totalCalculado = this.calcularTotal(operario);
     });
+
+    // Guardar la configuración automáticamente cuando cambia
+    this.guardarConfiguracion();
   }
 
   getTotalGeneral(): number {
@@ -325,7 +329,7 @@ export class ExcelImportComponent implements OnInit {
     const mesAnio = now.toLocaleString('es-AR', { month: 'long', year: 'numeric' });
 
     const excelData = [
-      ['', '', '', `Vijande ${mesAnio}`, ''],
+      ['', '', '', `${mesAnio}`, ''],
       ['Operario:', resumen.nombre, '', 'DNI:', resumen.dni],
       ['', '', '', '', ''],
       ['Concepto', 'Unidades', 'Valor', 'Remunerativo', 'Adelantos'],
@@ -478,6 +482,37 @@ export class ExcelImportComponent implements OnInit {
         console.error('Error al cargar resúmenes:', error);
         this.errorMessage = 'Error al cargar los resúmenes de sueldo desde el backend.';
         setTimeout(() => this.errorMessage = '', 5000);
+      }
+    });
+  }
+
+  cargarConfiguracion() {
+    this.http.get<ConfiguracionTarifas>(`${this.apiBaseUrl}/excel/configuracion-tarifas`).subscribe({
+      next: (config) => {
+        this.configuracion.horaNormal = config.horaNormal;
+        this.configuracion.horaFeriado = config.horaFeriado;
+        this.configuracion.horaExtra = config.horaExtra;
+        this.configuracion.multiplicadorExtra = config.multiplicadorExtra;
+        console.log('Configuración cargada desde el backend:', config);
+      },
+      error: (error) => {
+        console.log('No se pudo cargar configuración guardada, usando valores por defecto:', error);
+        // Mantener los valores por defecto que ya están en this.configuracion
+      }
+    });
+  }
+
+  guardarConfiguracion() {
+    this.http.post(`${this.apiBaseUrl}/excel/configuracion-tarifas`, this.configuracion).subscribe({
+      next: () => {
+        console.log('Configuración guardada exitosamente');
+        this.successMessage = 'Tarifas guardadas correctamente';
+        setTimeout(() => this.successMessage = '', 2000);
+      },
+      error: (error) => {
+        console.error('Error al guardar configuración:', error);
+        this.errorMessage = 'Error al guardar las tarifas';
+        setTimeout(() => this.errorMessage = '', 3000);
       }
     });
   }
