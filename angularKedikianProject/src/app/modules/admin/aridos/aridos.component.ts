@@ -9,6 +9,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AridosService } from '../../../core/services/aridos.service';
 import { UserService } from '../../../core/services/user.service';
+import { ProjectService } from '../../../core/services/project.service';
 import { forkJoin } from 'rxjs';
 
 export interface Arido {
@@ -69,6 +70,7 @@ export class AridosComponent implements OnInit {
   filtroOperario: string = '';
   filtroFechaDesde: string = '';
   filtroFechaHasta: string = '';
+  mesSeleccionado: Date = new Date();
   mostrarFiltros: boolean = false;
 
   mostrarModal = false;
@@ -80,7 +82,8 @@ export class AridosComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private aridosService: AridosService,
-    private userService: UserService
+    private userService: UserService,
+    private projectService: ProjectService
   ) {
     this.registroForm = this.fb.group({
       proyectoId: ['', Validators.required],
@@ -156,9 +159,19 @@ export class AridosComponent implements OnInit {
   }
   
   private cargarRegistros(): void {
-    this.aridosService.getRegistrosAridos().subscribe({
-      next: (registrosBackend) => {
-        this.registros = this.mapearRegistros(registrosBackend);
+    // Usar el mismo endpoint que el dashboard para garantizar consistencia
+    this.projectService.getProyectosConDetalles(false).subscribe({
+      next: (proyectos) => {
+        // Extraer todos los áridos de todos los proyectos
+        const todosLosAridos = proyectos.flatMap(proyecto =>
+          (proyecto.aridos || []).map(arido => ({
+            ...arido,
+            proyectoId: proyecto.id,
+            proyectoNombre: proyecto.nombre
+          }))
+        );
+
+        this.registros = this.mapearRegistros(todosLosAridos);
         // Ordenar por ID descendente (últimos registros primero)
         this.registros.sort((a, b) => b.id - a.id);
         // IMPORTANTE: Inicializar registrosFiltrados con todos los registros
@@ -185,21 +198,46 @@ export class AridosComponent implements OnInit {
     }));
   }
 
+  /**
+   * Normaliza el nombre de un árido eliminando la unidad de medida entre paréntesis
+   * Ejemplo: "arena comun (m3)" -> "arena comun"
+   */
+  private normalizarNombreArido(nombre: string): string {
+    if (!nombre) return '';
+    // Eliminar cualquier cosa entre paréntesis y espacios extra
+    return nombre.replace(/\s*\([^)]*\)\s*/g, '').trim().toLowerCase();
+  }
+
   private mapearRegistros(registrosBackend: any[]): RegistroArido[] {
     return registrosBackend.map(registro => {
-      const proyecto = this.proyectos.find(p => p.id === registro.proyecto_id);
-      const operario = this.operarios.find(o => o.id === registro.usuario_id);
-      const arido = this.aridos.find(a => a.nombre.toLowerCase() === registro.tipo_arido?.toLowerCase());
+      // El proyecto ya viene mapeado desde cargarRegistros()
+      const proyectoNombre = registro.proyectoNombre || 'Proyecto no encontrado';
+      const proyectoId = registro.proyectoId || registro.proyecto_id || 0;
+
+      // Buscar operario: primero en los datos del árido, luego en this.operarios
+      let operarioNombre = 'Operario no encontrado';
+      if (registro.usuario?.nombre) {
+        operarioNombre = registro.usuario.nombre;
+      } else if (registro.usuario_id) {
+        const operario = this.operarios.find(o => o.id === registro.usuario_id);
+        operarioNombre = operario ? operario.nombre : 'Operario no encontrado';
+      }
+
+      // Normalizar el tipo de árido del backend para buscar coincidencia
+      const tipoAridoNormalizado = this.normalizarNombreArido(registro.tipo_arido || '');
+      const arido = this.aridos.find(a =>
+        this.normalizarNombreArido(a.nombre) === tipoAridoNormalizado
+      );
 
       return {
         id: registro.id,
-        proyectoId: registro.proyecto_id || 0,
-        proyectoNombre: proyecto ? proyecto.nombre : 'Proyecto no encontrado',
+        proyectoId: proyectoId,
+        proyectoNombre: proyectoNombre,
         aridoId: arido ? arido.id : 1,
         aridoNombre: arido ? arido.nombre : registro.tipo_arido || 'Árido desconocido',
         cantidad: registro.cantidad || 0,
         fechaEntrega: new Date(registro.fecha_entrega),
-        operario: operario ? operario.nombre : 'Operario no encontrado',
+        operario: operarioNombre,
         observaciones: registro.observaciones || ''
       };
     });
@@ -248,6 +286,19 @@ export class AridosComponent implements OnInit {
         }
       }
 
+      // Filtro por mes específico (usando mesSeleccionado)
+      if (this.mesSeleccionado) {
+        const fechaRegistro = new Date(registro.fechaEntrega);
+        const anioRegistro = fechaRegistro.getFullYear();
+        const mesRegistro = fechaRegistro.getMonth();
+        const anioSeleccionado = this.mesSeleccionado.getFullYear();
+        const mesSeleccionadoNum = this.mesSeleccionado.getMonth();
+
+        if (anioRegistro !== anioSeleccionado || mesRegistro !== mesSeleccionadoNum) {
+          return false;
+        }
+      }
+
       return true;
     });
   }
@@ -258,12 +309,38 @@ export class AridosComponent implements OnInit {
     this.filtroOperario = '';
     this.filtroFechaDesde = '';
     this.filtroFechaHasta = '';
+    this.mesSeleccionado = new Date();
     this.aplicarFiltros();
   }
 
   hayFiltrosActivos(): boolean {
-    return !!(this.filtroProyecto || this.filtroArido || this.filtroOperario || 
+    return !!(this.filtroProyecto || this.filtroArido || this.filtroOperario ||
               this.filtroFechaDesde || this.filtroFechaHasta);
+  }
+
+  // Métodos para navegación de mes
+  obtenerNombreMes(): string {
+    const meses = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    const mes = meses[this.mesSeleccionado.getMonth()];
+    const anio = this.mesSeleccionado.getFullYear();
+    return `${mes} ${anio}`;
+  }
+
+  mesAnterior(): void {
+    const nuevaFecha = new Date(this.mesSeleccionado);
+    nuevaFecha.setMonth(nuevaFecha.getMonth() - 1);
+    this.mesSeleccionado = nuevaFecha;
+    this.aplicarFiltros();
+  }
+
+  mesSiguiente(): void {
+    const nuevaFecha = new Date(this.mesSeleccionado);
+    nuevaFecha.setMonth(nuevaFecha.getMonth() + 1);
+    this.mesSeleccionado = nuevaFecha;
+    this.aplicarFiltros();
   }
 
   abrirModalAgregar(): void {
