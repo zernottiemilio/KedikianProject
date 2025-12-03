@@ -214,8 +214,8 @@ export class UsersGestionComponent implements OnInit {
     
     this.jornadasLaborales.forEach(jornada => {
       const fecha = new Date(jornada.fecha);
-      const month = fecha.getMonth() + 1;
-      const year = fecha.getFullYear();
+      const month = fecha.getUTCMonth() + 1;
+      const year = fecha.getUTCFullYear();
       monthsSet.add(`${year}-${month}`);
     });
 
@@ -247,8 +247,8 @@ export class UsersGestionComponent implements OnInit {
   filterJornadasByMonth(): void {
     this.jornadasFiltradasPorMes = this.jornadasLaborales.filter(jornada => {
       const fecha = new Date(jornada.fecha);
-      const month = fecha.getMonth() + 1;
-      const year = fecha.getFullYear();
+      const month = fecha.getUTCMonth() + 1;
+      const year = fecha.getUTCFullYear();
       return month === this.selectedMonth && year === this.selectedYear;
     });
   }
