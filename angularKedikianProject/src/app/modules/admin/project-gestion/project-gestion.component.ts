@@ -25,7 +25,7 @@ export class ProjectGestionComponent implements OnInit {
   showAddForm = false;
   isEditing = false;
   projectForm!: FormGroup;
-  filterStatus: string = 'all';
+  filterStatus: string = 'true';
   searchTerm: string = '';
   imagePreviewUrls: string[] = [];
   selectedFiles: File[] = [];

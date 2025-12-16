@@ -94,8 +94,8 @@
     <!-- Paginación -->
     <div *ngIf="productosFiltrados.length > 0" class="pagination-container">
       <div class="pagination-info">
-        Mostrando {{ (paginaActual - 1) * itemsPorPagina + 1 }} - 
-        {{ Math?.min(paginaActual * itemsPorPagina, totalItems) }}
+        Mostrando {{ (paginaActual - 1) * itemsPorPagina + 1 }} -
+        {{ Math.min(paginaActual * itemsPorPagina, totalItems) }}
         de {{ totalItems }} productos
       </div>
       <ul class="pagination">
