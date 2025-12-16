@@ -397,12 +397,7 @@ export class MaquinariaComponent implements OnInit {
     }
 
     const nuevasHorasProxMant = this.horasMantenimientoForm.value.horas_proximo_mantenimiento;
-    const horasActuales = this.maquinaSeleccionada.horas_uso || 0;
-
-    if (nuevasHorasProxMant <= horasActuales) {
-      this.mostrarMensaje('El próximo mantenimiento debe ser mayor a las horas actuales de la máquina');
-      return;
-    }
+    const horasActuales = this.maquinaSeleccionada.horas_uso;
 
     // Actualizar en el backend
     this.machinesService.actualizarProximoMantenimiento(this.maquinaSeleccionada.id, nuevasHorasProxMant).subscribe({

@@ -246,13 +246,6 @@
           </div>
         </div>
 
-        <div class="info-actual" *ngIf="maquinaSeleccionada">
-          <p><strong>Horas actuales de la máquina:</strong> {{maquinaSeleccionada.horas_uso}} hs</p>
-          <p><strong>Último mantenimiento realizado en:</strong> {{getUltimoMantenimiento(maquinaSeleccionada)}} hs</p>
-          <p><strong>Horas trabajadas desde último mant.:</strong> {{getHorasTrabajadas(maquinaSeleccionada)}} hs</p>
-          <p><strong>Próximo mantenimiento actual:</strong> {{getProximoMantenimiento(maquinaSeleccionada)}} hs</p>
-        </div>
-
         <div class="form-actions">
           <button type="button" class="btn-cancelar" (click)="cerrarModalEditarHorasMantenimiento()">Cancelar</button>
           <button type="submit" class="btn-guardar" [disabled]="horasMantenimientoForm.invalid">Guardar</button>
