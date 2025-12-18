@@ -87,6 +87,14 @@
     <table>
       <thead>
         <tr>
+          <th style="width: 50px;">
+            <input
+              type="checkbox"
+              class="checkbox-select"
+              title="Seleccionar todo visible"
+              [checked]="allReportesSelected"
+              (change)="toggleSelectAllReportes()">
+          </th>
           <th style="width: 16%;">Máquina</th>
           <th style="width: 16%;">Proyecto</th>
           <th style="width: 12%;">Usuario</th>
@@ -99,7 +107,7 @@
       <tbody>
         <!-- Mensaje cuando no hay datos -->
         <tr *ngIf="reportes.length === 0">
-          <td colspan="7" class="empty-state">
+          <td colspan="8" class="empty-state">
             <i>📊</i>
             <h3>No hay registros</h3>
             <p>No se encontraron informes con los filtros aplicados</p>
@@ -108,27 +116,34 @@
             </button>
           </td>
         </tr>
-        
+
         <!-- Filas de datos -->
-        <tr *ngFor="let reporte of reportesPaginados; trackBy: trackByReporte">
-          <td>
+        <tr *ngFor="let reporte of reportesPaginados; trackBy: trackByReporte" [class.selected-row]="isReporteSelected(reporte.id)">
+          <td class="checkbox-cell">
+            <input
+              type="checkbox"
+              class="checkbox-select"
+              [checked]="isReporteSelected(reporte.id)"
+              (change)="toggleReporteSelection(reporte.id)">
+          </td>
+          <td (click)="toggleReporteSelection(reporte.id)" class="clickable-cell">
             <strong>{{ getNombreMaquina(reporte.maquina_id) }}</strong>
           </td>
-          <td>
+          <td (click)="toggleReporteSelection(reporte.id)" class="clickable-cell">
             <span [title]="getNombreProyecto(reporte.proyecto_id)">
               {{ getNombreProyecto(reporte.proyecto_id) }}
             </span>
           </td>
-          <td>
+          <td (click)="toggleReporteSelection(reporte.id)" class="clickable-cell">
             <strong>{{ getNombreUsuario(reporte.usuario_id) }}</strong>
           </td>
-          <td>
+          <td (click)="toggleReporteSelection(reporte.id)" class="clickable-cell">
             <strong>{{ reporte.horas_turno || 0 }} horas</strong>
           </td>
-          <td>
+          <td (click)="toggleReporteSelection(reporte.id)" class="clickable-cell">
             <strong>{{ reporte.horometro_inicial || 0 }} hs</strong>
           </td>
-          <td>
+          <td (click)="toggleReporteSelection(reporte.id)" class="clickable-cell">
             <span>{{ reporte.fecha_asignacion | date:'dd/MM/yyyy' }}</span>
           </td>
           <td>
@@ -140,6 +155,27 @@
         </tr>
       </tbody>
     </table>
+
+    <!-- Totalizadores -->
+    <div class="totalizadores-grid">
+      <app-summary-selector
+        [items]="reportesPaginados"
+        [selectedItems]="selectedReportesIds"
+        [config]="summaryConfigHoras"
+        [idKey]="'id'"
+        (selectionChanged)="onSelectionChanged($event)"
+        (clearSelection)="onClearSelection()">
+      </app-summary-selector>
+
+      <app-summary-selector
+        [items]="reportesPaginados"
+        [selectedItems]="selectedReportesIds"
+        [config]="summaryConfigHorometro"
+        [idKey]="'id'"
+        (selectionChanged)="onSelectionChanged($event)"
+        (clearSelection)="onClearSelection()">
+      </app-summary-selector>
+    </div>
   </div>
 
   <!-- PAGINACIÓN -->

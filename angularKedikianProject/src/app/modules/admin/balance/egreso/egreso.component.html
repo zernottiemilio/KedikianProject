@@ -105,6 +105,14 @@
     <table class="data-table" *ngIf="gastosFiltrados.length > 0">
       <thead>
         <tr>
+          <th style="width: 50px;">
+            <input
+              type="checkbox"
+              class="checkbox-select"
+              title="Seleccionar todo visible"
+              [checked]="allGastosSelected"
+              (change)="toggleSelectAllGastos()">
+          </th>
           <th>Usuario</th>
           <th>Máquina</th>
           <th>Tipo</th>
@@ -116,18 +124,25 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let gasto of gastosFiltrados">
-          <td>{{ getNombreUsuario(gasto.usuario_id) }}</td>
-          <td>{{ getNombreMaquina(gasto.maquina_id) }}</td>
-          <td><span class="tipo-badge {{ gasto.tipo }}">{{ getTipoLabel(gasto.tipo) }}</span></td>
-          <td class="importe">{{ gasto.importe_total | currency }}</td>
-          <td>{{ gasto.fecha | date:'dd/MM/yyyy' }}</td>
-          <td>{{ gasto.descripcion }}</td>
+        <tr *ngFor="let gasto of gastosFiltrados" [class.selected-row]="isGastoSelected(gasto.id)">
+          <td class="checkbox-cell">
+            <input
+              type="checkbox"
+              class="checkbox-select"
+              [checked]="isGastoSelected(gasto.id)"
+              (change)="toggleGastoSelection(gasto.id)">
+          </td>
+          <td (click)="toggleGastoSelection(gasto.id)" class="clickable-cell">{{ getNombreUsuario(gasto.usuario_id) }}</td>
+          <td (click)="toggleGastoSelection(gasto.id)" class="clickable-cell">{{ getNombreMaquina(gasto.maquina_id) }}</td>
+          <td (click)="toggleGastoSelection(gasto.id)" class="clickable-cell"><span class="tipo-badge {{ gasto.tipo }}">{{ getTipoLabel(gasto.tipo) }}</span></td>
+          <td (click)="toggleGastoSelection(gasto.id)" class="clickable-cell importe">{{ gasto.importe_total | currency }}</td>
+          <td (click)="toggleGastoSelection(gasto.id)" class="clickable-cell">{{ gasto.fecha | date:'dd/MM/yyyy' }}</td>
+          <td (click)="toggleGastoSelection(gasto.id)" class="clickable-cell">{{ gasto.descripcion }}</td>
           <td>
-            <img *ngIf="gasto.imagen" 
-                 [src]="getImagenSrc(gasto.imagen)" 
-                 alt="Comprobante" 
-                 style="max-width: 100px; max-height: 100px; cursor: pointer;" 
+            <img *ngIf="gasto.imagen"
+                 [src]="getImagenSrc(gasto.imagen)"
+                 alt="Comprobante"
+                 style="max-width: 100px; max-height: 100px; cursor: pointer;"
                  (click)="abrirModalImagen(gasto.imagen)"
                  class="comprobante-thumbnail" />
             <span *ngIf="!gasto.imagen">-</span>
@@ -147,6 +162,16 @@
       <span class="material-icons">info</span>
       <p>No hay egresos registrados en este período</p>
     </div>
+
+    <!-- Totalizador -->
+    <app-summary-selector
+      [items]="gastosFiltrados"
+      [selectedItems]="selectedGastosIds"
+      [config]="summaryConfig"
+      [idKey]="'id'"
+      (selectionChanged)="onSelectionChanged($event)"
+      (clearSelection)="onClearSelection()">
+    </app-summary-selector>
   </div>
 
   <!-- Modal para mostrar imagen en tamaño grande -->

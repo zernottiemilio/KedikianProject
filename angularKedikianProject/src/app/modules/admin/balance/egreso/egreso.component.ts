@@ -4,6 +4,7 @@ import { BalanceService } from '../../../../core/services/balance.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { SummarySelectorComponent, SummarySelectorConfig } from '../../../../shared/components/summary-selector/summary-selector.component';
 
 interface Gasto {
   id: number;
@@ -28,7 +29,7 @@ interface Maquina {
 
 @Component({
   selector: 'app-egreso',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SummarySelectorComponent],
   templateUrl: './egreso.component.html',
   styleUrls: ['./egreso.component.css'],
 })
@@ -56,6 +57,15 @@ export class EgresoComponent implements OnInit {
     { value: 'combustible', label: 'Combustible' },
     { value: 'otro', label: 'Otro' },
   ];
+
+  // Propiedades para el totalizador
+  selectedGastosIds: Set<number> = new Set();
+  summaryConfig: SummarySelectorConfig = {
+    columnKey: 'importe_total',
+    label: 'TOTAL EGRESOS SELECCIONADOS',
+    format: 'currency',
+    decimalPlaces: 2
+  };
 
   constructor(private balanceService: BalanceService, private fb: FormBuilder) {
     this.gastoForm = this.fb.group({
@@ -290,5 +300,42 @@ export class EgresoComponent implements OnInit {
     return gastosFiltrados.sort((a, b) => {
       return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
     });
+  }
+
+  // Métodos para el totalizador
+  toggleGastoSelection(gastoId: number): void {
+    if (this.selectedGastosIds.has(gastoId)) {
+      this.selectedGastosIds.delete(gastoId);
+    } else {
+      this.selectedGastosIds.add(gastoId);
+    }
+    this.selectedGastosIds = new Set(this.selectedGastosIds);
+  }
+
+  isGastoSelected(gastoId: number): boolean {
+    return this.selectedGastosIds.has(gastoId);
+  }
+
+  get allGastosSelected(): boolean {
+    return this.gastosFiltrados.length > 0 &&
+           this.gastosFiltrados.every(g => this.selectedGastosIds.has(g.id));
+  }
+
+  toggleSelectAllGastos(): void {
+    if (this.allGastosSelected) {
+      this.gastosFiltrados.forEach(g => this.selectedGastosIds.delete(g.id));
+    } else {
+      this.gastosFiltrados.forEach(g => this.selectedGastosIds.add(g.id));
+    }
+    this.selectedGastosIds = new Set(this.selectedGastosIds);
+  }
+
+  onSelectionChanged(selectedIds: Set<number>): void {
+    this.selectedGastosIds = selectedIds;
+  }
+
+  onClearSelection(): void {
+    this.selectedGastosIds.clear();
+    this.selectedGastosIds = new Set();
   }
 }

@@ -120,6 +120,14 @@
     <table *ngIf="registrosFiltrados.length > 0" class="tabla-registros">
       <thead>
         <tr>
+          <th style="width: 50px;">
+            <input
+              type="checkbox"
+              class="checkbox-select"
+              title="Seleccionar todo visible"
+              [checked]="allRegistrosSelected"
+              (change)="toggleSelectAllRegistros()">
+          </th>
           <th>Proyecto</th>
           <th>Árido</th>
           <th>Cantidad</th>
@@ -130,12 +138,19 @@
       </thead>
       <tbody>
         <ng-container *ngFor="let registro of registrosFiltrados; trackBy: trackByRegistroId">
-          <tr>
-            <td>{{ registro.proyectoNombre }}</td>
-            <td>{{ registro.aridoNombre }}</td>
-            <td>{{ registro.cantidad | number:'1.2-2' }} {{ getUnidadMedida(registro.aridoId) }}</td>
-            <td>{{ registro.fechaEntrega | date:'dd/MM/yyyy' }}</td>
-            <td>{{ registro.operario }}</td>
+          <tr [class.selected-row]="isRegistroSelected(registro.id)">
+            <td class="checkbox-cell">
+              <input
+                type="checkbox"
+                class="checkbox-select"
+                [checked]="isRegistroSelected(registro.id)"
+                (change)="toggleRegistroSelection(registro.id)">
+            </td>
+            <td (click)="toggleRegistroSelection(registro.id)" class="clickable-cell">{{ registro.proyectoNombre }}</td>
+            <td (click)="toggleRegistroSelection(registro.id)" class="clickable-cell">{{ registro.aridoNombre }}</td>
+            <td (click)="toggleRegistroSelection(registro.id)" class="clickable-cell">{{ registro.cantidad | number:'1.2-2' }} {{ getUnidadMedida(registro.aridoId) }}</td>
+            <td (click)="toggleRegistroSelection(registro.id)" class="clickable-cell">{{ registro.fechaEntrega | date:'dd/MM/yyyy' }}</td>
+            <td (click)="toggleRegistroSelection(registro.id)" class="clickable-cell">{{ registro.operario }}</td>
             <td class="acciones">
               <button class="btn-icon btn-edit" title="Editar" (click)="editarRegistro(registro)">
                 <i class="fas fa-edit"></i>
@@ -146,13 +161,23 @@
             </td>
           </tr>
           <tr *ngIf="registro.observaciones" class="fila-observaciones">
-            <td colspan="6">
+            <td colspan="7">
               <strong>Observaciones:</strong> {{ registro.observaciones }}
             </td>
           </tr>
         </ng-container>
       </tbody>
     </table>
+
+    <!-- Totalizador -->
+    <app-summary-selector
+      [items]="registrosFiltrados"
+      [selectedItems]="selectedRegistrosIds"
+      [config]="summaryConfig"
+      [idKey]="'id'"
+      (selectionChanged)="onSelectionChanged($event)"
+      (clearSelection)="onClearSelection()">
+    </app-summary-selector>
   </div>
 </div>
 

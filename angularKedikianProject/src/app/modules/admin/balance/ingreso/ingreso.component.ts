@@ -4,6 +4,7 @@ import { ProjectService, Project } from '../../../../core/services/project.servi
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { SummarySelectorComponent, SummarySelectorConfig } from '../../../../shared/components/summary-selector/summary-selector.component';
 
 interface Pago {
   id: number;
@@ -16,7 +17,7 @@ interface Pago {
 @Component({
   selector: 'app-ingreso',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SummarySelectorComponent],
   templateUrl: './ingreso.component.html',
   styleUrls: ['./ingreso.component.css']
 })
@@ -30,6 +31,15 @@ export class IngresoComponent implements OnInit {
   modoEdicion = false;
   pagoSeleccionadoId: number | null = null;
   filtroTexto = '';
+
+  // Propiedades para el totalizador
+  selectedPagosIds: Set<number> = new Set();
+  summaryConfig: SummarySelectorConfig = {
+    columnKey: 'importe_total',
+    label: 'TOTAL INGRESOS SELECCIONADOS',
+    format: 'currency',
+    decimalPlaces: 2
+  };
 
   constructor(
     private balanceService: BalanceService,
@@ -120,7 +130,7 @@ export class IngresoComponent implements OnInit {
 
   get pagosFiltrados(): Pago[] {
     let pagosFiltrados = [...this.pagos]; // Crear copia
-  
+
     // Aplicar filtro de texto
     if (this.filtroTexto.trim()) {
       const filtro = this.filtroTexto.toLowerCase();
@@ -128,7 +138,7 @@ export class IngresoComponent implements OnInit {
         const proyectoNombre = this.getNombreProyecto(pago.proyecto_id).toLowerCase();
         const descripcion = pago.descripcion?.toLowerCase() || '';
         const fecha = new Date(pago.fecha).toLocaleDateString();
-  
+
         return (
           proyectoNombre.includes(filtro) ||
           descripcion.includes(filtro) ||
@@ -137,10 +147,47 @@ export class IngresoComponent implements OnInit {
         );
       });
     }
-  
+
     // Ordenar por fecha (más recientes primero)
     return pagosFiltrados.sort((a, b) => {
       return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
     });
+  }
+
+  // Métodos para el totalizador
+  togglePagoSelection(pagoId: number): void {
+    if (this.selectedPagosIds.has(pagoId)) {
+      this.selectedPagosIds.delete(pagoId);
+    } else {
+      this.selectedPagosIds.add(pagoId);
+    }
+    this.selectedPagosIds = new Set(this.selectedPagosIds);
+  }
+
+  isPagoSelected(pagoId: number): boolean {
+    return this.selectedPagosIds.has(pagoId);
+  }
+
+  get allPagosSelected(): boolean {
+    return this.pagosFiltrados.length > 0 &&
+           this.pagosFiltrados.every(p => this.selectedPagosIds.has(p.id));
+  }
+
+  toggleSelectAllPagos(): void {
+    if (this.allPagosSelected) {
+      this.pagosFiltrados.forEach(p => this.selectedPagosIds.delete(p.id));
+    } else {
+      this.pagosFiltrados.forEach(p => this.selectedPagosIds.add(p.id));
+    }
+    this.selectedPagosIds = new Set(this.selectedPagosIds);
+  }
+
+  onSelectionChanged(selectedIds: Set<number>): void {
+    this.selectedPagosIds = selectedIds;
+  }
+
+  onClearSelection(): void {
+    this.selectedPagosIds.clear();
+    this.selectedPagosIds = new Set();
   }
 }

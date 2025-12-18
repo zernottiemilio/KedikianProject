@@ -58,6 +58,14 @@
     <table class="data-table" *ngIf="pagosFiltrados.length > 0">
       <thead>
         <tr>
+          <th style="width: 50px;">
+            <input
+              type="checkbox"
+              class="checkbox-select"
+              title="Seleccionar todo visible"
+              [checked]="allPagosSelected"
+              (change)="toggleSelectAllPagos()">
+          </th>
           <th>Proyecto</th>
           <th>Monto</th>
           <th>Fecha</th>
@@ -66,11 +74,18 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let pago of pagosFiltrados">
-          <td>{{ getNombreProyecto(pago.proyecto_id) }}</td>
-          <td class="monto">{{ pago.importe_total | currency }}</td>
-          <td>{{ pago.fecha | date:'dd/MM/yyyy' }}</td>
-          <td>{{ pago.descripcion }}</td>
+        <tr *ngFor="let pago of pagosFiltrados" [class.selected-row]="isPagoSelected(pago.id)">
+          <td class="checkbox-cell">
+            <input
+              type="checkbox"
+              class="checkbox-select"
+              [checked]="isPagoSelected(pago.id)"
+              (change)="togglePagoSelection(pago.id)">
+          </td>
+          <td (click)="togglePagoSelection(pago.id)" class="clickable-cell">{{ getNombreProyecto(pago.proyecto_id) }}</td>
+          <td (click)="togglePagoSelection(pago.id)" class="clickable-cell monto">{{ pago.importe_total | currency }}</td>
+          <td (click)="togglePagoSelection(pago.id)" class="clickable-cell">{{ pago.fecha | date:'dd/MM/yyyy' }}</td>
+          <td (click)="togglePagoSelection(pago.id)" class="clickable-cell">{{ pago.descripcion }}</td>
           <td class="actions-cell">
             <button class="btn btn-sm btn-info" (click)="editarPago(pago)" title="Editar">
               <i class="fas fa-edit"></i>
@@ -86,5 +101,15 @@
       <span class="material-icons">info</span>
       <p>No hay ingresos registrados en este período</p>
     </div>
+
+    <!-- Totalizador -->
+    <app-summary-selector
+      [items]="pagosFiltrados"
+      [selectedItems]="selectedPagosIds"
+      [config]="summaryConfig"
+      [idKey]="'id'"
+      (selectionChanged)="onSelectionChanged($event)"
+      (clearSelection)="onClearSelection()">
+    </app-summary-selector>
   </div>
 </div>
