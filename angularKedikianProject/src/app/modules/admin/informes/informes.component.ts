@@ -6,13 +6,14 @@ import { ReportesLaboralesService, ReporteLaboral } from '../../../core/services
 import { MachinesService } from '../../../core/services/machines.service';
 import { ProjectService, Project } from '../../../core/services/project.service';
 import { UserService } from '../../../core/services/user.service';
+import { SummarySelectorComponent, SummarySelectorConfig } from '../../../shared/components/summary-selector/summary-selector.component';
 
 @Component({
   selector: 'app-informes',
   templateUrl: './informes.component.html',
   styleUrls: ['./informes.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SummarySelectorComponent],
 })
 export class InformesComponent implements OnInit {
   reportes: ReporteLaboral[] = [];
@@ -35,6 +36,23 @@ export class InformesComponent implements OnInit {
 
   formulario: Partial<ReporteLaboral> = {};
   cargandoDatos: boolean = true;
+
+  // Propiedades para el totalizador
+  selectedReportesIds: Set<number> = new Set();
+  summaryConfigHoras: SummarySelectorConfig = {
+    columnKey: 'horas_turno',
+    label: 'TOTAL HORAS TRABAJADAS',
+    format: 'number',
+    decimalPlaces: 2,
+    suffix: 'hs'
+  };
+  summaryConfigHorometro: SummarySelectorConfig = {
+    columnKey: 'horometro_inicial',
+    label: 'PROMEDIO HORÓMETRO INICIAL',
+    format: 'number',
+    decimalPlaces: 0,
+    suffix: 'hs'
+  };
 
   constructor(
     private reportesService: ReportesLaboralesService,
@@ -208,4 +226,42 @@ export class InformesComponent implements OnInit {
   paginaSiguiente(): void { if (this.paginaActual < this.totalPaginas) this.paginaActual++; }
   get totalPaginas(): number { return Math.max(1, Math.ceil(this.reportes.length / this.itemsPorPagina)); }
   trackByReporte(index: number, reporte: ReporteLaboral): any { return reporte.id || index; }
+
+  // Métodos para el totalizador
+  toggleReporteSelection(reporteId: number | undefined): void {
+    if (!reporteId) return;
+    if (this.selectedReportesIds.has(reporteId)) {
+      this.selectedReportesIds.delete(reporteId);
+    } else {
+      this.selectedReportesIds.add(reporteId);
+    }
+    this.selectedReportesIds = new Set(this.selectedReportesIds);
+  }
+
+  isReporteSelected(reporteId: number | undefined): boolean {
+    return reporteId !== undefined && this.selectedReportesIds.has(reporteId);
+  }
+
+  get allReportesSelected(): boolean {
+    return this.reportesPaginados.length > 0 &&
+           this.reportesPaginados.every(r => r.id !== undefined && this.selectedReportesIds.has(r.id));
+  }
+
+  toggleSelectAllReportes(): void {
+    if (this.allReportesSelected) {
+      this.reportesPaginados.forEach(r => { if (r.id) this.selectedReportesIds.delete(r.id); });
+    } else {
+      this.reportesPaginados.forEach(r => { if (r.id) this.selectedReportesIds.add(r.id); });
+    }
+    this.selectedReportesIds = new Set(this.selectedReportesIds);
+  }
+
+  onSelectionChanged(selectedIds: Set<number>): void {
+    this.selectedReportesIds = selectedIds;
+  }
+
+  onClearSelection(): void {
+    this.selectedReportesIds.clear();
+    this.selectedReportesIds = new Set();
+  }
 }

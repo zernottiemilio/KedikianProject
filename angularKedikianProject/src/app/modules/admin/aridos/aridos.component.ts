@@ -11,6 +11,7 @@ import { AridosService } from '../../../core/services/aridos.service';
 import { UserService } from '../../../core/services/user.service';
 import { ProjectService } from '../../../core/services/project.service';
 import { forkJoin } from 'rxjs';
+import { SummarySelectorComponent, SummarySelectorConfig } from '../../../shared/components/summary-selector/summary-selector.component';
 
 export interface Arido {
   id: number;
@@ -51,7 +52,7 @@ export interface Operario {
 @Component({
   selector: 'app-aridos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SummarySelectorComponent],
   templateUrl: './aridos.component.html',
   styleUrls: ['./aridos.component.css'],
 })
@@ -78,6 +79,16 @@ export class AridosComponent implements OnInit {
   modoEdicion = false;
   registroEditandoId: number | null = null;
   registroAEliminar: RegistroArido | null = null;
+
+  // Propiedades para el totalizador
+  selectedRegistrosIds: Set<number> = new Set();
+  summaryConfig: SummarySelectorConfig = {
+    columnKey: 'cantidad',
+    label: 'TOTAL SELECCIONADO',
+    format: 'number',
+    decimalPlaces: 2,
+    suffix: 'm³'
+  };
 
   constructor(
     private fb: FormBuilder,
@@ -420,6 +431,7 @@ export class AridosComponent implements OnInit {
       tipo_arido: arido.nombre,
       cantidad: +formData.cantidad,
       fecha_entrega: new Date(formData.fechaEntrega + 'T10:30:00').toISOString(),
+      observaciones: formData.observaciones || ''
     };
 
     if (this.modoEdicion && this.registroEditandoId) {
@@ -476,5 +488,43 @@ export class AridosComponent implements OnInit {
         document.body.removeChild(notificacion);
       }
     }, 3000);
+  }
+
+  // Métodos para el totalizador
+  toggleRegistroSelection(registroId: number): void {
+    if (this.selectedRegistrosIds.has(registroId)) {
+      this.selectedRegistrosIds.delete(registroId);
+    } else {
+      this.selectedRegistrosIds.add(registroId);
+    }
+    // Forzar actualización del componente hijo
+    this.selectedRegistrosIds = new Set(this.selectedRegistrosIds);
+  }
+
+  isRegistroSelected(registroId: number): boolean {
+    return this.selectedRegistrosIds.has(registroId);
+  }
+
+  get allRegistrosSelected(): boolean {
+    return this.registrosFiltrados.length > 0 &&
+           this.registrosFiltrados.every(r => this.selectedRegistrosIds.has(r.id));
+  }
+
+  toggleSelectAllRegistros(): void {
+    if (this.allRegistrosSelected) {
+      this.registrosFiltrados.forEach(r => this.selectedRegistrosIds.delete(r.id));
+    } else {
+      this.registrosFiltrados.forEach(r => this.selectedRegistrosIds.add(r.id));
+    }
+    this.selectedRegistrosIds = new Set(this.selectedRegistrosIds);
+  }
+
+  onSelectionChanged(selectedIds: Set<number>): void {
+    this.selectedRegistrosIds = selectedIds;
+  }
+
+  onClearSelection(): void {
+    this.selectedRegistrosIds.clear();
+    this.selectedRegistrosIds = new Set();
   }
 }

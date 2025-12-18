@@ -589,3 +589,79 @@
   font-size: 0.875rem;
   border-radius: 0.25rem;
 }
+
+
+/* Estilos para checkboxes y selección de filas */
+.checkbox-cell {
+  text-align: center;
+  padding: 0.5rem !important;
+}
+
+.checkbox-select {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #667eea;
+  transition: transform 0.2s ease;
+}
+
+.checkbox-select:hover {
+  transform: scale(1.1);
+}
+
+.clickable-cell {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.data-table tbody tr.selected-row {
+  background-color: #e8eaf6 !important;
+  border-left: 4px solid #667eea;
+}
+
+.data-table tbody tr.selected-row td {
+  background-color: transparent;
+  font-weight: 500;
+}
+
+.data-table tbody tr.selected-row:hover {
+  background-color: #e8eaf6 !important;
+}
+
+/* Animación para filas seleccionadas */
+@keyframes highlightRow {
+  0% {
+    background-color: #f9f9f9;
+  }
+  50% {
+    background-color: #d1d5fa;
+  }
+  100% {
+    background-color: #e8eaf6;
+  }
+}
+
+.data-table tbody tr.selected-row {
+  animation: highlightRow 0.3s ease;
+}
+
+/* Estilos para el encabezado de la tabla con checkbox */
+.data-table th:first-child {
+  text-align: center;
+  width: 50px;
+}
+
+/* Mejoras visuales para los checkboxes */
+.checkbox-select:checked {
+  background-color: #667eea;
+}
+
+/* Hover effect en las filas */
+.data-table tbody tr:hover .clickable-cell {
+  background-color: #f0f4ff;
+}
+
+.data-table tbody tr.selected-row:hover .clickable-cell {
+  background-color: #d1d5fa;
+}
