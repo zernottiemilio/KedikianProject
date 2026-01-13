@@ -244,8 +244,20 @@ export class MaquinariaComponent implements OnInit {
           this.mostrarMensaje('Máquina eliminada correctamente');
           this.cancelarEliminarMaquina();
         },
-        error: () => {
-          this.mostrarMensaje('Error al eliminar la máquina');
+        error: (error) => {
+          console.error('Error al eliminar máquina:', error);
+
+          // Extraer el mensaje de error específico del backend
+          let errorMsg = 'Error al eliminar la máquina';
+          if (error.error?.message) {
+            errorMsg = error.error.message;
+          } else if (error.error?.detail) {
+            errorMsg = error.error.detail;
+          } else if (typeof error.error === 'string') {
+            errorMsg = error.error;
+          }
+
+          this.mostrarMensaje(`Error: ${errorMsg}`);
           this.cancelarEliminarMaquina();
         }
       });
