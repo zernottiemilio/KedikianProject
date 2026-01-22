@@ -75,7 +75,8 @@ export class InformesComponent implements OnInit {
     }).subscribe({
       next: ({ maquinas, proyectos, usuarios }) => {
         this.maquinas = maquinas;
-        this.proyectos = proyectos;
+        // Filtrar solo proyectos activos
+        this.proyectos = proyectos.filter(p => p.estado === true);
         this.usuarios = usuarios;
         this.cargarReportes();
       },

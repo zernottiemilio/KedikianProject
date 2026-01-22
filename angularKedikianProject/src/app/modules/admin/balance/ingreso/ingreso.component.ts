@@ -60,7 +60,10 @@ export class IngresoComponent implements OnInit {
 
   cargarProyectos(): void {
     this.projectService.getProjects().subscribe(
-      (data: Project[]) => this.proyectos = data,
+      (data: Project[]) => {
+        // Filtrar solo proyectos activos
+        this.proyectos = data.filter(p => p.estado === true);
+      },
       (error) => console.error('Error al cargar proyectos:', error)
     );
   }

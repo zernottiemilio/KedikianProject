@@ -116,11 +116,15 @@ export class ProjectService {
   }
 
   getProjects(): Observable<Project[]> {
-    return this.http.get<Project[]>(this.apiUrl);
+    return this.http.get<Project[]>(this.apiUrl, {
+      headers: this.getAuthHeaders()
+    });
   }
 
   getLastProjects(): Observable<Project[]> {
-    return this.http.get<Project[]>(`${this.apiUrl}/ultimos`);
+    return this.http.get<Project[]>(`${this.apiUrl}/ultimos`, {
+      headers: this.getAuthHeaders()
+    });
   }
 
   findByIdMaquina(id: number): Observable<Project[]> {
@@ -131,11 +135,15 @@ export class ProjectService {
   }
 
   getActiveProjects(): Observable<Project[]> {
-    return this.http.get<Project[]>(`${this.apiUrl}/activos`);
+    return this.http.get<Project[]>(`${this.apiUrl}/activos`, {
+      headers: this.getAuthHeaders()
+    });
   }
 
   getCantidadProyectosActivos(): Observable<CantidadProyectosActivos> {
-    return this.http.get<CantidadProyectosActivos>(`${this.apiUrl}/activos/cantidad`).pipe(
+    return this.http.get<CantidadProyectosActivos>(`${this.apiUrl}/activos/cantidad`, {
+      headers: this.getAuthHeaders()
+    }).pipe(
       tap((response) => {
         console.log('Cantidad de proyectos activos obtenida:', response);
       }),
@@ -151,7 +159,10 @@ export class ProjectService {
       .set('skip', skip.toString())
       .set('limit', limit.toString());
 
-    return this.http.get<ProyectosPaginadosResponse>(`${this.apiUrl}/paginado`, { params }).pipe(
+    return this.http.get<ProyectosPaginadosResponse>(`${this.apiUrl}/paginado`, {
+      params,
+      headers: this.getAuthHeaders()
+    }).pipe(
       tap((response) => {
         console.log('Proyectos paginados obtenidos:', response);
       }),
@@ -279,15 +290,21 @@ export class ProjectService {
   }
 
   getMaquinasPorProyecto(id: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/${id}/maquinas`);
+    return this.http.get<any[]>(`${this.apiUrl}/${id}/maquinas`, {
+      headers: this.getAuthHeaders()
+    });
   }
 
   getAridosPorProyecto(id: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/${id}/aridos`);
+    return this.http.get<any[]>(`${this.apiUrl}/${id}/aridos`, {
+      headers: this.getAuthHeaders()
+    });
   }
 
   getReportesLaboralesPorProyecto(id: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/${id}/reportes-laborales`).pipe(
+    return this.http.get<any[]>(`${this.apiUrl}/${id}/reportes-laborales`, {
+      headers: this.getAuthHeaders()
+    }).pipe(
       tap((response) => {
         console.log(`📊 Reportes laborales del proyecto ${id}:`, response);
       }),
@@ -318,7 +335,8 @@ export class ProjectService {
     // Crear el observable con todas las optimizaciones
     this.proyectosConDetallesCache$ = this.http
       .get<ProyectoConDetalles[]>(`${this.apiUrl}/con-detalles`, {
-        params: { solo_activos: soloActivos.toString() }
+        params: { solo_activos: soloActivos.toString() },
+        headers: this.getAuthHeaders()
       })
       .pipe(
         timeout(15000), // Timeout de 15 segundos
@@ -347,7 +365,9 @@ export class ProjectService {
 
     // Crear el observable con todas las optimizaciones
     const observable$ = this.http
-      .get<ProyectoConDetalles>(`${this.apiUrl}/${id}/con-detalles`)
+      .get<ProyectoConDetalles>(`${this.apiUrl}/${id}/con-detalles`, {
+        headers: this.getAuthHeaders()
+      })
       .pipe(
         timeout(15000), // Timeout de 15 segundos
         retry(2), // Reintentar hasta 2 veces si falla
