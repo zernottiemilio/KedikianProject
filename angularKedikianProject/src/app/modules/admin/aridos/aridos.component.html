@@ -36,13 +36,13 @@
     <div class="filtros-grid">
       <div class="filtro-item">
         <label for="filtroProyecto">Proyecto:</label>
-        <select 
-          id="filtroProyecto" 
-          [(ngModel)]="filtroProyecto" 
+        <select
+          id="filtroProyecto"
+          [(ngModel)]="filtroProyecto"
           (ngModelChange)="aplicarFiltros()"
           class="form-control">
           <option value="">Todos los proyectos</option>
-          <option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+          <option *ngFor="let proyecto of proyectosActivos" [value]="proyecto.id">
             {{ proyecto.nombre }}
           </option>
         </select>

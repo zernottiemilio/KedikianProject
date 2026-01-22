@@ -37,7 +37,7 @@ export interface Proyecto {
   id: number;
   nombre: string;
   ubicacion: string;
-  estado: 'activo' | 'pausado' | 'completado';
+  estado: boolean;
 }
 
 export interface Operario {
@@ -131,11 +131,8 @@ export class AridosComponent implements OnInit {
         console.log('Proyectos recibidos:', proyectos);
         console.log('Estados de proyectos:', proyectos.map(p => ({ id: p.id, nombre: p.nombre, estado: p.estado })));
         
-        // Filtrar solo proyectos activos para el formulario (más flexible)
-        this.proyectosActivos = proyectos.filter(p => {
-          const estado = p.estado?.toString().toLowerCase();
-          return estado === 'activo' || estado === 'active' || estado === '1' || estado === 'true';
-        });
+        // Filtrar solo proyectos activos para el formulario
+        this.proyectosActivos = proyectos.filter(p => p.estado === true);
         
         console.log('Proyectos activos filtrados:', this.proyectosActivos);
   
