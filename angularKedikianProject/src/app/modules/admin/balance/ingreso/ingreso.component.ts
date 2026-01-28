@@ -1,9 +1,8 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { BalanceService } from '../../../../core/services/balance.service';
 import { ProjectService, Project } from '../../../../core/services/project.service';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { SummarySelectorComponent, SummarySelectorConfig } from '../../../../shared/components/summary-selector/summary-selector.component';
 
 interface Pago {
@@ -59,12 +58,19 @@ export class IngresoComponent implements OnInit {
   }
 
   cargarProyectos(): void {
+    console.log('🔍 Cargando proyectos desde el servicio...');
     this.projectService.getProjects().subscribe(
       (data: Project[]) => {
+        console.log('📦 Proyectos recibidos del backend:', data);
         // Filtrar solo proyectos activos
         this.proyectos = data.filter(p => p.estado === true);
+        console.log('✅ Proyectos activos filtrados:', this.proyectos);
+        console.log(`Total de proyectos activos: ${this.proyectos.length}`);
       },
-      (error) => console.error('Error al cargar proyectos:', error)
+      (error) => {
+        console.error('❌ Error al cargar proyectos:', error);
+        console.error('Detalles del error:', error.message);
+      }
     );
   }
 

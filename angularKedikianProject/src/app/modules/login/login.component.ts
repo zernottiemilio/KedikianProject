@@ -231,9 +231,6 @@ export class LoginComponent {
     this.authService.login(usernameFromForm, passwordFromForm).subscribe({
       next: (usuario: Usuario) => {
         this.loading = false;
-        console.log('✅ Login exitoso');
-        console.log('👤 Usuario:', usuario.nombreUsuario);
-        console.log('🎯 Roles desde backend:', usuario.roles);
 
         // 🔹 Mapear roles del backend a los de Angular
         const mappedRoles = usuario.roles.map((rol) => {
@@ -242,23 +239,17 @@ export class LoginComponent {
           return rol.toLowerCase();
         });
 
-        console.log('🎯 Roles mapeados:', mappedRoles);
-
         if (mappedRoles.includes('administrador')) {
-          console.log('✅ Administrador detectado, redirigiendo...');
           window.location.href =
             'http://168.197.50.82/administrador/dashboard';
         } else if (mappedRoles.includes('operario')) {
-          console.log('✅ Operario detectado, redirigiendo...');
           window.location.href = 'http://168.197.50.82/operario/dashboard';
         } else {
-          console.error('❌ Rol no reconocido:', mappedRoles);
           this.error = 'Usuario sin rol válido.';
         }
       },
       error: (error: HttpErrorResponse) => {
         this.loading = false;
-        console.error('❌ Error en login - Status:', error.status);
 
         if (error.status === 401) {
           this.error = 'Usuario o contraseña incorrectos';

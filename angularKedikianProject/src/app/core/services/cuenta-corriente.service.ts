@@ -21,21 +21,18 @@ export class CuentaCorrienteService {
   constructor(private http: HttpClient) {}
 
   private getAuthHeaders(): HttpHeaders {
-    const token = localStorage.getItem('token') || '';
-    const usuario = localStorage.getItem('usuarioActual');
-    let authToken = token;
-
-    if (!authToken && usuario) {
+    const usuarioStr = localStorage.getItem('usuarioActual');
+    let token = '';
+    if (usuarioStr) {
       try {
-        const parsedUser = JSON.parse(usuario);
-        authToken = parsedUser.access_token || parsedUser.token || '';
+        const usuario = JSON.parse(usuarioStr);
+        token = usuario.access_token || usuario.token || '';
       } catch (error) {
-        console.error('Error al parsear usuario:', error);
+        // Si hay error parseando, token queda vacío
       }
     }
-
     return new HttpHeaders({
-      'Authorization': `Bearer ${authToken}`,
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     });
   }

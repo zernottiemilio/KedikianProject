@@ -101,14 +101,15 @@ export class CuentaCorrienteComponent implements OnInit {
           }
         },
         error: (error) => {
-          console.error('Error al cargar proyectos:', error);
+          // Manejo de errores silencioso
         }
       });
     } else {
-      // Si es administrador, mostrar todos los proyectos
-      this.projectService.getActiveProjects().subscribe({
+      // Si es administrador, mostrar todos los proyectos activos (filtrados del lado cliente)
+      this.projectService.getProjects().subscribe({
         next: (proyectos) => {
-          this.proyectos = proyectos;
+          // Filtrar solo proyectos activos
+          this.proyectos = proyectos.filter(p => p.estado);
           if (this.proyectos.length > 0) {
             this.proyectoSeleccionado = this.proyectos[0].id;
             this.cargarDatos();

@@ -100,7 +100,16 @@ export class ProjectService {
   constructor(private http: HttpClient) {}
 
   private getAuthHeaders(): HttpHeaders {
-    const token = localStorage.getItem('token') || '';
+    const usuarioStr = localStorage.getItem('usuarioActual');
+    let token = '';
+    if (usuarioStr) {
+      try {
+        const usuario = JSON.parse(usuarioStr);
+        token = usuario.access_token || usuario.token || '';
+      } catch (error) {
+        // Si hay error parseando, token queda vacío
+      }
+    }
     return new HttpHeaders({
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
@@ -108,7 +117,16 @@ export class ProjectService {
   }
 
   private getAuthHeadersForFiles(): HttpHeaders {
-    const token = localStorage.getItem('token') || '';
+    const usuarioStr = localStorage.getItem('usuarioActual');
+    let token = '';
+    if (usuarioStr) {
+      try {
+        const usuario = JSON.parse(usuarioStr);
+        token = usuario.access_token || usuario.token || '';
+      } catch (error) {
+        // Si hay error parseando, token queda vacío
+      }
+    }
     return new HttpHeaders({
       'Authorization': `Bearer ${token}`
       // NO incluir Content-Type para que el browser lo configure automáticamente con boundary
