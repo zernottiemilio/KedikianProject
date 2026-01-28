@@ -71,6 +71,13 @@ export class SidebarComponent implements OnInit {
       roles: ['administrador'], // Solo administradores
     },
     {
+      title: 'Cuenta Corriente',
+      icon: 'fas fa-file-invoice-dollar',
+      route: '/cuenta-corriente',
+      active: false,
+      roles: ['administrador', 'cliente'], // Accesible para administradores y clientes
+    },
+    {
       title: 'Importar Excel',
       icon: 'fas fa-file-excel',
       route: '/excel-import',

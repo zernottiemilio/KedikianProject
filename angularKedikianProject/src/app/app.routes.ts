@@ -14,6 +14,7 @@ import { EgresoComponent } from './modules/admin/balance/egreso/egreso.component
 import { AridosComponent } from './modules/admin/aridos/aridos.component';
 import { InformesComponent } from './modules/admin/informes/informes.component';
 import { ExcelImportComponent } from './modules/admin/excel-import/excel-import.component';
+import { CuentaCorrienteComponent } from './modules/admin/cuenta-corriente/cuenta-corriente.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -62,12 +63,17 @@ export const routes: Routes = [
         component: InformesComponent,
         data: { role: 'administrador' }
       },
-      { 
-        path: 'excel-import', 
+      {
+        path: 'excel-import',
         component: ExcelImportComponent,
         data: { role: 'administrador' }
       },
-      
+      {
+        path: 'cuenta-corriente',
+        component: CuentaCorrienteComponent
+        // Accesible para todos los roles autenticados (administrador y cliente)
+      },
+
       // Rutas para operarios (si las hay en el futuro)
       // { path: 'operario-ruta', component: OperarioComponent, data: { role: 'operario' } },
     ],
