@@ -17,7 +17,7 @@ export class SidebarComponent implements OnInit {
   screenWidth: number;
   isMobile: boolean = false;
 
-  useAngularRouting: boolean = false;
+  useAngularRouting: boolean = true;
   // Definición de elementos de navegación
   navItems = [
     {
