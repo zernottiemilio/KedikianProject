@@ -1,0 +1,292 @@
+<div class="informes-container">
+
+  <!-- HEADER -->
+  <div class="header-section">
+    <h1>Informes y Reportes</h1>
+    <div class="action-buttons">
+      <button class="btn btn-success" (click)="abrirModal()">
+        + Agregar Registro
+      </button>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filtros">
+    <div class="filter-group">
+      <label for="busqueda">Buscar máquina...</label>
+      <input 
+        id="busqueda"
+        type="text" 
+        placeholder="Buscar máquina..." 
+        [(ngModel)]="filtroBusqueda"
+        (input)="cargarReportes()">
+    </div>
+
+    <div class="filter-group">
+      <label for="filtro-maquina">Máquina</label>
+      <select id="filtro-maquina" [(ngModel)]="filtroMaquina" (change)="cargarReportes()">
+        <option value="">Todas las máquinas</option>
+        <option *ngFor="let maquina of maquinas" [value]="maquina.id">
+          {{ maquina.nombre }}
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filtro-proyecto">Proyecto</label>
+      <select id="filtro-proyecto" [(ngModel)]="filtroProyecto" (change)="cargarReportes()">
+        <option value="">Todos los proyectos</option>
+        <option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+          {{ proyecto.nombre }}
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filtro-usuario">Usuario</label>
+      <select id="filtro-usuario" [(ngModel)]="filtroUsuario" (change)="cargarReportes()">
+        <option value="">Todos los usuarios</option>
+        <option *ngFor="let usuario of usuarios" [value]="usuario.id">
+          {{ usuario.nombre }}
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="fecha-desde">Fecha desde</label>
+      <input 
+        id="fecha-desde"
+        type="date" 
+        [(ngModel)]="filtroFechaDesde"
+        (change)="cargarReportes()">
+    </div>
+
+    <div class="filter-group">
+      <label for="fecha-hasta">Fecha hasta</label>
+      <input 
+        id="fecha-hasta"
+        type="date" 
+        [(ngModel)]="filtroFechaHasta"
+        (change)="cargarReportes()">
+    </div>
+  </div>
+
+  <!-- OPCIONES ADICIONALES -->
+  <div class="results-info">
+    <span>
+      Mostrando {{ reportesPaginados.length }} de {{ reportes.length }} registros
+    </span>
+    <div class="checkbox-container">
+      <input type="checkbox" id="solo-activos" checked>
+      <label for="solo-activos">Solo activos</label>
+    </div>
+  </div>
+
+  <!-- TABLA CON HOROMETRO_INICIAL -->
+  <div class="tabla-container">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 50px;">
+            <input
+              type="checkbox"
+              class="checkbox-select"
+              title="Seleccionar todo visible"
+              [checked]="allReportesSelected"
+              (change)="toggleSelectAllReportes()">
+          </th>
+          <th style="width: 16%;">Máquina</th>
+          <th style="width: 16%;">Proyecto</th>
+          <th style="width: 12%;">Usuario</th>
+          <th style="width: 10%;">Horas</th>
+          <th style="width: 12%;">Horómetro Inicial</th>
+          <th style="width: 12%;">Fecha</th>
+          <th style="width: 14%;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Mensaje cuando no hay datos -->
+        <tr *ngIf="reportes.length === 0">
+          <td colspan="8" class="empty-state">
+            <i>📊</i>
+            <h3>No hay registros</h3>
+            <p>No se encontraron informes con los filtros aplicados</p>
+            <button class="btn btn-success" (click)="abrirModal()">
+              + Crear primer registro
+            </button>
+          </td>
+        </tr>
+
+        <!-- Filas de datos -->
+        <tr *ngFor="let reporte of reportesPaginados; trackBy: trackByReporte" [class.selected-row]="isReporteSelected(reporte.id)">
+          <td class="checkbox-cell">
+            <input
+              type="checkbox"
+              class="checkbox-select"
+              [checked]="isReporteSelected(reporte.id)"
+              (change)="toggleReporteSelection(reporte.id)">
+          </td>
+          <td (click)="toggleReporteSelection(reporte.id)" class="clickable-cell">
+            <strong>{{ getNombreMaquina(reporte.maquina_id) }}</strong>
+          </td>
+          <td (click)="toggleReporteSelection(reporte.id)" class="clickable-cell">
+            <span [title]="getNombreProyecto(reporte.proyecto_id)">
+              {{ getNombreProyecto(reporte.proyecto_id) }}
+            </span>
+          </td>
+          <td (click)="toggleReporteSelection(reporte.id)" class="clickable-cell">
+            <strong>{{ getNombreUsuario(reporte.usuario_id) }}</strong>
+          </td>
+          <td (click)="toggleReporteSelection(reporte.id)" class="clickable-cell">
+            <strong>{{ reporte.horas_turno || 0 }} horas</strong>
+          </td>
+          <td (click)="toggleReporteSelection(reporte.id)" class="clickable-cell">
+            <strong>{{ reporte.horometro_inicial || 0 }} hs</strong>
+          </td>
+          <td (click)="toggleReporteSelection(reporte.id)" class="clickable-cell">
+            <span>{{ reporte.fecha_asignacion | date:'dd/MM/yyyy' }}</span>
+          </td>
+          <td>
+            <div class="action-buttons-group">
+              <button class="btn-icon btn-edit" (click)="editarReporte(reporte)" title="Editar">✏️</button>
+              <button class="btn-icon btn-delete" (click)="eliminarReporte(reporte.id)" title="Eliminar">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Totalizadores -->
+    <div class="totalizadores-grid">
+      <app-summary-selector
+        [items]="reportesPaginados"
+        [selectedItems]="selectedReportesIds"
+        [config]="summaryConfigHoras"
+        [idKey]="'id'"
+        (selectionChanged)="onSelectionChanged($event)"
+        (clearSelection)="onClearSelection()">
+      </app-summary-selector>
+    </div>
+  </div>
+
+  <!-- PAGINACIÓN -->
+  <div class="paginacion" *ngIf="reportes.length > 0">
+    <button 
+      (click)="paginaActual = 1" 
+      [disabled]="paginaActual === 1"
+      title="Primera página">
+      ⟪
+    </button>
+    <button 
+      (click)="paginaAnterior()" 
+      [disabled]="paginaActual === 1"
+      title="Anterior">
+      ⟨
+    </button>
+    
+    <span class="page-info">
+      Página {{ paginaActual }}
+    </span>
+    
+    <button 
+      (click)="paginaSiguiente()" 
+      [disabled]="paginaActual === totalPaginas"
+      title="Siguiente">
+      ⟩
+    </button>
+    <button 
+      (click)="paginaActual = totalPaginas" 
+      [disabled]="paginaActual === totalPaginas"
+      title="Última">
+      ⟫
+    </button>
+  </div>
+
+  <!-- MODAL CON HOROMETRO_INICIAL -->
+  <div class="modal" *ngIf="modalAbierto" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ reporteEditando ? 'Editar Registro' : 'Nuevo Registro' }}</h2>
+        <button class="close-btn" (click)="cerrarModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="modal-maquina">Máquina *</label>
+          <select id="modal-maquina" [(ngModel)]="formulario.maquina_id" required>
+            <option value="">Seleccione una máquina</option>
+            <option *ngFor="let maquina of maquinas" [value]="maquina.id">
+              {{ maquina.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="modal-proyecto">Proyecto *</label>
+          <select id="modal-proyecto" [(ngModel)]="formulario.proyecto_id" required>
+            <option value="">Seleccione un proyecto</option>
+            <option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+              {{ proyecto.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="modal-usuario">Usuario *</label>
+          <select id="modal-usuario" [(ngModel)]="formulario.usuario_id" required>
+            <option value="">Seleccione un usuario</option>
+            <option *ngFor="let usuario of usuarios" [value]="usuario.id">
+              {{ usuario.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="modal-fecha">Fecha de asignación *</label>
+          <input 
+            id="modal-fecha"
+            type="date" 
+            [(ngModel)]="formulario.fecha_asignacion" 
+            required>
+        </div>
+
+        <div class="form-group">
+          <label for="modal-horas">Horas trabajadas *</label>
+          <input 
+            id="modal-horas"
+            type="number" 
+            placeholder="Ej: 8.5" 
+            [(ngModel)]="formulario.horas_turno" 
+            min="0.1" 
+            step="0.1"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label for="modal-horometro">Horómetro inicial *</label>
+          <input 
+            id="modal-horometro"
+            type="number" 
+            placeholder="Ej: 1250" 
+            [(ngModel)]="formulario.horometro_inicial" 
+            min="0" 
+            step="1"
+            required>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" (click)="cerrarModal()">
+          Cancelar
+        </button>
+        <button 
+          class="btn btn-success" 
+          (click)="guardarReporte()"
+          [disabled]="!formulario.maquina_id || !formulario.proyecto_id || !formulario.usuario_id || !formulario.horometro_inicial">
+          {{ reporteEditando ? 'Actualizar' : 'Crear' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba Base64 - Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .result {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .example {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Prueba de Codificación Base64</h1>
+        <p>Esta herramienta te permite verificar cómo se codifican las credenciales en base64 antes de enviarlas al backend.</p>
+        
+        <div class="form-group">
+            <label for="username">Usuario:</label>
+            <input type="text" id="username" placeholder="Ingresa el usuario">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password" placeholder="Ingresa la contraseña">
+        </div>
+        
+        <button onclick="encodeCredentials()">Codificar en Base64</button>
+        
+        <div id="result" class="result" style="display: none;">
+            <strong>Resultado:</strong><br>
+            <div id="encodedResult"></div>
+        </div>
+        
+        <div class="example">
+            <h3>Ejemplo:</h3>
+            <p><strong>Usuario:</strong> admin</p>
+            <p><strong>Contraseña:</strong> 123456</p>
+            <p><strong>Base64:</strong></p>
+            <ul>
+                <li>admin → <code>YWRtaW4=</code></li>
+                <li>123456 → <code>MTIzNDU2</code></li>
+            </ul>
+            <p><strong>Request Body:</strong></p>
+            <code>username=YWRtaW4=&password=MTIzNDU2</code>
+        </div>
+    </div>
+
+    <script>
+        function encodeCredentials() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                alert('Por favor ingresa usuario y contraseña');
+                return;
+            }
+            
+            const encodedUsername = btoa(username);
+            const encodedPassword = btoa(password);
+            
+            const resultDiv = document.getElementById('result');
+            const encodedResultDiv = document.getElementById('encodedResult');
+            
+            encodedResultDiv.innerHTML = `
+                <strong>Usuario original:</strong> ${username}<br>
+                <strong>Usuario en Base64:</strong> ${encodedUsername}<br><br>
+                <strong>Contraseña original:</strong> ${password}<br>
+                <strong>Contraseña en Base64:</strong> ${encodedPassword}<br><br>
+                <strong>Body del request:</strong><br>
+                <code>username=${encodedUsername}&password=${encodedPassword}</code>
+            `;
+            
+            resultDiv.style.display = 'block';
+        }
+        
+        // Permitir codificar con Enter
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                encodeCredentials();
+            }
+        });
+    </script>
+</body>
+</html> 

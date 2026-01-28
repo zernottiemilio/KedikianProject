@@ -1,0 +1,452 @@
+<div class="cuenta-corriente-container">
+  <header class="cuenta-corriente-header">
+    <h1>
+      <i class="fas fa-file-invoice-dollar"></i>
+      Cuenta Corriente / Final de Obra
+    </h1>
+    <div class="header-buttons" *ngIf="esAdministrador">
+      <button
+        class="btn btn-primary"
+        (click)="abrirModalGenerarReporte()"
+        [disabled]="!proyectoSeleccionado || !resumen">
+        <i class="fas fa-plus"></i>
+        Generar Reporte
+      </button>
+    </div>
+  </header>
+
+  <!-- Selector de Proyecto y Período -->
+  <div class="controles-principales">
+    <div class="control-grupo">
+      <label for="proyectoSelect">
+        <i class="fas fa-project-diagram"></i>
+        Proyecto:
+      </label>
+      <select
+        id="proyectoSelect"
+        [(ngModel)]="proyectoSeleccionado"
+        (ngModelChange)="onProyectoChange()"
+        class="form-control">
+        <option [value]="null" disabled>Seleccione un proyecto</option>
+        <option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+          {{ proyecto.nombre }}
+        </option>
+      </select>
+    </div>
+
+    <div class="control-grupo">
+      <label>
+        <i class="fas fa-calendar-alt"></i>
+        Período:
+      </label>
+      <div class="periodo-buttons">
+        <button
+          class="btn"
+          [class.btn-active]="periodoActual === 'semana'"
+          (click)="cambiarPeriodo('semana')">
+          Semana Actual
+        </button>
+        <button
+          class="btn"
+          [class.btn-active]="periodoActual === 'personalizado'"
+          (click)="cambiarPeriodo('personalizado')">
+          Personalizado
+        </button>
+      </div>
+    </div>
+
+    <div class="control-grupo" *ngIf="periodoActual === 'personalizado'">
+      <label for="fechaInicio">Desde:</label>
+      <input
+        type="date"
+        id="fechaInicio"
+        [(ngModel)]="fechaInicio"
+        class="form-control">
+    </div>
+
+    <div class="control-grupo" *ngIf="periodoActual === 'personalizado'">
+      <label for="fechaFin">Hasta:</label>
+      <input
+        type="date"
+        id="fechaFin"
+        [(ngModel)]="fechaFin"
+        class="form-control">
+    </div>
+
+    <div class="control-grupo" *ngIf="periodoActual === 'personalizado'">
+      <button
+        class="btn btn-info"
+        (click)="aplicarFechasPersonalizadas()"
+        [disabled]="!fechaInicio || !fechaFin">
+        <i class="fas fa-search"></i>
+        Aplicar
+      </button>
+    </div>
+  </div>
+
+  <!-- Loader -->
+  <div *ngIf="cargandoResumen" class="loader-container">
+    <div class="loader"></div>
+    <p>Cargando información...</p>
+  </div>
+
+  <!-- Resumen y Tablas -->
+  <div *ngIf="!cargandoResumen && resumen" class="resumen-container">
+
+    <!-- Cards de Totales -->
+    <div class="totales-cards">
+      <div class="card-total card-aridos">
+        <div class="card-icon">
+          <i class="fas fa-cubes"></i>
+        </div>
+        <div class="card-info">
+          <h3>Total Áridos</h3>
+          <p class="cantidad">{{ resumen.total_aridos_m3 | number:'1.2-2' }} m³</p>
+          <p class="monto">{{ formatearMoneda(resumen.total_importe_aridos) }}</p>
+        </div>
+      </div>
+
+      <div class="card-total card-horas">
+        <div class="card-icon">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="card-info">
+          <h3>Total Horas Máquinas</h3>
+          <p class="cantidad">{{ resumen.total_horas | number:'1.2-2' }} hs</p>
+          <p class="monto">{{ formatearMoneda(resumen.total_importe_horas) }}</p>
+        </div>
+      </div>
+
+      <div class="card-total card-total-general">
+        <div class="card-icon">
+          <i class="fas fa-dollar-sign"></i>
+        </div>
+        <div class="card-info">
+          <h3>Total General</h3>
+          <p class="monto-grande">{{ formatearMoneda(resumen.importe_total) }}</p>
+          <p class="periodo-info">
+            {{ formatearFechaLegible(resumen.periodo_inicio) }} -
+            {{ formatearFechaLegible(resumen.periodo_fin) }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de Áridos -->
+    <div class="tabla-section">
+      <h2>
+        <i class="fas fa-cubes"></i>
+        Áridos Entregados
+      </h2>
+
+      <div *ngIf="resumen.aridos.length === 0" class="no-datos">
+        No hay registros de áridos en este período.
+      </div>
+
+      <table *ngIf="resumen.aridos.length > 0" class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Tipo de Árido</th>
+            <th>Cantidad (m³)</th>
+            <th>Precio Unitario</th>
+            <th>Importe</th>
+            <th *ngIf="esAdministrador">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let arido of resumen.aridos" [class.editando]="editandoArido === arido.tipo_arido">
+            <td>
+              <span *ngIf="editandoArido !== arido.tipo_arido">{{ arido.tipo_arido }}</span>
+              <input
+                *ngIf="editandoArido === arido.tipo_arido"
+                type="text"
+                [(ngModel)]="arido.tipo_arido"
+                class="form-control-inline">
+            </td>
+            <td>
+              <span *ngIf="editandoArido !== arido.tipo_arido">{{ arido.cantidad | number:'1.2-2' }}</span>
+              <input
+                *ngIf="editandoArido === arido.tipo_arido"
+                type="number"
+                [(ngModel)]="arido.cantidad"
+                class="form-control-inline">
+            </td>
+            <td>{{ formatearMoneda(arido.precio_unitario) }}</td>
+            <td class="subtotal">{{ formatearMoneda(arido.importe) }}</td>
+            <td *ngIf="esAdministrador">
+              <div class="acciones-cell">
+                <button
+                  *ngIf="editandoArido !== arido.tipo_arido"
+                  class="btn-icon btn-edit"
+                  (click)="iniciarEdicionArido(arido)"
+                  title="Editar">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button
+                  *ngIf="editandoArido === arido.tipo_arido"
+                  class="btn-icon btn-save"
+                  (click)="guardarEdicionArido(arido)"
+                  title="Guardar">
+                  <i class="fas fa-check"></i>
+                </button>
+                <button
+                  *ngIf="editandoArido === arido.tipo_arido"
+                  class="btn-icon btn-cancel"
+                  (click)="cancelarEdicionArido()"
+                  title="Cancelar">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td><strong>TOTAL ÁRIDOS</strong></td>
+            <td><strong>{{ resumen.total_aridos_m3 | number:'1.2-2' }} m³</strong></td>
+            <td></td>
+            <td class="subtotal"><strong>{{ formatearMoneda(resumen.total_importe_aridos) }}</strong></td>
+            <td *ngIf="esAdministrador"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Tabla de Horas de Máquinas -->
+    <div class="tabla-section">
+      <h2>
+        <i class="fas fa-truck"></i>
+        Horas de Máquinas
+      </h2>
+
+      <div *ngIf="resumen.horas_maquinas.length === 0" class="no-datos">
+        No hay registros de horas de máquinas en este período.
+      </div>
+
+      <table *ngIf="resumen.horas_maquinas.length > 0" class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Máquina</th>
+            <th>Total Horas</th>
+            <th>Tarifa/Hora</th>
+            <th>Importe</th>
+            <th *ngIf="esAdministrador">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let hora of resumen.horas_maquinas" [class.editando]="editandoHora === hora.maquina_id">
+            <td>{{ hora.maquina_nombre }}</td>
+            <td>
+              <span *ngIf="editandoHora !== hora.maquina_id">{{ hora.total_horas | number:'1.2-2' }}</span>
+              <input
+                *ngIf="editandoHora === hora.maquina_id"
+                type="number"
+                [(ngModel)]="hora.total_horas"
+                class="form-control-inline">
+            </td>
+            <td>{{ formatearMoneda(hora.tarifa_hora) }}</td>
+            <td class="subtotal">{{ formatearMoneda(hora.importe) }}</td>
+            <td *ngIf="esAdministrador">
+              <div class="acciones-cell">
+                <button
+                  *ngIf="editandoHora !== hora.maquina_id"
+                  class="btn-icon btn-edit"
+                  (click)="iniciarEdicionHora(hora)"
+                  title="Editar">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button
+                  *ngIf="editandoHora === hora.maquina_id"
+                  class="btn-icon btn-save"
+                  (click)="guardarEdicionHora(hora)"
+                  title="Guardar">
+                  <i class="fas fa-check"></i>
+                </button>
+                <button
+                  *ngIf="editandoHora === hora.maquina_id"
+                  class="btn-icon btn-cancel"
+                  (click)="cancelarEdicionHora()"
+                  title="Cancelar">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td><strong>TOTAL HORAS</strong></td>
+            <td><strong>{{ resumen.total_horas | number:'1.2-2' }} hs</strong></td>
+            <td></td>
+            <td class="subtotal"><strong>{{ formatearMoneda(resumen.total_importe_horas) }}</strong></td>
+            <td *ngIf="esAdministrador"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sección de Reportes Generados -->
+  <div class="reportes-section" *ngIf="!cargandoReportes">
+    <h2>
+      <i class="fas fa-file-alt"></i>
+      Reportes Generados
+    </h2>
+
+    <div *ngIf="reportes.length === 0" class="no-datos">
+      No hay reportes generados para este proyecto.
+    </div>
+
+    <div *ngIf="reportes.length > 0" class="reportes-grid">
+      <div *ngFor="let reporte of reportes" class="reporte-card">
+        <div class="reporte-header">
+          <h3>Reporte #{{ reporte.id }}</h3>
+          <span
+            class="badge"
+            [ngClass]="getEstadoBadgeClass(reporte.estado)">
+            {{ getEstadoTexto(reporte.estado) }}
+          </span>
+        </div>
+
+        <div class="reporte-body">
+          <p>
+            <i class="fas fa-calendar"></i>
+            <strong>Período:</strong>
+            {{ formatearFechaLegible(reporte.periodo_inicio) }} -
+            {{ formatearFechaLegible(reporte.periodo_fin) }}
+          </p>
+          <p>
+            <i class="fas fa-dollar-sign"></i>
+            <strong>Importe Total:</strong>
+            {{ formatearMoneda(reporte.importe_total) }}
+          </p>
+          <p>
+            <i class="fas fa-clock"></i>
+            <strong>Generado:</strong>
+            {{ formatearFechaLegible(reporte.fecha_generacion) }}
+          </p>
+          <p *ngIf="reporte.observaciones" class="observaciones">
+            <i class="fas fa-comment"></i>
+            {{ reporte.observaciones }}
+          </p>
+        </div>
+
+        <div class="reporte-footer">
+          <button
+            class="btn btn-sm btn-outline"
+            (click)="abrirModalExportar(reporte.id)">
+            <i class="fas fa-download"></i>
+            Exportar
+          </button>
+
+          <div class="estado-buttons" *ngIf="esAdministrador">
+            <button
+              *ngIf="reporte.estado !== EstadoPago.PAGADO"
+              class="btn btn-sm btn-success"
+              (click)="cambiarEstadoReporte(reporte, EstadoPago.PAGADO)">
+              Marcar Pagado
+            </button>
+            <button
+              *ngIf="reporte.estado !== EstadoPago.PENDIENTE"
+              class="btn btn-sm btn-warning"
+              (click)="cambiarEstadoReporte(reporte, EstadoPago.PENDIENTE)">
+              Marcar Pendiente
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Generar Reporte -->
+<div class="modal-overlay" *ngIf="mostrarModalGenerarReporte" (click)="cerrarModalGenerarReporte()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Generar Nuevo Reporte</h2>
+      <button class="btn-close" (click)="cerrarModalGenerarReporte()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="reporteForm" (ngSubmit)="generarReporte()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="periodo_inicio">Fecha Inicio:</label>
+          <input
+            type="date"
+            id="periodo_inicio"
+            formControlName="periodo_inicio"
+            class="form-control"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label for="periodo_fin">Fecha Fin:</label>
+          <input
+            type="date"
+            id="periodo_fin"
+            formControlName="periodo_fin"
+            class="form-control"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label for="observaciones">Observaciones (opcional):</label>
+          <textarea
+            id="observaciones"
+            formControlName="observaciones"
+            class="form-control"
+            rows="3"
+            placeholder="Agregue notas o comentarios sobre este reporte..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalGenerarReporte()">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="reporteForm.invalid">
+          <i class="fas fa-check"></i>
+          Generar Reporte
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Exportar -->
+<div class="modal-overlay" *ngIf="mostrarModalExportar" (click)="cerrarModalExportar()">
+  <div class="modal-content modal-small" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Exportar Reporte</h2>
+      <button class="btn-close" (click)="cerrarModalExportar()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <p>Seleccione el formato de exportación:</p>
+      <div class="export-buttons">
+        <button
+          class="btn btn-danger btn-lg"
+          (click)="exportarPDF(reporteSeleccionadoExportar!)">
+          <i class="fas fa-file-pdf"></i>
+          Exportar PDF
+        </button>
+        <button
+          class="btn btn-success btn-lg"
+          (click)="exportarExcel(reporteSeleccionadoExportar!)">
+          <i class="fas fa-file-excel"></i>
+          Exportar Excel
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="cerrarModalExportar()">
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>

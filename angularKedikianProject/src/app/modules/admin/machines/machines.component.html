@@ -1,0 +1,324 @@
+<div class="maquinaria-container">
+  <div class="header">
+    <h2>Administración de Maquinaria</h2>
+    <button class="btn-add" (click)="abrirModalAgregar()">
+      <i class="fas fa-plus"></i> Agregar Máquina
+    </button>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" placeholder="Buscar máquina..." [(ngModel)]="terminoBusqueda" (input)="filtrarMaquinas()">
+  </div>
+
+  <div class="table-container" *ngIf="maquinasFiltradas.length > 0; else noData">
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Horas de Uso</th>
+          <th>Próximo Mant.</th>
+          <th>Horas Restantes</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+  <tr *ngFor="let maquina of maquinasFiltradas">
+    <td>{{maquina.nombre}}</td>
+
+    <!-- 🆕 Horómetro inicial desde el último reporte -->
+    <td>
+      <span [ngClass]="getColorHorasTrabajadas(maquina)" 
+            [title]="'Horómetro inicial del último reporte registrado'">
+        <strong>{{getHorometroInicial(maquina)}} hs</strong>
+      </span>
+    </td>
+
+    <td>
+      <button class="btn-editar-horas-mant" 
+              (click)="abrirModalEditarHorasMantenimiento(maquina)" 
+              title="Editar intervalo de mantenimiento">
+        {{getProximoMantenimiento(maquina)}} hs
+        <i class="fas fa-edit"></i>
+      </button>
+    </td>
+
+    <td>
+      <span [ngClass]="getColorHorasRestantes(maquina)" [title]="getEstadoMantenimiento(maquina)">
+        <strong>{{getHorasRestantes(maquina)}} hs</strong>
+      </span>
+    </td>
+
+    <td class="acciones">
+      <button class="btn-mant btn-mant-registrar" title="Registrar mantenimiento" (click)="abrirModalRegistrarMantenimiento(maquina)">
+        <i class="fas fa-wrench"></i>
+      </button>
+      <button class="btn-mant btn-mant-historial" title="Ver historial mantenimiento" (click)="abrirModalHistorial(maquina)">
+        <i class="fas fa-history"></i>
+      </button>
+      <button class="btn-notas" title="Notas" (click)="abrirModalNotas(maquina)">
+        <i class="fas fa-sticky-note"></i>
+      </button>
+      <button class="btn-editar" (click)="abrirModalEditar(maquina)">
+        <i class="fas fa-edit"></i>
+      </button>
+      <button class="btn-eliminar" (click)="eliminarMaquina(maquina.id)">
+        <i class="fas fa-trash"></i>
+      </button>
+    </td>
+  </tr>
+</tbody>
+    </table>
+  </div>
+
+  <ng-template #noData>
+    <div class="no-data">
+      <p>No hay máquinas disponibles</p>
+    </div>
+  </ng-template>
+</div>
+
+<!-- Modales (agregar/editar, horas, mantenimiento, historial, notas, confirmación) -->
+
+<!-- ✅ CAMBIO: Modal simplificado - solo pide nombre -->
+<div class="modal" *ngIf="modalVisible">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>{{modoEdicion ? 'Editar Máquina' : 'Agregar Máquina'}}</h3>
+      <button class="btn-cerrar" (click)="cerrarModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form [formGroup]="maquinaForm" (ngSubmit)="guardarMaquina()">
+        <div class="form-group">
+          <label for="nombre">Nombre:</label>
+          <input type="text" id="nombre" formControlName="nombre" placeholder="Nombre de la máquina">
+          <div class="error-message" *ngIf="maquinaForm.get('nombre')?.invalid && maquinaForm.get('nombre')?.touched">
+            El nombre es obligatorio
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-cancelar" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn-guardar" [disabled]="maquinaForm.invalid">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para agregar horas -->
+<div class="modal" *ngIf="modalHorasVisible">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Agregar Horas - {{maquinaSeleccionada?.nombre}}</h3>
+      <button class="btn-cerrar" (click)="cerrarModalHoras()">×</button>
+    </div>
+    <div class="modal-body">
+      <form [formGroup]="horasForm" (ngSubmit)="confirmarAgregarHoras()">
+        <div class="form-group">
+          <label for="horas">Horas trabajadas:</label>
+          <input type="number" id="horas" formControlName="horas" min="0.1" step="0.1" placeholder="Ej: 8.5">
+          <div class="error-message" *ngIf="horasForm.get('horas')?.invalid && horasForm.get('horas')?.touched">
+            Ingrese un número válido de horas
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="fecha">Fecha:</label>
+          <input type="date" id="fecha" formControlName="fecha">
+          <div class="error-message" *ngIf="horasForm.get('fecha')?.invalid && horasForm.get('fecha')?.touched">
+            La fecha es obligatoria
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="descripcion">Descripción (opcional):</label>
+          <input type="text" id="descripcion" formControlName="descripcion" placeholder="Trabajo realizado...">
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-cancelar" (click)="cerrarModalHoras()">Cancelar</button>
+          <button type="submit" class="btn-guardar" [disabled]="horasForm.invalid">Agregar Horas</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal registrar mantenimiento -->
+<div class="modal" *ngIf="modalMantVisible">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Registrar Mantenimiento - {{maquinaSeleccionada?.nombre}}</h3>
+      <button class="btn-cerrar" (click)="cerrarModalMantenimiento()">×</button>
+    </div>
+    <div class="modal-body">
+      <form [formGroup]="mantenimientoForm" (ngSubmit)="confirmarRegistrarMantenimiento()">
+        <div class="form-group">
+          <label for="fecha">Fecha:</label>
+          <input type="date" id="fecha" formControlName="fecha">
+          <div class="error-message" *ngIf="mantenimientoForm.get('fecha')?.invalid && mantenimientoForm.get('fecha')?.touched">
+            La fecha es obligatoria
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="tipo">Tipo de mantenimiento:</label>
+          <select id="tipo" formControlName="tipo">
+            <option value="preventivo">Preventivo</option>
+            <option value="correctivo">Tiempo Cumplido</option>
+            <option value="predictivo">Urgencia</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="descripcion">Descripción:</label>
+          <textarea id="descripcion" formControlName="descripcion" rows="3" placeholder="Descripción del mantenimiento realizado..."></textarea>
+          <div class="error-message" *ngIf="mantenimientoForm.get('descripcion')?.invalid && mantenimientoForm.get('descripcion')?.touched">
+            La descripción es obligatoria (mínimo 3 caracteres)
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-cancelar" (click)="cerrarModalMantenimiento()">Cancelar</button>
+          <button type="submit" class="btn-guardar" [disabled]="mantenimientoForm.invalid">Registrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal historial mantenimiento -->
+<div class="modal" *ngIf="modalHistorialVisible">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3>Historial de Mantenimiento - {{maquinaSeleccionada?.nombre}}</h3>
+      <button class="btn-cerrar" (click)="cerrarModalHistorial()">×</button>
+    </div>
+    <div class="modal-body">
+      <table *ngIf="getHistorialMaquina(maquinaSeleccionada?.id || 0).length > 0; else noHistorial">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Horas Máquina</th>
+            <th>Tipo</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let mantenimiento of getHistorialMaquina(maquinaSeleccionada?.id || 0)">
+            <td>{{ formatearFecha(mantenimiento.fecha_mantenimiento) }}</td>
+            <td>{{ mantenimiento.horas_maquina }} hs</td>
+            <td>{{ mantenimiento.tipo_mantenimiento | titlecase }}</td>
+            <td>{{ mantenimiento.descripcion }}</td>
+            <td class="acciones">
+              <button class="btn-eliminar-mant" (click)="eliminarMantenimiento(mantenimiento.id)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #noHistorial>
+        <div class="no-data">
+          <p>No hay registros de mantenimiento</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>
+
+<!-- Modal editar horas mantenimiento -->
+<div class="modal" *ngIf="modalEditarHorasMantenimientoVisible">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Editar Próximo Mantenimiento - {{maquinaSeleccionada?.nombre}}</h3>
+      <button class="btn-cerrar" (click)="cerrarModalEditarHorasMantenimiento()">×</button>
+    </div>
+    <div class="modal-body">
+      <form [formGroup]="horasMantenimientoForm" (ngSubmit)="guardarHorasMantenimiento()">
+        <div class="form-group">
+          <label for="horas_proximo_mantenimiento">Horas del próximo mantenimiento:</label>
+          <input type="number" id="horas_proximo_mantenimiento" formControlName="horas_proximo_mantenimiento" min="0" placeholder="Ej: 2500">
+          <small class="form-text">A qué hora total de uso debe realizarse el próximo mantenimiento</small>
+          <div class="error-message" *ngIf="horasMantenimientoForm.get('horas_proximo_mantenimiento')?.invalid && horasMantenimientoForm.get('horas_proximo_mantenimiento')?.touched">
+            Ingrese un número válido de horas
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-cancelar" (click)="cerrarModalEditarHorasMantenimiento()">Cancelar</button>
+          <button type="submit" class="btn-guardar" [disabled]="horasMantenimientoForm.invalid">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal notas -->
+<div class="modal" *ngIf="modalNotasVisible">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3>Notas - {{maquinaSeleccionada?.nombre}}</h3>
+      <button class="btn-cerrar" (click)="cerrarModalNotas()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="agregar-nota-section">
+        <form [formGroup]="notaForm" (ngSubmit)="agregarNota()">
+          <div class="form-group">
+            <label for="texto-nota">Nueva nota:</label>
+            <textarea id="texto-nota" formControlName="texto" rows="3" placeholder="Escribe una nota sobre esta máquina..."></textarea>
+            <div class="error-message" *ngIf="notaForm.get('texto')?.invalid && notaForm.get('texto')?.touched">
+              La nota debe tener al menos 3 caracteres
+            </div>
+          </div>
+          <button type="submit" class="btn-agregar-nota" [disabled]="notaForm.invalid">
+            <i class="fas fa-plus"></i> Agregar Nota
+          </button>
+        </form>
+      </div>
+
+      <hr class="separador-notas">
+
+      <div class="notas-historial">
+        <h4>Historial de Notas</h4>
+        <div *ngIf="getNotasMaquina(maquinaSeleccionada?.id || 0).length > 0; else sinNotas" class="lista-notas">
+          <div *ngFor="let nota of getNotasMaquina(maquinaSeleccionada?.id || 0)" class="nota-item">
+            <div class="nota-header">
+              <span class="nota-fecha">{{ formatearFecha(nota.fecha) }}</span>
+              <span class="nota-usuario">{{ nota.usuario }}</span>
+              <button class="btn-eliminar-nota" (click)="eliminarNota(nota.id)" title="Eliminar nota">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+            <div class="nota-texto">{{ nota.texto }}</div>
+          </div>
+        </div>
+        <ng-template #sinNotas>
+          <div class="no-data">
+            <p>No hay notas registradas para esta máquina</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmación eliminación -->
+<div class="modal" *ngIf="modalConfirmacionVisible">
+  <div class="modal-content modal-confirmacion">
+    <div class="modal-header">
+      <h3>Confirmar eliminación</h3>
+      <button class="btn-cerrar" (click)="cancelarEliminarMaquina()">×</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Está seguro que desea eliminar esta máquina?</p>
+      <p>Esta acción no se puede deshacer.</p>
+
+      <div class="form-actions">
+        <button type="button" class="btn-cancelar" (click)="cancelarEliminarMaquina()">Cancelar</button>
+        <button type="button" class="btn-eliminar-confirmar" (click)="confirmarEliminarMaquina()">Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>

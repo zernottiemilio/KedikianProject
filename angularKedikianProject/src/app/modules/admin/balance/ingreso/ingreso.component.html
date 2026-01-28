@@ -1,0 +1,115 @@
+<div class="ingreso-container">
+  <div class="actions">
+    <div class="search-container">
+      <input type="text" class="search-input" placeholder="Buscar ingresos..." [(ngModel)]="filtroTexto">
+      <span class="material-icons"></span>
+    </div>
+    <button class="add-btn" (click)="toggleFormulario()">
+      <span class="material-icons">{{ mostrarFormulario ? 'close' : '' }}</span>
+      {{ mostrarFormulario ? 'Cancelar' : 'Nuevo Ingreso' }}
+    </button>
+  </div>
+
+  <div class="form-container" *ngIf="mostrarFormulario">
+    <form [formGroup]="pagoForm" (ngSubmit)="guardarPago()">
+      <h3>{{ modoEdicion ? 'Editar Ingreso' : 'Nuevo Ingreso' }}</h3>
+
+      <div class="form-group">
+        <label for="proyecto">Proyecto:</label>
+        <select id="proyecto" formControlName="proyecto_id">
+          <option value="">Seleccione un proyecto</option>
+          <option *ngFor="let proyecto of proyectos" [value]="proyecto.id">{{ proyecto.nombre }}</option>
+        </select>
+        <div class="error-message" *ngIf="pagoForm.get('proyecto_id')?.touched && pagoForm.get('proyecto_id')?.invalid">
+          Proyecto es requerido
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="importe_total">Monto:</label>
+        <input type="number" id="importe_total" formControlName="importe_total" placeholder="0.00">
+        <div class="error-message" *ngIf="pagoForm.get('importe_total')?.touched && pagoForm.get('importe_total')?.invalid">
+          Monto es requerido y debe ser mayor que 0
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="fecha">Fecha:</label>
+        <input type="date" id="fecha" formControlName="fecha">
+        <div class="error-message" *ngIf="pagoForm.get('fecha')?.touched && pagoForm.get('fecha')?.invalid">
+          Fecha es requerida
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" formControlName="descripcion" rows="3"
+          placeholder="Descripción (opcional)"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" (click)="toggleFormulario()">Cancelar</button>
+        <button type="submit" class="save-btn" [disabled]="pagoForm.invalid">{{ modoEdicion ? 'Actualizar' : 'Guardar' }}</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table" *ngIf="pagosFiltrados.length > 0">
+      <thead>
+        <tr>
+          <th style="width: 50px;">
+            <input
+              type="checkbox"
+              class="checkbox-select"
+              title="Seleccionar todo visible"
+              [checked]="allPagosSelected"
+              (change)="toggleSelectAllPagos()">
+          </th>
+          <th>Proyecto</th>
+          <th>Monto</th>
+          <th>Fecha</th>
+          <th>Descripción</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let pago of pagosFiltrados" [class.selected-row]="isPagoSelected(pago.id)">
+          <td class="checkbox-cell">
+            <input
+              type="checkbox"
+              class="checkbox-select"
+              [checked]="isPagoSelected(pago.id)"
+              (change)="togglePagoSelection(pago.id)">
+          </td>
+          <td (click)="togglePagoSelection(pago.id)" class="clickable-cell">{{ getNombreProyecto(pago.proyecto_id) }}</td>
+          <td (click)="togglePagoSelection(pago.id)" class="clickable-cell monto">{{ pago.importe_total | currency }}</td>
+          <td (click)="togglePagoSelection(pago.id)" class="clickable-cell">{{ pago.fecha | date:'dd/MM/yyyy' }}</td>
+          <td (click)="togglePagoSelection(pago.id)" class="clickable-cell">{{ pago.descripcion }}</td>
+          <td class="actions-cell">
+            <button class="btn btn-sm btn-info" (click)="editarPago(pago)" title="Editar">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="eliminarPago(pago.id)" title="Eliminar">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="no-data" *ngIf="pagosFiltrados.length === 0">
+      <span class="material-icons">info</span>
+      <p>No hay ingresos registrados en este período</p>
+    </div>
+
+    <!-- Totalizador -->
+    <app-summary-selector
+      [items]="pagosFiltrados"
+      [selectedItems]="selectedPagosIds"
+      [config]="summaryConfig"
+      [idKey]="'id'"
+      (selectionChanged)="onSelectionChanged($event)"
+      (clearSelection)="onClearSelection()">
+    </app-summary-selector>
+  </div>
+</div>
