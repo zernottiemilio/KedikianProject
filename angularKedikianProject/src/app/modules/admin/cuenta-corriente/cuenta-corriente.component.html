@@ -48,6 +48,18 @@
         </button>
         <button
           class="btn"
+          [class.btn-active]="periodoActual === 'mes'"
+          (click)="cambiarPeriodo('mes')">
+          Mes Actual
+        </button>
+        <button
+          class="btn"
+          [class.btn-active]="periodoActual === 'anual'"
+          (click)="cambiarPeriodo('anual')">
+          Año Actual
+        </button>
+        <button
+          class="btn"
           [class.btn-active]="periodoActual === 'personalizado'"
           (click)="cambiarPeriodo('personalizado')">
           Personalizado
@@ -61,6 +73,7 @@
         type="date"
         id="fechaInicio"
         [(ngModel)]="fechaInicio"
+        (ngModelChange)="onFechaChange()"
         class="form-control">
     </div>
 
@@ -70,17 +83,8 @@
         type="date"
         id="fechaFin"
         [(ngModel)]="fechaFin"
+        (ngModelChange)="onFechaChange()"
         class="form-control">
-    </div>
-
-    <div class="control-grupo" *ngIf="periodoActual === 'personalizado'">
-      <button
-        class="btn btn-info"
-        (click)="aplicarFechasPersonalizadas()"
-        [disabled]="!fechaInicio || !fechaFin">
-        <i class="fas fa-search"></i>
-        Aplicar
-      </button>
     </div>
   </div>
 
@@ -156,22 +160,22 @@
         <tbody>
           <tr *ngFor="let arido of resumen.aridos" [class.editando]="editandoArido === arido.tipo_arido">
             <td>
-              <span *ngIf="editandoArido !== arido.tipo_arido">{{ arido.tipo_arido }}</span>
-              <input
-                *ngIf="editandoArido === arido.tipo_arido"
-                type="text"
-                [(ngModel)]="arido.tipo_arido"
-                class="form-control-inline">
+              <span>{{ arido.tipo_arido }}</span>
             </td>
             <td>
-              <span *ngIf="editandoArido !== arido.tipo_arido">{{ arido.cantidad | number:'1.2-2' }}</span>
+              <span>{{ arido.cantidad | number:'1.2-2' }}</span>
+            </td>
+            <td>
+              <span *ngIf="editandoArido !== arido.tipo_arido">{{ formatearMoneda(arido.precio_unitario) }}</span>
               <input
                 *ngIf="editandoArido === arido.tipo_arido"
                 type="number"
-                [(ngModel)]="arido.cantidad"
-                class="form-control-inline">
+                [(ngModel)]="arido.precio_unitario"
+                (ngModelChange)="recalcularImporteArido(arido)"
+                class="form-control-inline"
+                step="0.01"
+                min="0">
             </td>
-            <td>{{ formatearMoneda(arido.precio_unitario) }}</td>
             <td class="subtotal">{{ formatearMoneda(arido.importe) }}</td>
             <td *ngIf="esAdministrador">
               <div class="acciones-cell">
@@ -237,14 +241,19 @@
           <tr *ngFor="let hora of resumen.horas_maquinas" [class.editando]="editandoHora === hora.maquina_id">
             <td>{{ hora.maquina_nombre }}</td>
             <td>
-              <span *ngIf="editandoHora !== hora.maquina_id">{{ hora.total_horas | number:'1.2-2' }}</span>
+              <span>{{ hora.total_horas | number:'1.2-2' }}</span>
+            </td>
+            <td>
+              <span *ngIf="editandoHora !== hora.maquina_id">{{ formatearMoneda(hora.tarifa_hora) }}</span>
               <input
                 *ngIf="editandoHora === hora.maquina_id"
                 type="number"
-                [(ngModel)]="hora.total_horas"
-                class="form-control-inline">
+                [(ngModel)]="hora.tarifa_hora"
+                (ngModelChange)="recalcularImporteMaquina(hora)"
+                class="form-control-inline"
+                step="0.01"
+                min="0">
             </td>
-            <td>{{ formatearMoneda(hora.tarifa_hora) }}</td>
             <td class="subtotal">{{ formatearMoneda(hora.importe) }}</td>
             <td *ngIf="esAdministrador">
               <div class="acciones-cell">
@@ -297,61 +306,228 @@
       No hay reportes generados para este proyecto.
     </div>
 
-    <div *ngIf="reportes.length > 0" class="reportes-grid">
-      <div *ngFor="let reporte of reportes" class="reporte-card">
-        <div class="reporte-header">
-          <h3>Reporte #{{ reporte.id }}</h3>
-          <span
-            class="badge"
-            [ngClass]="getEstadoBadgeClass(reporte.estado)">
-            {{ getEstadoTexto(reporte.estado) }}
-          </span>
+    <div *ngIf="reportes.length > 0" class="reportes-lista">
+      <div *ngFor="let reporte of reportes" class="reporte-item" [class.expandido]="isReporteExpandido(reporte.id)">
+        <div class="reporte-resumen" (click)="toggleReporte(reporte.id)">
+          <div class="reporte-info-principal">
+            <div class="reporte-titulo">
+              <h3>Reporte #{{ reporte.id }}</h3>
+              <span class="badge" [ngClass]="getEstadoBadgeClass(reporte.estado)">
+                {{ getEstadoTexto(reporte.estado) }}
+              </span>
+            </div>
+            <div class="reporte-datos-breves">
+              <span class="dato-breve">
+                <i class="fas fa-calendar"></i>
+                {{ formatearFechaLegible(reporte.periodo_inicio) }} - {{ formatearFechaLegible(reporte.periodo_fin) }}
+              </span>
+              <span class="dato-breve importe">
+                <i class="fas fa-dollar-sign"></i>
+                {{ formatearMoneda(reporte.importe_total) }}
+              </span>
+            </div>
+          </div>
+          <div class="toggle-icon">
+            <i class="fas" [ngClass]="isReporteExpandido(reporte.id) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+          </div>
         </div>
 
-        <div class="reporte-body">
-          <p>
-            <i class="fas fa-calendar"></i>
-            <strong>Período:</strong>
-            {{ formatearFechaLegible(reporte.periodo_inicio) }} -
-            {{ formatearFechaLegible(reporte.periodo_fin) }}
-          </p>
-          <p>
-            <i class="fas fa-dollar-sign"></i>
-            <strong>Importe Total:</strong>
-            {{ formatearMoneda(reporte.importe_total) }}
-          </p>
-          <p>
-            <i class="fas fa-clock"></i>
-            <strong>Generado:</strong>
-            {{ formatearFechaLegible(reporte.fecha_generacion) }}
-          </p>
-          <p *ngIf="reporte.observaciones" class="observaciones">
-            <i class="fas fa-comment"></i>
-            {{ reporte.observaciones }}
-          </p>
-        </div>
+        <div class="reporte-detalle" *ngIf="isReporteExpandido(reporte.id)">
+          <div class="detalle-info-general">
+            <div class="info-item">
+              <i class="fas fa-clock"></i>
+              <strong>Generado:</strong>
+              <span>{{ formatearFechaLegible(reporte.fecha_generacion) }}</span>
+            </div>
+            <div class="info-item" *ngIf="reporte.observaciones">
+              <i class="fas fa-comment"></i>
+              <strong>Observaciones:</strong>
+              <span class="observaciones-texto">{{ reporte.observaciones }}</span>
+            </div>
+          </div>
 
-        <div class="reporte-footer">
-          <button
-            class="btn btn-sm btn-outline"
-            (click)="abrirModalExportar(reporte.id)">
-            <i class="fas fa-download"></i>
-            Exportar
-          </button>
+          <!-- Desglose de Áridos -->
+          <div class="items-section">
+            <h4>
+              <i class="fas fa-cubes"></i>
+              Desglose de Áridos
+              <span class="badge-count" *ngIf="getReporteConDetalle(reporte.id)?.items_aridos">
+                ({{ getReporteConDetalle(reporte.id)!.items_aridos!.length }} entregas)
+              </span>
+            </h4>
 
-          <div class="estado-buttons" *ngIf="esAdministrador">
-            <button
-              *ngIf="reporte.estado !== EstadoPago.PAGADO"
-              class="btn btn-sm btn-success"
-              (click)="cambiarEstadoReporte(reporte, EstadoPago.PAGADO)">
-              Marcar Pagado
-            </button>
-            <button
-              *ngIf="reporte.estado !== EstadoPago.PENDIENTE"
-              class="btn btn-sm btn-warning"
-              (click)="cambiarEstadoReporte(reporte, EstadoPago.PENDIENTE)">
-              Marcar Pendiente
-            </button>
+            <div *ngIf="!getReporteConDetalle(reporte.id)?.items_aridos || getReporteConDetalle(reporte.id)!.items_aridos!.length === 0" class="no-items">
+              <i class="fas fa-info-circle"></i>
+              No hay entregas de áridos registradas en este período.
+            </div>
+
+            <table class="tabla-items" *ngIf="getReporteConDetalle(reporte.id)?.items_aridos && getReporteConDetalle(reporte.id)!.items_aridos!.length > 0">
+              <thead>
+                <tr>
+                  <th *ngIf="esAdministrador" style="width: 50px;">Pagado</th>
+                  <th>Tipo de Árido</th>
+                  <th>Fecha</th>
+                  <th>Cantidad</th>
+                  <th>Precio Unitario</th>
+                  <th>Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of getReporteConDetalle(reporte.id)!.items_aridos" [class.fila-pagada]="item.pagado">
+                  <td *ngIf="esAdministrador" class="td-checkbox">
+                    <label class="checkbox-container">
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="item.pagado"
+                        (change)="toggleItemAridoPagado(reporte.id, item.tipo_arido); $event.stopPropagation()">
+                      <span class="checkmark"></span>
+                    </label>
+                  </td>
+                  <td>
+                    <strong>{{ item.tipo_arido }}</strong>
+                  </td>
+                  <td>
+                    <span class="fecha-item">{{ item.fecha ? (item.fecha | date:'dd/MM/yyyy') : '-' }}</span>
+                  </td>
+                  <td>
+                    {{ item.cantidad | number:'1.2-2' }} m³
+                  </td>
+                  <td>
+                    {{ formatearMoneda(item.precio_unitario) }}/m³
+                  </td>
+                  <td class="td-importe">
+                    <strong>{{ formatearMoneda(item.importe) }}</strong>
+                    <i class="fas fa-check-circle icon-pagado" *ngIf="item.pagado"></i>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="total-row">
+                  <td *ngIf="esAdministrador"></td>
+                  <td colspan="4"><strong>SUBTOTAL ÁRIDOS:</strong></td>
+                  <td class="td-importe"><strong>{{ formatearMoneda(reporte.importe_aridos) }}</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Desglose de Horas de Máquinas -->
+          <div class="items-section">
+            <h4>
+              <i class="fas fa-truck"></i>
+              Desglose de Horas de Máquinas
+              <span class="badge-count" *ngIf="getReporteConDetalle(reporte.id)?.items_horas">
+                ({{ getReporteConDetalle(reporte.id)!.items_horas!.length }} reportes)
+              </span>
+            </h4>
+
+            <div *ngIf="!getReporteConDetalle(reporte.id)?.items_horas || getReporteConDetalle(reporte.id)!.items_horas!.length === 0" class="no-items">
+              <i class="fas fa-info-circle"></i>
+              No hay reportes de horas de máquinas en este período.
+            </div>
+
+            <table class="tabla-items" *ngIf="getReporteConDetalle(reporte.id)?.items_horas && getReporteConDetalle(reporte.id)!.items_horas!.length > 0">
+              <thead>
+                <tr>
+                  <th *ngIf="esAdministrador" style="width: 50px;">Pagado</th>
+                  <th>Máquina</th>
+                  <th>Fecha</th>
+                  <th>Horas</th>
+                  <th>Tarifa/Hora</th>
+                  <th>Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of getReporteConDetalle(reporte.id)!.items_horas" [class.fila-pagada]="item.pagado">
+                  <td *ngIf="esAdministrador" class="td-checkbox">
+                    <label class="checkbox-container">
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="item.pagado"
+                        (change)="toggleItemHoraPagado(reporte.id, item.maquina_id); $event.stopPropagation()">
+                      <span class="checkmark"></span>
+                    </label>
+                  </td>
+                  <td>
+                    <strong>{{ item.maquina_nombre }}</strong>
+                    <span class="operador-info" *ngIf="item.usuario_nombre">
+                      <i class="fas fa-user"></i> {{ item.usuario_nombre }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="fecha-item">{{ item.fecha ? (item.fecha | date:'dd/MM/yyyy') : '-' }}</span>
+                  </td>
+                  <td>
+                    {{ item.total_horas | number:'1.2-2' }} hs
+                  </td>
+                  <td>
+                    {{ formatearMoneda(item.tarifa_hora) }}/h
+                  </td>
+                  <td class="td-importe">
+                    <strong>{{ formatearMoneda(item.importe) }}</strong>
+                    <i class="fas fa-check-circle icon-pagado" *ngIf="item.pagado"></i>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="total-row">
+                  <td *ngIf="esAdministrador"></td>
+                  <td colspan="4"><strong>SUBTOTAL HORAS:</strong></td>
+                  <td class="td-importe"><strong>{{ formatearMoneda(reporte.importe_horas) }}</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Resumen de totales -->
+          <div class="detalle-totales">
+            <div class="total-linea">
+              <span>Total Áridos:</span>
+              <strong>{{ formatearMoneda(reporte.importe_aridos) }}</strong>
+            </div>
+            <div class="total-linea">
+              <span>Total Horas:</span>
+              <strong>{{ formatearMoneda(reporte.importe_horas) }}</strong>
+            </div>
+            <div class="total-linea total-general">
+              <span>Total General:</span>
+              <strong>{{ formatearMoneda(reporte.importe_total) }}</strong>
+            </div>
+          </div>
+
+          <div class="detalle-acciones">
+            <div class="acciones-izquierda">
+              <button
+                class="btn btn-sm btn-outline"
+                (click)="abrirModalExportar(reporte.id); $event.stopPropagation()">
+                <i class="fas fa-download"></i>
+                Exportar
+              </button>
+            </div>
+
+            <div class="estado-buttons" *ngIf="esAdministrador">
+              <button
+                class="btn btn-sm btn-success"
+                (click)="marcarTodosItemsPagados(reporte.id); $event.stopPropagation()"
+                title="Marcar todos como pagados">
+                <i class="fas fa-check-double"></i>
+                Marcar Todo Pagado
+              </button>
+              <button
+                class="btn btn-sm btn-warning"
+                (click)="marcarTodosItemsPendientes(reporte.id); $event.stopPropagation()"
+                title="Marcar todos como pendientes">
+                <i class="fas fa-undo"></i>
+                Marcar Todo Pendiente
+              </button>
+              <button
+                class="btn btn-sm btn-danger"
+                (click)="eliminarReporte(reporte.id); $event.stopPropagation()"
+                title="Eliminar reporte">
+                <i class="fas fa-trash"></i>
+                Eliminar
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -446,6 +622,82 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" (click)="cerrarModalExportar()">
         Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Confirmación de Cambios -->
+<div class="modal-overlay" *ngIf="mostrarModalConfirmacion" (click)="cancelarActualizacion()">
+  <div class="modal-content modal-confirmacion" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <i class="fas fa-exclamation-triangle"></i>
+        Confirmar Actualización
+      </h2>
+      <button class="btn-close" (click)="cancelarActualizacion()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="confirmacionData">
+      <div class="confirmacion-alerta">
+        <i class="fas fa-info-circle"></i>
+        <p>
+          Está a punto de actualizar el <strong>{{ confirmacionData.tipo === 'árido' ? 'precio unitario' : 'tarifa por hora' }}</strong>
+          de <strong>{{ confirmacionData.descripcion }}</strong>.
+        </p>
+      </div>
+
+      <div class="confirmacion-detalle">
+        <div class="detalle-row">
+          <span class="label">{{ confirmacionData.tipo === 'árido' ? 'Precio anterior:' : 'Tarifa anterior:' }}</span>
+          <span class="valor">{{ formatearMoneda(confirmacionData.valorAnterior) }}</span>
+        </div>
+        <div class="detalle-row destacado">
+          <span class="label">{{ confirmacionData.tipo === 'árido' ? 'Precio nuevo:' : 'Tarifa nueva:' }}</span>
+          <span class="valor">{{ formatearMoneda(confirmacionData.valorNuevo) }}</span>
+        </div>
+        <div class="detalle-row">
+          <span class="label">Período:</span>
+          <span class="valor">
+            {{ formatearFechaLegible(confirmacionData.fechaInicio) }} -
+            {{ formatearFechaLegible(confirmacionData.fechaFin) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="confirmacion-impacto">
+        <h4>
+          <i class="fas fa-calculator"></i>
+          Impacto en el resumen
+        </h4>
+        <div class="impacto-info">
+          <div class="impacto-item">
+            <i class="fas fa-arrow-right"></i>
+            <span>Se actualizarán todos los registros de este {{ confirmacionData.tipo }} en el período seleccionado.</span>
+          </div>
+          <div class="impacto-item">
+            <i class="fas fa-redo"></i>
+            <span>Los totales se recalcularán automáticamente.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="confirmacion-pregunta">
+        <i class="fas fa-question-circle"></i>
+        <strong>¿Desea continuar con esta actualización?</strong>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="cancelarActualizacion()">
+        <i class="fas fa-times"></i>
+        Cancelar
+      </button>
+      <button class="btn btn-primary" (click)="confirmarActualizacion()">
+        <i class="fas fa-check"></i>
+        Confirmar Actualización
       </button>
     </div>
   </div>

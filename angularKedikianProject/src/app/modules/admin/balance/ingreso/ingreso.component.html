@@ -18,7 +18,7 @@
         <label for="proyecto">Proyecto:</label>
         <select id="proyecto" formControlName="proyecto_id">
           <option value="">Seleccione un proyecto</option>
-          <option *ngFor="let proyecto of proyectos" [value]="proyecto.id">{{ proyecto.nombre }}</option>
+          <option *ngFor="let proyecto of proyectosActivos" [value]="proyecto.id">{{ proyecto.nombre }}</option>
         </select>
         <div class="error-message" *ngIf="pagoForm.get('proyecto_id')?.touched && pagoForm.get('proyecto_id')?.invalid">
           Proyecto es requerido

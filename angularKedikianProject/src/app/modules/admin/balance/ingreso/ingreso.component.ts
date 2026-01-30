@@ -25,6 +25,7 @@ export class IngresoComponent implements OnInit {
   @Output() actualizarBalance = new EventEmitter<void>();
 
   proyectos: Project[] = [];
+  proyectosActivos: Project[] = []; // Solo para los selectores
   pagoForm: FormGroup;
   mostrarFormulario = false;
   modoEdicion = false;
@@ -62,10 +63,12 @@ export class IngresoComponent implements OnInit {
     this.projectService.getProjects().subscribe(
       (data: Project[]) => {
         console.log('📦 Proyectos recibidos del backend:', data);
-        // Filtrar solo proyectos activos
-        this.proyectos = data.filter(p => p.estado === true);
-        console.log('✅ Proyectos activos filtrados:', this.proyectos);
-        console.log(`Total de proyectos activos: ${this.proyectos.length}`);
+        // Mantener todos los proyectos para mostrar nombres de proyectos inactivos
+        this.proyectos = data;
+        // Filtrar solo proyectos activos para los selectores
+        this.proyectosActivos = data.filter(p => p.estado === true);
+        console.log('✅ Proyectos activos filtrados:', this.proyectosActivos);
+        console.log(`Total de proyectos activos: ${this.proyectosActivos.length}`);
       },
       (error) => {
         console.error('❌ Error al cargar proyectos:', error);

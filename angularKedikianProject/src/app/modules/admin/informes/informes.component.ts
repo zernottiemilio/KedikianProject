@@ -19,7 +19,9 @@ export class InformesComponent implements OnInit {
   reportes: ReporteLaboral[] = [];
   maquinas: any[] = [];
   proyectos: Project[] = [];
+  proyectosActivos: Project[] = []; // Solo para los selectores
   usuarios: any[] = [];
+  usuariosActivos: any[] = []; // Solo para los selectores
 
   filtroBusqueda: string = '';
   filtroMaquina: string = '';
@@ -75,9 +77,14 @@ export class InformesComponent implements OnInit {
     }).subscribe({
       next: ({ maquinas, proyectos, usuarios }) => {
         this.maquinas = maquinas;
-        // Filtrar solo proyectos activos
-        this.proyectos = proyectos.filter(p => p.estado === true);
+        // Mantener todos los proyectos para mostrar nombres de proyectos inactivos
+        this.proyectos = proyectos;
+        // Filtrar solo proyectos activos para los selectores
+        this.proyectosActivos = proyectos.filter(p => p.estado === true);
+        // Mantener todos los usuarios para mostrar nombres de usuarios inactivos
         this.usuarios = usuarios;
+        // Filtrar solo usuarios activos para los selectores (si tienen propiedad estado)
+        this.usuariosActivos = usuarios.filter(u => u.estado === true || u.estado === undefined);
         this.cargarReportes();
       },
       error: (error) => {

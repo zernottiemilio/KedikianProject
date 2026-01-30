@@ -38,6 +38,30 @@ export interface ResumenCuentaCorriente {
   importe_total: number;
 }
 
+// Item individual de reporte con estado de pago
+export interface ItemReporteArido {
+  id?: number; // ID del ingreso de árido original
+  tipo_arido: string;
+  cantidad: number;
+  precio_unitario: number;
+  importe: number;
+  pagado: boolean;
+  fecha?: string; // Fecha de la entrega
+  proyecto_nombre?: string; // Nombre del proyecto (opcional)
+}
+
+export interface ItemReporteHora {
+  id?: number; // ID del reporte laboral original
+  maquina_id: number;
+  maquina_nombre: string;
+  total_horas: number;
+  tarifa_hora: number;
+  importe: number;
+  pagado: boolean;
+  fecha?: string; // Fecha del reporte laboral
+  usuario_nombre?: string; // Operador que realizó el trabajo (opcional)
+}
+
 // Reporte de cuenta corriente
 export interface ReporteCuentaCorriente {
   id: number;
@@ -56,6 +80,9 @@ export interface ReporteCuentaCorriente {
   fecha_pago?: string;
   created?: string;
   updated?: string;
+  // Detalles de items (se obtienen al expandir)
+  items_aridos?: ItemReporteArido[];
+  items_horas?: ItemReporteHora[];
 }
 
 export enum EstadoPago {

@@ -68,6 +68,17 @@ export class CuentaCorrienteService {
     ).pipe(
       tap((response) => {
         console.log('Resumen de cuenta corriente obtenido:', response);
+        console.log('Áridos en resumen:', response.aridos);
+        if (response.aridos && response.aridos.length > 0) {
+          response.aridos.forEach((arido, index) => {
+            console.log(`Árido ${index}:`, {
+              tipo: arido.tipo_arido,
+              cantidad: arido.cantidad,
+              precio_unitario: arido.precio_unitario,
+              importe: arido.importe
+            });
+          });
+        }
       }),
       catchError(this.handleError<ResumenCuentaCorriente>('getResumenProyecto'))
     );
@@ -115,6 +126,44 @@ export class CuentaCorrienteService {
         console.log('Reporte obtenido:', response);
       }),
       catchError(this.handleError<ReporteCuentaCorriente>('getReporte'))
+    );
+  }
+
+  /**
+   * Obtiene el detalle completo de un reporte con items individuales
+   */
+  getReporteDetalle(reporteId: number): Observable<ReporteCuentaCorriente> {
+    return this.http.get<ReporteCuentaCorriente>(
+      `${this.apiUrl}/reportes/${reporteId}/detalle`,
+      {
+        headers: this.getAuthHeaders()
+      }
+    ).pipe(
+      tap((response) => {
+        console.log('Detalle de reporte obtenido:', response);
+      }),
+      catchError(this.handleError<ReporteCuentaCorriente>('getReporteDetalle'))
+    );
+  }
+
+  /**
+   * Actualiza el estado de pago de items individuales de un reporte
+   */
+  actualizarItemsPago(reporteId: number, items: {
+    aridos?: { tipo_arido: string, pagado: boolean }[],
+    horas?: { maquina_id: number, pagado: boolean }[]
+  }): Observable<ReporteCuentaCorriente> {
+    return this.http.put<ReporteCuentaCorriente>(
+      `${this.apiUrl}/reportes/${reporteId}/items-pago`,
+      items,
+      {
+        headers: this.getAuthHeaders()
+      }
+    ).pipe(
+      tap((response) => {
+        console.log('Items de pago actualizados:', response);
+      }),
+      catchError(this.handleError<ReporteCuentaCorriente>('actualizarItemsPago'))
     );
   }
 
@@ -255,6 +304,74 @@ export class CuentaCorrienteService {
         console.log('Precios de áridos obtenidos:', response);
       }),
       catchError(this.handleError<any[]>('getPreciosAridos', []))
+    );
+  }
+
+  /**
+   * Actualiza el precio unitario de áridos para un proyecto y período específico
+   */
+  actualizarPrecioArido(
+    proyectoId: number,
+    tipoArido: string,
+    nuevoPrecio: number,
+    periodoInicio: string,
+    periodoFin: string
+  ): Observable<any> {
+    const body = {
+      tipo_arido: tipoArido,
+      nuevo_precio: nuevoPrecio,
+      periodo_inicio: periodoInicio,
+      periodo_fin: periodoFin
+    };
+
+    return this.http.put<any>(
+      `${this.apiUrl}/proyectos/${proyectoId}/aridos/actualizar-precio`,
+      body,
+      {
+        headers: this.getAuthHeaders()
+      }
+    ).pipe(
+      tap((response) => {
+        console.log('Precio de árido actualizado:', response);
+      }),
+      catchError((error) => {
+        console.error('actualizarPrecioArido failed:', error);
+        throw error;
+      })
+    );
+  }
+
+  /**
+   * Actualiza la tarifa por hora de máquinas para un proyecto y período específico
+   */
+  actualizarTarifaMaquina(
+    proyectoId: number,
+    maquinaId: number,
+    nuevaTarifa: number,
+    periodoInicio: string,
+    periodoFin: string
+  ): Observable<any> {
+    const body = {
+      maquina_id: maquinaId,
+      nueva_tarifa: nuevaTarifa,
+      periodo_inicio: periodoInicio,
+      periodo_fin: periodoFin
+    };
+
+    return this.http.put<any>(
+      `${this.apiUrl}/proyectos/${proyectoId}/maquinas/actualizar-tarifa`,
+      body,
+      {
+        headers: this.getAuthHeaders()
+      }
+    ).pipe(
+      tap((response) => {
+        console.log('Tarifa de máquina actualizada:', response);
+      }),
+      catchError((error) => {
+        console.error('actualizarTarifaMaquina failed:', error);
+        throw error;
+      })
     );
   }
 
