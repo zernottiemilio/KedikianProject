@@ -32,6 +32,10 @@ export class CuentaCorrienteComponent implements OnInit {
   fechaInicio: string = '';
   fechaFin: string = '';
 
+  // Selección de items para reporte personalizado
+  aridosSeleccionados: Set<string> = new Set(); // Set de tipo_arido
+  horasSeleccionadas: Set<number> = new Set(); // Set de maquina_id
+
   // Estados de carga
   cargandoResumen = false;
   cargandoReportes = false;
@@ -201,6 +205,9 @@ export class CuentaCorrienteComponent implements OnInit {
       next: (resumen) => {
         this.resumen = resumen;
         this.cargandoResumen = false;
+        // Limpiar selecciones previas al cargar nuevo resumen
+        this.aridosSeleccionados.clear();
+        this.horasSeleccionadas.clear();
       },
       error: (error) => {
         console.error('Error al cargar resumen:', error);
@@ -566,17 +573,38 @@ export class CuentaCorrienteComponent implements OnInit {
       proyecto_id: this.proyectoSeleccionado,
       periodo_inicio: this.reporteForm.value.periodo_inicio,
       periodo_fin: this.reporteForm.value.periodo_fin,
-      observaciones: this.reporteForm.value.observaciones
+      observaciones: this.reporteForm.value.observaciones,
+      // Incluir solo los items seleccionados
+      aridos_seleccionados: Array.from(this.aridosSeleccionados),
+      maquinas_seleccionadas: Array.from(this.horasSeleccionadas)
     };
+
+    console.log('Generando reporte con selección:', {
+      aridos: request.aridos_seleccionados,
+      maquinas: request.maquinas_seleccionadas,
+      total_items: (request.aridos_seleccionados?.length || 0) + (request.maquinas_seleccionadas?.length || 0)
+    });
 
     this.cuentaCorrienteService.generarReporte(request).subscribe({
       next: (reporte) => {
-        console.log('Reporte generado:', reporte);
+        console.log('Reporte generado exitosamente:', reporte);
         this.cargarReportes();
         this.cerrarModalGenerarReporte();
+        // Limpiar selecciones después de generar el reporte
+        this.limpiarSelecciones();
+        alert('Reporte generado exitosamente con los items seleccionados.');
       },
       error: (error) => {
         console.error('Error al generar reporte:', error);
+        let mensajeError = 'Error al generar el reporte. ';
+        if (error.status === 400) {
+          mensajeError += 'Verifique que haya seleccionado al menos un item.';
+        } else if (error.status === 404) {
+          mensajeError += 'El endpoint no existe en el servidor.';
+        } else {
+          mensajeError += 'Por favor, intente nuevamente.';
+        }
+        alert(mensajeError);
       }
     });
   }
@@ -733,99 +761,133 @@ export class CuentaCorrienteComponent implements OnInit {
     return this.reportesConDetalle.get(reporteId) || this.reportes.find(r => r.id === reporteId);
   }
 
-  toggleItemAridoPagado(reporteId: number, tipoArido: string): void {
-    // El valor de item.pagado ya fue cambiado por [(ngModel)]
-    // Solo necesitamos guardar en el backend
-    this.guardarItemsPagoEnBackend(reporteId);
-  }
-
-  toggleItemHoraPagado(reporteId: number, maquinaId: number): void {
-    // El valor de item.pagado ya fue cambiado por [(ngModel)]
-    // Solo necesitamos guardar en el backend
-    this.guardarItemsPagoEnBackend(reporteId);
-  }
-
-  guardarItemsPagoEnBackend(reporteId: number): void {
-    const reporte = this.getReporteConDetalle(reporteId);
-    if (!reporte) return;
-
-    // Calcular el nuevo estado basado en items pagados
-    const aridosPagados = reporte.items_aridos?.filter(a => a.pagado).length || 0;
-    const aridosTotales = reporte.items_aridos?.length || 0;
-    const horasPagadas = reporte.items_horas?.filter(h => h.pagado).length || 0;
-    const horasTotales = reporte.items_horas?.length || 0;
-
-    const totalItems = aridosTotales + horasTotales;
-    const itemsPagados = aridosPagados + horasPagadas;
-
-    let nuevoEstado: EstadoPago;
-    if (itemsPagados === 0) {
-      nuevoEstado = EstadoPago.PENDIENTE;
-    } else if (itemsPagados === totalItems) {
-      nuevoEstado = EstadoPago.PAGADO;
-    } else {
-      nuevoEstado = EstadoPago.PARCIAL;
-    }
-
-    // Guardar estado previo para poder revertir en caso de error
-    const estadoPrevio = reporte.estado;
-
-    // Actualizar estado localmente
-    reporte.estado = nuevoEstado;
-
-    // SIEMPRE enviar al backend para persistir los checkboxes
-    const itemsActualizados = {
-      aridos: reporte.items_aridos?.map(a => ({ tipo_arido: a.tipo_arido, pagado: a.pagado })),
-      horas: reporte.items_horas?.map(h => ({ maquina_id: h.maquina_id, pagado: h.pagado }))
-    };
-
-    this.cuentaCorrienteService.actualizarItemsPago(reporteId, itemsActualizados).subscribe({
-      next: (reporteActualizado) => {
-        console.log('Items de pago guardados exitosamente en backend:', reporteActualizado);
-        // Actualizar el estado en la lista principal de reportes
-        const index = this.reportes.findIndex(r => r.id === reporteId);
-        if (index !== -1) {
-          this.reportes[index].estado = reporteActualizado.estado;
-        }
-      },
-      error: (error) => {
-        console.error('Error al guardar items de pago:', error);
-        // Revertir al estado previo
-        reporte.estado = estadoPrevio;
-        // Recargar el detalle del reporte desde el backend para revertir todos los cambios
-        this.cargarDetalleReporte(reporteId);
-        alert('Error al guardar el estado de pago. Los cambios no se guardaron. Por favor, intente nuevamente.');
-      }
-    });
-  }
-
-  actualizarEstadoReportePorItems(reporteId: number): void {
-    // Método legacy mantenido para compatibilidad
-    // Ahora delega todo a guardarItemsPagoEnBackend
-    this.guardarItemsPagoEnBackend(reporteId);
-  }
-
   marcarTodosItemsPagados(reporteId: number): void {
-    const reporte = this.getReporteConDetalle(reporteId);
-    if (!reporte) return;
+    if (!this.esAdministrador) return;
 
-    // Marcar todos los items como pagados
-    reporte.items_aridos?.forEach(a => a.pagado = true);
-    reporte.items_horas?.forEach(h => h.pagado = true);
-
-    // Guardar en backend
-    this.guardarItemsPagoEnBackend(reporteId);
+    this.cambiarEstadoReporte(
+      this.reportes.find(r => r.id === reporteId)!,
+      EstadoPago.PAGADO
+    );
   }
 
   marcarTodosItemsPendientes(reporteId: number): void {
-    const reporte = this.getReporteConDetalle(reporteId);
-    if (!reporte) return;
+    if (!this.esAdministrador) return;
 
-    // Marcar todos los items como pendientes
-    reporte.items_aridos?.forEach(a => a.pagado = false);
-    reporte.items_horas?.forEach(h => h.pagado = false);
+    this.cambiarEstadoReporte(
+      this.reportes.find(r => r.id === reporteId)!,
+      EstadoPago.PENDIENTE
+    );
+  }
 
-    // Guardar en backend
-    this.guardarItemsPagoEnBackend(reporteId);
+  // ------------------------
+  // Selección de items en resumen
+  // ------------------------
+
+  toggleAridoSeleccionado(tipoArido: string): void {
+    if (this.aridosSeleccionados.has(tipoArido)) {
+      this.aridosSeleccionados.delete(tipoArido);
+    } else {
+      this.aridosSeleccionados.add(tipoArido);
+    }
+    this.aridosSeleccionados = new Set(this.aridosSeleccionados); // Trigger change detection
+  }
+
+  toggleHoraSeleccionada(maquinaId: number): void {
+    if (this.horasSeleccionadas.has(maquinaId)) {
+      this.horasSeleccionadas.delete(maquinaId);
+    } else {
+      this.horasSeleccionadas.add(maquinaId);
+    }
+    this.horasSeleccionadas = new Set(this.horasSeleccionadas); // Trigger change detection
+  }
+
+  isAridoSeleccionado(tipoArido: string): boolean {
+    return this.aridosSeleccionados.has(tipoArido);
+  }
+
+  isHoraSeleccionada(maquinaId: number): boolean {
+    return this.horasSeleccionadas.has(maquinaId);
+  }
+
+  toggleSeleccionarTodosAridos(): void {
+    if (!this.resumen) return;
+
+    if (this.todosAridosSeleccionados()) {
+      // Deseleccionar todos
+      this.aridosSeleccionados.clear();
+    } else {
+      // Seleccionar todos
+      this.resumen.aridos.forEach(arido => {
+        this.aridosSeleccionados.add(arido.tipo_arido);
+      });
+    }
+    this.aridosSeleccionados = new Set(this.aridosSeleccionados);
+  }
+
+  toggleSeleccionarTodasHoras(): void {
+    if (!this.resumen) return;
+
+    if (this.todasHorasSeleccionadas()) {
+      // Deseleccionar todas
+      this.horasSeleccionadas.clear();
+    } else {
+      // Seleccionar todas
+      this.resumen.horas_maquinas.forEach(hora => {
+        this.horasSeleccionadas.add(hora.maquina_id);
+      });
+    }
+    this.horasSeleccionadas = new Set(this.horasSeleccionadas);
+  }
+
+  todosAridosSeleccionados(): boolean {
+    if (!this.resumen || this.resumen.aridos.length === 0) return false;
+    return this.resumen.aridos.every(arido => this.aridosSeleccionados.has(arido.tipo_arido));
+  }
+
+  todasHorasSeleccionadas(): boolean {
+    if (!this.resumen || this.resumen.horas_maquinas.length === 0) return false;
+    return this.resumen.horas_maquinas.every(hora => this.horasSeleccionadas.has(hora.maquina_id));
+  }
+
+  // Totales de selección
+  getTotalAridosSeleccionados(): number {
+    if (!this.resumen) return 0;
+    return this.resumen.aridos
+      .filter(arido => this.aridosSeleccionados.has(arido.tipo_arido))
+      .reduce((sum, arido) => sum + arido.cantidad, 0);
+  }
+
+  getTotalImporteAridosSeleccionados(): number {
+    if (!this.resumen) return 0;
+    return this.resumen.aridos
+      .filter(arido => this.aridosSeleccionados.has(arido.tipo_arido))
+      .reduce((sum, arido) => sum + arido.importe, 0);
+  }
+
+  getTotalHorasSeleccionadas(): number {
+    if (!this.resumen) return 0;
+    return this.resumen.horas_maquinas
+      .filter(hora => this.horasSeleccionadas.has(hora.maquina_id))
+      .reduce((sum, hora) => sum + hora.total_horas, 0);
+  }
+
+  getTotalImporteHorasSeleccionadas(): number {
+    if (!this.resumen) return 0;
+    return this.resumen.horas_maquinas
+      .filter(hora => this.horasSeleccionadas.has(hora.maquina_id))
+      .reduce((sum, hora) => sum + hora.importe, 0);
+  }
+
+  getTotalGeneralSeleccionado(): number {
+    return this.getTotalImporteAridosSeleccionados() + this.getTotalImporteHorasSeleccionadas();
+  }
+
+  haySeleccion(): boolean {
+    return this.aridosSeleccionados.size > 0 || this.horasSeleccionadas.size > 0;
+  }
+
+  limpiarSelecciones(): void {
+    this.aridosSeleccionados.clear();
+    this.horasSeleccionadas.clear();
   }
 }

@@ -6,11 +6,22 @@
     </h1>
     <div class="header-buttons" *ngIf="esAdministrador">
       <button
+        class="btn btn-warning"
+        *ngIf="haySeleccion()"
+        (click)="limpiarSelecciones()"
+        title="Limpiar selección">
+        <i class="fas fa-times-circle"></i>
+        Limpiar Selección
+      </button>
+      <button
         class="btn btn-primary"
         (click)="abrirModalGenerarReporte()"
-        [disabled]="!proyectoSeleccionado || !resumen">
+        [disabled]="!proyectoSeleccionado || !resumen || !haySeleccion()">
         <i class="fas fa-plus"></i>
-        Generar Reporte
+        Generar Reporte con Selección
+        <span *ngIf="haySeleccion()" class="badge-count-header">
+          {{ aridosSeleccionados.size + horasSeleccionadas.size }}
+        </span>
       </button>
     </div>
   </header>
@@ -136,6 +147,46 @@
       </div>
     </div>
 
+    <!-- Cards de Selección (solo si hay items seleccionados) -->
+    <div class="totales-cards totales-seleccion" *ngIf="haySeleccion()">
+      <div class="card-total card-seleccion card-aridos-seleccion">
+        <div class="card-icon">
+          <i class="fas fa-check-square"></i>
+        </div>
+        <div class="card-info">
+          <h3>Áridos Seleccionados</h3>
+          <p class="cantidad">{{ getTotalAridosSeleccionados() | number:'1.2-2' }} m³</p>
+          <p class="monto">{{ formatearMoneda(getTotalImporteAridosSeleccionados()) }}</p>
+          <p class="items-count">{{ aridosSeleccionados.size }} tipo(s)</p>
+        </div>
+      </div>
+
+      <div class="card-total card-seleccion card-horas-seleccion">
+        <div class="card-icon">
+          <i class="fas fa-check-square"></i>
+        </div>
+        <div class="card-info">
+          <h3>Horas Seleccionadas</h3>
+          <p class="cantidad">{{ getTotalHorasSeleccionadas() | number:'1.2-2' }} hs</p>
+          <p class="monto">{{ formatearMoneda(getTotalImporteHorasSeleccionadas()) }}</p>
+          <p class="items-count">{{ horasSeleccionadas.size }} máquina(s)</p>
+        </div>
+      </div>
+
+      <div class="card-total card-seleccion card-total-seleccion">
+        <div class="card-icon">
+          <i class="fas fa-file-invoice"></i>
+        </div>
+        <div class="card-info">
+          <h3>Total Seleccionado</h3>
+          <p class="monto-grande">{{ formatearMoneda(getTotalGeneralSeleccionado()) }}</p>
+          <p class="periodo-info">
+            Para nuevo reporte
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Tabla de Áridos -->
     <div class="tabla-section">
       <h2>
@@ -150,6 +201,16 @@
       <table *ngIf="resumen.aridos.length > 0" class="tabla-datos">
         <thead>
           <tr>
+            <th style="width: 50px;">
+              <label class="checkbox-container">
+                <input
+                  type="checkbox"
+                  [checked]="todosAridosSeleccionados()"
+                  (change)="toggleSeleccionarTodosAridos()"
+                  title="Seleccionar todos">
+                <span class="checkmark"></span>
+              </label>
+            </th>
             <th>Tipo de Árido</th>
             <th>Cantidad (m³)</th>
             <th>Precio Unitario</th>
@@ -158,7 +219,18 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let arido of resumen.aridos" [class.editando]="editandoArido === arido.tipo_arido">
+          <tr *ngFor="let arido of resumen.aridos"
+              [class.editando]="editandoArido === arido.tipo_arido"
+              [class.fila-seleccionada]="isAridoSeleccionado(arido.tipo_arido)">
+            <td class="td-checkbox">
+              <label class="checkbox-container">
+                <input
+                  type="checkbox"
+                  [checked]="isAridoSeleccionado(arido.tipo_arido)"
+                  (change)="toggleAridoSeleccionado(arido.tipo_arido)">
+                <span class="checkmark"></span>
+              </label>
+            </td>
             <td>
               <span>{{ arido.tipo_arido }}</span>
             </td>
@@ -206,10 +278,19 @@
         </tbody>
         <tfoot>
           <tr class="total-row">
+            <td></td>
             <td><strong>TOTAL ÁRIDOS</strong></td>
             <td><strong>{{ resumen.total_aridos_m3 | number:'1.2-2' }} m³</strong></td>
             <td></td>
             <td class="subtotal"><strong>{{ formatearMoneda(resumen.total_importe_aridos) }}</strong></td>
+            <td *ngIf="esAdministrador"></td>
+          </tr>
+          <tr class="seleccion-row" *ngIf="aridosSeleccionados.size > 0">
+            <td></td>
+            <td><strong>SELECCIONADO ({{ aridosSeleccionados.size }})</strong></td>
+            <td><strong>{{ getTotalAridosSeleccionados() | number:'1.2-2' }} m³</strong></td>
+            <td></td>
+            <td class="subtotal"><strong>{{ formatearMoneda(getTotalImporteAridosSeleccionados()) }}</strong></td>
             <td *ngIf="esAdministrador"></td>
           </tr>
         </tfoot>
@@ -230,6 +311,16 @@
       <table *ngIf="resumen.horas_maquinas.length > 0" class="tabla-datos">
         <thead>
           <tr>
+            <th style="width: 50px;">
+              <label class="checkbox-container">
+                <input
+                  type="checkbox"
+                  [checked]="todasHorasSeleccionadas()"
+                  (change)="toggleSeleccionarTodasHoras()"
+                  title="Seleccionar todas">
+                <span class="checkmark"></span>
+              </label>
+            </th>
             <th>Máquina</th>
             <th>Total Horas</th>
             <th>Tarifa/Hora</th>
@@ -238,7 +329,18 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let hora of resumen.horas_maquinas" [class.editando]="editandoHora === hora.maquina_id">
+          <tr *ngFor="let hora of resumen.horas_maquinas"
+              [class.editando]="editandoHora === hora.maquina_id"
+              [class.fila-seleccionada]="isHoraSeleccionada(hora.maquina_id)">
+            <td class="td-checkbox">
+              <label class="checkbox-container">
+                <input
+                  type="checkbox"
+                  [checked]="isHoraSeleccionada(hora.maquina_id)"
+                  (change)="toggleHoraSeleccionada(hora.maquina_id)">
+                <span class="checkmark"></span>
+              </label>
+            </td>
             <td>{{ hora.maquina_nombre }}</td>
             <td>
               <span>{{ hora.total_horas | number:'1.2-2' }}</span>
@@ -284,10 +386,19 @@
         </tbody>
         <tfoot>
           <tr class="total-row">
+            <td></td>
             <td><strong>TOTAL HORAS</strong></td>
             <td><strong>{{ resumen.total_horas | number:'1.2-2' }} hs</strong></td>
             <td></td>
             <td class="subtotal"><strong>{{ formatearMoneda(resumen.total_importe_horas) }}</strong></td>
+            <td *ngIf="esAdministrador"></td>
+          </tr>
+          <tr class="seleccion-row" *ngIf="horasSeleccionadas.size > 0">
+            <td></td>
+            <td><strong>SELECCIONADO ({{ horasSeleccionadas.size }})</strong></td>
+            <td><strong>{{ getTotalHorasSeleccionadas() | number:'1.2-2' }} hs</strong></td>
+            <td></td>
+            <td class="subtotal"><strong>{{ formatearMoneda(getTotalImporteHorasSeleccionadas()) }}</strong></td>
             <td *ngIf="esAdministrador"></td>
           </tr>
         </tfoot>
@@ -364,7 +475,6 @@
             <table class="tabla-items" *ngIf="getReporteConDetalle(reporte.id)?.items_aridos && getReporteConDetalle(reporte.id)!.items_aridos!.length > 0">
               <thead>
                 <tr>
-                  <th *ngIf="esAdministrador" style="width: 50px;">Pagado</th>
                   <th>Tipo de Árido</th>
                   <th>Fecha</th>
                   <th>Cantidad</th>
@@ -374,15 +484,6 @@
               </thead>
               <tbody>
                 <tr *ngFor="let item of getReporteConDetalle(reporte.id)!.items_aridos" [class.fila-pagada]="item.pagado">
-                  <td *ngIf="esAdministrador" class="td-checkbox">
-                    <label class="checkbox-container">
-                      <input
-                        type="checkbox"
-                        [(ngModel)]="item.pagado"
-                        (change)="toggleItemAridoPagado(reporte.id, item.tipo_arido); $event.stopPropagation()">
-                      <span class="checkmark"></span>
-                    </label>
-                  </td>
                   <td>
                     <strong>{{ item.tipo_arido }}</strong>
                   </td>
@@ -403,7 +504,6 @@
               </tbody>
               <tfoot>
                 <tr class="total-row">
-                  <td *ngIf="esAdministrador"></td>
                   <td colspan="4"><strong>SUBTOTAL ÁRIDOS:</strong></td>
                   <td class="td-importe"><strong>{{ formatearMoneda(reporte.importe_aridos) }}</strong></td>
                 </tr>
@@ -429,7 +529,6 @@
             <table class="tabla-items" *ngIf="getReporteConDetalle(reporte.id)?.items_horas && getReporteConDetalle(reporte.id)!.items_horas!.length > 0">
               <thead>
                 <tr>
-                  <th *ngIf="esAdministrador" style="width: 50px;">Pagado</th>
                   <th>Máquina</th>
                   <th>Fecha</th>
                   <th>Horas</th>
@@ -439,15 +538,6 @@
               </thead>
               <tbody>
                 <tr *ngFor="let item of getReporteConDetalle(reporte.id)!.items_horas" [class.fila-pagada]="item.pagado">
-                  <td *ngIf="esAdministrador" class="td-checkbox">
-                    <label class="checkbox-container">
-                      <input
-                        type="checkbox"
-                        [(ngModel)]="item.pagado"
-                        (change)="toggleItemHoraPagado(reporte.id, item.maquina_id); $event.stopPropagation()">
-                      <span class="checkmark"></span>
-                    </label>
-                  </td>
                   <td>
                     <strong>{{ item.maquina_nombre }}</strong>
                     <span class="operador-info" *ngIf="item.usuario_nombre">
@@ -471,7 +561,6 @@
               </tbody>
               <tfoot>
                 <tr class="total-row">
-                  <td *ngIf="esAdministrador"></td>
                   <td colspan="4"><strong>SUBTOTAL HORAS:</strong></td>
                   <td class="td-importe"><strong>{{ formatearMoneda(reporte.importe_horas) }}</strong></td>
                 </tr>
@@ -547,6 +636,34 @@
 
     <form [formGroup]="reporteForm" (ngSubmit)="generarReporte()">
       <div class="modal-body">
+        <!-- Resumen de selección -->
+        <div class="resumen-seleccion-modal">
+          <h4>
+            <i class="fas fa-check-circle"></i>
+            Items seleccionados para el reporte
+          </h4>
+          <div class="items-seleccionados-grid">
+            <div class="item-seleccion-info">
+              <i class="fas fa-cubes"></i>
+              <div>
+                <strong>{{ aridosSeleccionados.size }}</strong> tipo(s) de áridos
+                <span class="cantidad-detalle">{{ getTotalAridosSeleccionados() | number:'1.2-2' }} m³</span>
+              </div>
+            </div>
+            <div class="item-seleccion-info">
+              <i class="fas fa-truck"></i>
+              <div>
+                <strong>{{ horasSeleccionadas.size }}</strong> máquina(s)
+                <span class="cantidad-detalle">{{ getTotalHorasSeleccionadas() | number:'1.2-2' }} hs</span>
+              </div>
+            </div>
+          </div>
+          <div class="total-seleccion-modal">
+            <span>Total a facturar:</span>
+            <strong>{{ formatearMoneda(getTotalGeneralSeleccionado()) }}</strong>
+          </div>
+        </div>
+
         <div class="form-group">
           <label for="periodo_inicio">Fecha Inicio:</label>
           <input

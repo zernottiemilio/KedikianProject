@@ -102,6 +102,9 @@ export interface RequestGenerarReporte {
   periodo_inicio: string;
   periodo_fin: string;
   observaciones?: string;
+  // Selección de items específicos (opcional, si no se envía se incluyen todos)
+  aridos_seleccionados?: string[]; // Array de tipo_arido
+  maquinas_seleccionadas?: number[]; // Array de maquina_id
 }
 
 export interface RequestActualizarEstado {
