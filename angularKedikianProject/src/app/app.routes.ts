@@ -15,6 +15,7 @@ import { AridosComponent } from './modules/admin/aridos/aridos.component';
 import { InformesComponent } from './modules/admin/informes/informes.component';
 import { ExcelImportComponent } from './modules/admin/excel-import/excel-import.component';
 import { CuentaCorrienteComponent } from './modules/admin/cuenta-corriente/cuenta-corriente.component';
+import { CotizacionesComponent } from './modules/admin/cotizaciones/cotizaciones.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -72,6 +73,11 @@ export const routes: Routes = [
         path: 'cuenta-corriente',
         component: CuentaCorrienteComponent
         // Accesible para todos los roles autenticados (administrador y cliente)
+      },
+      {
+        path: 'cotizaciones',
+        component: CotizacionesComponent,
+        data: { role: 'administrador' }
       },
 
       // Rutas para operarios (si las hay en el futuro)

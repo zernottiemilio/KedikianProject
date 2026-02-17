@@ -78,6 +78,13 @@ export class SidebarComponent implements OnInit {
       roles: ['administrador', 'cliente'], // Accesible para administradores y clientes
     },
     {
+      title: 'Cotizaciones',
+      icon: 'fas fa-file-alt',
+      route: '/cotizaciones',
+      active: false,
+      roles: ['administrador'], // Solo administradores
+    },
+    {
       title: 'Importar Excel',
       icon: 'fas fa-file-excel',
       route: '/excel-import',

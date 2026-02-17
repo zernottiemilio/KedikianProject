@@ -1,0 +1,386 @@
+<div class="cotizaciones-container">
+  <header class="cotizaciones-header">
+    <h1>
+      <i class="fas fa-file-alt"></i>
+      Cotizaciones
+    </h1>
+  </header>
+
+  <!-- Sección de creación de cotización -->
+  <div class="crear-cotizacion-section">
+    <h2>
+      <i class="fas fa-plus-circle"></i>
+      Nueva Cotización
+    </h2>
+
+    <form [formGroup]="cotizacionForm" (ngSubmit)="generarCotizacion()">
+
+      <!-- Selección de Cliente -->
+      <div class="controles-principales">
+        <div class="control-grupo">
+          <label for="clienteSelect">
+            <i class="fas fa-user"></i>
+            Cliente:
+          </label>
+          <select
+            id="clienteSelect"
+            formControlName="cliente_id"
+            class="form-control">
+            <option value="" disabled selected>Seleccione un cliente</option>
+            <option *ngFor="let cliente of clientes" [value]="cliente.id">
+              {{ cliente.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-nuevo-cliente"
+          (click)="abrirModalNuevoCliente()">
+          <i class="fas fa-user-plus"></i>
+          Nuevo Cliente
+        </button>
+
+        <div class="control-grupo">
+          <label for="fechaValidez">
+            <i class="fas fa-calendar-check"></i>
+            Válida hasta:
+          </label>
+          <input
+            type="date"
+            id="fechaValidez"
+            formControlName="fecha_validez"
+            class="form-control">
+        </div>
+      </div>
+
+      <!-- Tabla de Items -->
+      <div class="items-section">
+        <h3>
+          <i class="fas fa-list"></i>
+          Servicios / Productos
+        </h3>
+
+        <div class="table-responsive">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th style="width: 35%;">Servicio / Producto</th>
+                <th style="width: 15%;">Cantidad</th>
+                <th style="width: 15%;">Unidad</th>
+                <th style="width: 20%;">Precio Unitario</th>
+                <th style="width: 15%;">Subtotal</th>
+                <th style="width: 5%;"></th>
+              </tr>
+            </thead>
+            <tbody formArrayName="items">
+              <tr *ngFor="let item of items.controls; let i = index; trackBy: trackByIndex" [formGroupName]="i">
+                <td>
+                  <input
+                    type="text"
+                    list="serviciosList"
+                    formControlName="nombre_servicio"
+                    (change)="onServicioSeleccionado(i, items.at(i).value.nombre_servicio)"
+                    class="form-control"
+                    placeholder="Escriba o seleccione">
+                  <datalist id="serviciosList">
+                    <option *ngFor="let servicio of serviciosPredefinidos" [value]="servicio.nombre">
+                      {{ servicio.nombre }} - {{ formatearMoneda(servicio.precio_por_defecto) }}/{{ servicio.unidad }}
+                    </option>
+                  </datalist>
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    formControlName="cantidad"
+                    class="form-control"
+                    min="0.01"
+                    step="0.01">
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    formControlName="unidad"
+                    class="form-control"
+                    placeholder="m³, hora, etc.">
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    formControlName="precio_unitario"
+                    class="form-control"
+                    min="0"
+                    step="0.01">
+                </td>
+                <td class="subtotal-cell">
+                  {{ formatearMoneda(calcularSubtotal(i)) }}
+                </td>
+                <td class="text-center">
+                  <button
+                    type="button"
+                    class="btn btn-danger btn-sm"
+                    (click)="eliminarItem(i)"
+                    [disabled]="items.length === 1"
+                    title="Eliminar línea">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="agregarItem()">
+          <i class="fas fa-plus"></i>
+          Agregar Línea
+        </button>
+      </div>
+
+      <!-- Observaciones y Total -->
+      <div class="resumen-section">
+        <div class="observaciones-grupo">
+          <label for="observaciones">
+            <i class="fas fa-comment"></i>
+            Observaciones:
+          </label>
+          <textarea
+            id="observaciones"
+            formControlName="observaciones"
+            class="form-control"
+            rows="3"
+            placeholder="Notas adicionales para la cotización..."></textarea>
+        </div>
+
+        <div class="total-card">
+          <h3>Total de la Cotización</h3>
+          <p class="monto-total">{{ formatearMoneda(calcularTotal()) }}</p>
+          <button
+            type="submit"
+            class="btn btn-primary btn-lg"
+            [disabled]="!cotizacionForm.valid || items.length === 0">
+            <i class="fas fa-check"></i>
+            Generar Cotización
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Loader para cotizaciones -->
+  <div *ngIf="cargandoCotizaciones" class="loader-container">
+    <div class="loader"></div>
+    <p>Cargando cotizaciones...</p>
+  </div>
+
+  <!-- Lista de cotizaciones generadas -->
+  <div *ngIf="!cargandoCotizaciones" class="cotizaciones-generadas-section">
+    <h2>
+      <i class="fas fa-file-invoice"></i>
+      Cotizaciones Generadas
+      <span class="badge-count">{{ cotizaciones.length }}</span>
+    </h2>
+
+    <div *ngIf="cotizaciones.length === 0" class="empty-state">
+      <i class="fas fa-inbox"></i>
+      <p>No hay cotizaciones generadas todavía</p>
+    </div>
+
+    <div class="cotizaciones-grid">
+      <div
+        *ngFor="let cotizacion of cotizaciones"
+        class="cotizacion-card"
+        [class.expanded]="cotizacionExpandida === cotizacion.id">
+
+        <!-- Header de la card -->
+        <div class="cotizacion-header" (click)="expandirCotizacion(cotizacion.id)">
+          <div class="cotizacion-info">
+            <h3>
+              <i class="fas fa-user"></i>
+              {{ cotizacion.cliente?.nombre || 'Cliente no disponible' }}
+            </h3>
+            <p class="cotizacion-fecha">
+              <i class="fas fa-calendar"></i>
+              {{ formatearFecha(cotizacion.fecha_creacion) }}
+            </p>
+            <span [class]="'badge-estado ' + obtenerClaseEstado(cotizacion.estado)">
+              <i [class]="obtenerIconoEstado(cotizacion.estado)"></i>
+              {{ obtenerTextoEstado(cotizacion.estado) }}
+            </span>
+          </div>
+          <div class="cotizacion-monto">
+            <p class="label">Total</p>
+            <p class="monto">{{ formatearMoneda(cotizacion.importe_total) }}</p>
+          </div>
+          <div class="expand-icon">
+            <i class="fas" [class.fa-chevron-down]="cotizacionExpandida !== cotizacion.id" [class.fa-chevron-up]="cotizacionExpandida === cotizacion.id"></i>
+          </div>
+        </div>
+
+        <!-- Detalle expandible -->
+        <div class="cotizacion-detalle" *ngIf="cotizacionExpandida === cotizacion.id">
+
+          <!-- Info adicional -->
+          <div class="detalle-info">
+            <div class="info-item">
+              <label><i class="fas fa-calendar-check"></i> Válida hasta:</label>
+              <span>{{ formatearFecha(cotizacion.fecha_validez) }}</span>
+            </div>
+            <div class="info-item" *ngIf="cotizacion.cliente?.email">
+              <label><i class="fas fa-envelope"></i> Email:</label>
+              <span>{{ cotizacion.cliente?.email }}</span>
+            </div>
+            <div class="info-item" *ngIf="cotizacion.cliente?.telefono">
+              <label><i class="fas fa-phone"></i> Teléfono:</label>
+              <span>{{ cotizacion.cliente?.telefono }}</span>
+            </div>
+            <div class="info-item" *ngIf="cotizacion.observaciones">
+              <label><i class="fas fa-comment"></i> Observaciones:</label>
+              <span>{{ cotizacion.observaciones }}</span>
+            </div>
+          </div>
+
+          <!-- Tabla de items -->
+          <div class="detalle-items">
+            <h4><i class="fas fa-list"></i> Detalle de Servicios</h4>
+            <table class="detalle-table">
+              <thead>
+                <tr>
+                  <th>Servicio</th>
+                  <th>Cantidad</th>
+                  <th>Unidad</th>
+                  <th>Precio Unit.</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of cotizacion.items">
+                  <td>{{ item.nombre_servicio }}</td>
+                  <td>{{ item.cantidad | number:'1.2-2' }}</td>
+                  <td>{{ item.unidad }}</td>
+                  <td>{{ formatearMoneda(item.precio_unitario) }}</td>
+                  <td>{{ formatearMoneda(item.subtotal) }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="4" class="text-right"><strong>Total:</strong></td>
+                  <td><strong>{{ formatearMoneda(cotizacion.importe_total) }}</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Cambiar estado -->
+          <div class="estado-control">
+            <label for="estado-{{cotizacion.id}}">
+              <i class="fas fa-tag"></i>
+              Estado:
+            </label>
+            <select
+              id="estado-{{cotizacion.id}}"
+              [value]="cotizacion.estado"
+              (change)="cambiarEstado(cotizacion.id, $event)"
+              class="form-control estado-select">
+              <option [value]="EstadoCotizacion.BORRADOR">Borrador</option>
+              <option [value]="EstadoCotizacion.ENVIADA">Enviada</option>
+              <option [value]="EstadoCotizacion.APROBADA">Aprobada</option>
+            </select>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="detalle-acciones">
+            <button
+              class="btn btn-success"
+              (click)="exportarPDF(cotizacion.id)">
+              <i class="fas fa-file-pdf"></i>
+              Exportar PDF
+            </button>
+            <button
+              class="btn btn-success"
+              (click)="exportarExcel(cotizacion.id)">
+              <i class="fas fa-file-excel"></i>
+              Exportar Excel
+            </button>
+            <button
+              class="btn btn-danger"
+              (click)="eliminarCotizacion(cotizacion.id)">
+              <i class="fas fa-trash"></i>
+              Eliminar
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: Nuevo Cliente -->
+<div class="modal-overlay" *ngIf="mostrarModalNuevoCliente" (click)="cerrarModalNuevoCliente()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <i class="fas fa-user-plus"></i>
+        Nuevo Cliente
+      </h2>
+      <button class="close-button" (click)="cerrarModalNuevoCliente()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <form [formGroup]="nuevoClienteForm" (ngSubmit)="crearCliente()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="clienteNombre">Nombre: *</label>
+          <input
+            type="text"
+            id="clienteNombre"
+            formControlName="nombre"
+            class="form-control"
+            placeholder="Nombre del cliente"
+            required>
+        </div>
+        <div class="form-group">
+          <label for="clienteEmail">Email:</label>
+          <input
+            type="email"
+            id="clienteEmail"
+            formControlName="email"
+            class="form-control"
+            placeholder="ejemplo@correo.com">
+        </div>
+        <div class="form-group">
+          <label for="clienteTelefono">Teléfono:</label>
+          <input
+            type="tel"
+            id="clienteTelefono"
+            formControlName="telefono"
+            class="form-control"
+            placeholder="+54 9 11 1234-5678">
+        </div>
+        <div class="form-group">
+          <label for="clienteDireccion">Dirección:</label>
+          <textarea
+            id="clienteDireccion"
+            formControlName="direccion"
+            class="form-control"
+            rows="2"
+            placeholder="Dirección del cliente"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalNuevoCliente()">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="!nuevoClienteForm.valid">
+          <i class="fas fa-save"></i>
+          Guardar Cliente
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
