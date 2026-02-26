@@ -97,16 +97,118 @@
         (ngModelChange)="onFechaChange()"
         class="form-control">
     </div>
+
+    <div class="control-grupo control-grupo-pendientes">
+      <button
+        class="btn btn-pendientes"
+        [class.btn-active]="mostrandoPendientes"
+        (click)="togglePendientes()"
+        title="Ver todos los proyectos con reportes pendientes de pago">
+        <i class="fas fa-exclamation-circle"></i>
+        Pendientes
+        <span class="badge-pendientes" *ngIf="reportesPendientes.length > 0">
+          {{ reportesPendientes.length }}
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Vista de Reportes Pendientes -->
+  <div class="pendientes-section" *ngIf="mostrandoPendientes">
+    <div class="pendientes-header">
+      <h2>
+        <i class="fas fa-exclamation-circle"></i>
+        Proyectos con Reportes Pendientes
+      </h2>
+      <div class="pendientes-summary" *ngIf="!cargandoPendientes && reportesPendientes.length > 0">
+        <span class="badge badge-warning-lg">{{ reportesPendientes.length }} reporte(s) pendiente(s)</span>
+        <span class="total-pendiente">Total: <strong>{{ formatearMoneda(getTotalPendientes()) }}</strong></span>
+      </div>
+    </div>
+
+    <div *ngIf="cargandoPendientes" class="loader-container">
+      <div class="loader"></div>
+      <p>Cargando reportes pendientes...</p>
+    </div>
+
+    <div *ngIf="!cargandoPendientes && reportesPendientes.length === 0" class="no-datos pendientes-ok">
+      <i class="fas fa-check-circle" style="font-size: 2rem; color: var(--success-color); margin-bottom: 0.5rem;"></i>
+      <p>No hay reportes pendientes de pago.</p>
+    </div>
+
+    <div *ngIf="!cargandoPendientes && getProyectosConPendientes().length > 0" class="proyectos-pendientes">
+      <div *ngFor="let grupo of getProyectosConPendientes()" class="proyecto-pendiente-card">
+        <div class="proyecto-pendiente-header">
+          <h3>
+            <i class="fas fa-project-diagram"></i>
+            {{ grupo.proyecto_nombre }}
+          </h3>
+          <div class="proyecto-pendiente-meta">
+            <span class="badge badge-warning">{{ grupo.reportes.length }} reporte(s)</span>
+            <span class="total-proyecto">{{ formatearMoneda(grupo.total) }}</span>
+            <button class="btn btn-sm btn-outline" (click)="irAProyecto(grupo.proyecto_id)">
+              <i class="fas fa-eye"></i>
+              Ver Proyecto
+            </button>
+          </div>
+        </div>
+
+        <table class="tabla-datos">
+          <thead>
+            <tr>
+              <th>Reporte #</th>
+              <th>Período</th>
+              <th>Generado</th>
+              <th>Importe Total</th>
+              <th *ngIf="esAdministrador">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let reporte of grupo.reportes">
+              <td><strong>#{{ reporte.id }}</strong></td>
+              <td>{{ formatearFechaLegible(reporte.periodo_inicio) }} - {{ formatearFechaLegible(reporte.periodo_fin) }}</td>
+              <td>{{ formatearFechaLegible(reporte.fecha_generacion) }}</td>
+              <td class="subtotal">{{ formatearMoneda(reporte.importe_total) }}</td>
+              <td *ngIf="esAdministrador">
+                <div class="acciones-cell">
+                  <button
+                    class="btn btn-sm btn-success"
+                    (click)="abrirModalRegistrarPago(reporte)"
+                    title="Registrar pago parcial o total">
+                    <i class="fas fa-dollar-sign"></i>
+                    Registrar Pago
+                  </button>
+                  <button
+                    class="btn btn-sm btn-info"
+                    (click)="abrirModalPagoParcial(reporte)"
+                    title="Marcar items individuales como pagados">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    Marcar Items
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="3"><strong>TOTAL PENDIENTE</strong></td>
+              <td class="subtotal"><strong>{{ formatearMoneda(grupo.total) }}</strong></td>
+              <td *ngIf="esAdministrador"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- Loader -->
-  <div *ngIf="cargandoResumen" class="loader-container">
+  <div *ngIf="cargandoResumen && !mostrandoPendientes" class="loader-container">
     <div class="loader"></div>
     <p>Cargando información...</p>
   </div>
 
   <!-- Resumen y Tablas -->
-  <div *ngIf="!cargandoResumen && resumen" class="resumen-container">
+  <div *ngIf="!cargandoResumen && resumen && !mostrandoPendientes" class="resumen-container">
 
     <!-- Cards de Totales -->
     <div class="totales-cards">
@@ -407,7 +509,7 @@
   </div>
 
   <!-- Sección de Reportes Generados -->
-  <div class="reportes-section" *ngIf="!cargandoReportes">
+  <div class="reportes-section" *ngIf="!cargandoReportes && !mostrandoPendientes">
     <h2>
       <i class="fas fa-file-alt"></i>
       Reportes Generados
@@ -582,6 +684,85 @@
               <span>Total General:</span>
               <strong>{{ formatearMoneda(reporte.importe_total) }}</strong>
             </div>
+            <!-- Desglose de pago con sistema de pagos parciales -->
+            <ng-container *ngIf="reporte.monto_pagado !== undefined && reporte.monto_pagado > 0">
+              <div class="total-linea total-linea-pagado">
+                <span>
+                  <i class="fas fa-check-circle"></i>
+                  Total Pagado:
+                </span>
+                <strong>{{ formatearMoneda(reporte.monto_pagado) }}</strong>
+              </div>
+              <div class="total-linea total-linea-pendiente" *ngIf="reporte.saldo_pendiente && reporte.saldo_pendiente > 0">
+                <span>
+                  <i class="fas fa-clock"></i>
+                  Saldo Pendiente:
+                </span>
+                <strong>{{ formatearMoneda(reporte.saldo_pendiente) }}</strong>
+              </div>
+            </ng-container>
+            <!-- Fallback para sistema anterior (items pagados) -->
+            <ng-container *ngIf="reporte.monto_pagado === undefined && (reporte.estado === EstadoPago.PARCIAL || reporte.estado === EstadoPago.PAGADO)">
+              <div class="total-linea total-linea-pagado">
+                <span>
+                  <i class="fas fa-check-circle"></i>
+                  Importe Pagado:
+                </span>
+                <strong>{{ formatearMoneda(getImportePagadoReporte(reporte.id)) }}</strong>
+              </div>
+              <div class="total-linea total-linea-pendiente" *ngIf="reporte.estado === EstadoPago.PARCIAL">
+                <span>
+                  <i class="fas fa-clock"></i>
+                  Saldo Pendiente:
+                </span>
+                <strong>{{ formatearMoneda(getImportePendienteReporte(reporte.id)) }}</strong>
+              </div>
+            </ng-container>
+          </div>
+
+          <!-- Historial de Pagos -->
+          <div class="items-section" *ngIf="reporte.pagos && reporte.pagos.length > 0">
+            <h4>
+              <i class="fas fa-history"></i>
+              Historial de Pagos
+              <span class="badge-count">
+                ({{ reporte.pagos.length }} pago(s) registrado(s))
+              </span>
+            </h4>
+
+            <table class="tabla-items">
+              <thead>
+                <tr>
+                  <th>Fecha Pago</th>
+                  <th>Monto</th>
+                  <th>Observaciones</th>
+                  <th>Fecha Registro</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let pago of reporte.pagos">
+                  <td>
+                    <span class="fecha-item">{{ pago.fecha | date:'dd/MM/yyyy' }}</span>
+                  </td>
+                  <td class="td-importe">
+                    <strong>{{ formatearMoneda(pago.monto) }}</strong>
+                  </td>
+                  <td>
+                    <span class="observaciones-texto">{{ pago.observaciones || '-' }}</span>
+                  </td>
+                  <td>
+                    <span class="fecha-item">{{ pago.fecha_registro ? (pago.fecha_registro | date:'dd/MM/yyyy HH:mm') : '-' }}</span>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="total-row">
+                  <td><strong>TOTAL PAGADO:</strong></td>
+                  <td class="td-importe"><strong>{{ formatearMoneda(reporte.monto_pagado || 0) }}</strong></td>
+                  <td colspan="2"></td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
 
           <div class="detalle-acciones">
@@ -595,6 +776,22 @@
             </div>
 
             <div class="estado-buttons" *ngIf="esAdministrador">
+              <button
+                class="btn btn-sm btn-success"
+                *ngIf="puedeRegistrarPago(reporte)"
+                (click)="abrirModalRegistrarPago(reporte); $event.stopPropagation()"
+                title="Registrar pago parcial o total de este reporte">
+                <i class="fas fa-dollar-sign"></i>
+                Registrar Pago
+              </button>
+              <button
+                class="btn btn-sm btn-info"
+                *ngIf="reporte.estado !== EstadoPago.PAGADO"
+                (click)="abrirModalPagoParcial(reporte); $event.stopPropagation()"
+                title="Marcar items individuales como pagados">
+                <i class="fas fa-hand-holding-usd"></i>
+                Marcar Items Pagados
+              </button>
               <button
                 class="btn btn-sm btn-success"
                 (click)="marcarTodosItemsPagados(reporte.id); $event.stopPropagation()"
@@ -817,5 +1014,260 @@
         Confirmar Actualización
       </button>
     </div>
+  </div>
+</div>
+
+<!-- Modal: Pago Parcial -->
+<div class="modal-overlay" *ngIf="mostrarModalPagoParcial" (click)="cerrarModalPagoParcial()">
+  <div class="modal-content modal-pago-parcial" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <i class="fas fa-hand-holding-usd"></i>
+        Registrar Pago - Reporte #{{ reportePagoParcial?.id }}
+      </h2>
+      <button class="btn-close" (click)="cerrarModalPagoParcial()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Cargando detalle -->
+    <div class="modal-body loader-container" *ngIf="cargandoPagoDetalle">
+      <div class="loader"></div>
+      <p>Cargando detalle del reporte...</p>
+    </div>
+
+    <!-- Contenido del modal -->
+    <div class="modal-body pago-parcial-body" *ngIf="!cargandoPagoDetalle">
+      <p class="pago-instrucciones">
+        <i class="fas fa-info-circle"></i>
+        Tildá los conceptos que fueron <strong>abonados</strong>. El reporte quedará en estado
+        <em>Parcial</em> si quedan conceptos sin pagar, o <em>Pagado</em> si todos están cubiertos.
+      </p>
+
+      <!-- Sección Áridos -->
+      <div class="pago-grupo" *ngIf="pagosAridos.length > 0">
+        <h4>
+          <i class="fas fa-cubes"></i>
+          Áridos
+        </h4>
+        <div class="pago-items">
+          <label
+            class="pago-item"
+            *ngFor="let item of pagosAridos"
+            [class.pago-item-pagado]="item.pagado">
+            <div class="pago-item-izq">
+              <input type="checkbox" [(ngModel)]="item.pagado" class="pago-checkbox">
+              <span class="pago-concepto">{{ item.tipo_arido }}</span>
+            </div>
+            <span class="pago-monto" [class.monto-pagado]="item.pagado">
+              {{ formatearMoneda(item.importe) }}
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Sección Horas -->
+      <div class="pago-grupo" *ngIf="pagosHoras.length > 0">
+        <h4>
+          <i class="fas fa-truck"></i>
+          Horas de Máquinas
+        </h4>
+        <div class="pago-items">
+          <label
+            class="pago-item"
+            *ngFor="let item of pagosHoras"
+            [class.pago-item-pagado]="item.pagado">
+            <div class="pago-item-izq">
+              <input type="checkbox" [(ngModel)]="item.pagado" class="pago-checkbox">
+              <span class="pago-concepto">{{ item.maquina_nombre }}</span>
+            </div>
+            <span class="pago-monto" [class.monto-pagado]="item.pagado">
+              {{ formatearMoneda(item.importe) }}
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Resumen de pagos -->
+      <div class="pago-resumen">
+        <div class="pago-resumen-fila">
+          <span>Total del reporte:</span>
+          <strong>{{ formatearMoneda(getTotalReporteModal()) }}</strong>
+        </div>
+        <div class="pago-resumen-fila pago-resumen-pagado">
+          <span>
+            <i class="fas fa-check-circle"></i>
+            Marcado como pagado:
+          </span>
+          <strong>{{ formatearMoneda(getTotalPagadoModal()) }}</strong>
+        </div>
+        <div class="pago-resumen-fila pago-resumen-pendiente">
+          <span>
+            <i class="fas fa-clock"></i>
+            Saldo pendiente:
+          </span>
+          <strong>{{ formatearMoneda(getTotalPendienteModal()) }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="cerrarModalPagoParcial()">
+        Cancelar
+      </button>
+      <button
+        class="btn btn-primary"
+        (click)="guardarPagoParcial()"
+        [disabled]="cargandoPagoDetalle">
+        <i class="fas fa-save"></i>
+        Guardar Cambios
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Registrar Pago Parcial/Total -->
+<div class="modal-overlay" *ngIf="mostrarModalRegistrarPago" (click)="cerrarModalRegistrarPago()">
+  <div class="modal-content modal-registrar-pago" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <i class="fas fa-dollar-sign"></i>
+        Registrar Pago - Reporte #{{ reporteParaPago?.id }}
+      </h2>
+      <button class="btn-close" (click)="cerrarModalRegistrarPago()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="pagoForm" (ngSubmit)="registrarPago()">
+      <div class="modal-body">
+        <!-- Resumen del reporte -->
+        <div class="pago-resumen-reporte">
+          <h4>
+            <i class="fas fa-file-invoice-dollar"></i>
+            Resumen del Reporte
+          </h4>
+          <div class="resumen-grid">
+            <div class="resumen-item">
+              <span class="resumen-label">Total del reporte:</span>
+              <strong class="resumen-valor">{{ formatearMoneda(reporteParaPago?.importe_total || 0) }}</strong>
+            </div>
+            <div class="resumen-item resumen-item-success">
+              <span class="resumen-label">
+                <i class="fas fa-check-circle"></i>
+                Total pagado hasta ahora:
+              </span>
+              <strong class="resumen-valor">{{ formatearMoneda(getTotalPagadoReporte()) }}</strong>
+            </div>
+            <div class="resumen-item resumen-item-warning">
+              <span class="resumen-label">
+                <i class="fas fa-clock"></i>
+                Saldo pendiente:
+              </span>
+              <strong class="resumen-valor">{{ formatearMoneda(getSaldoPendienteReporte()) }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario de pago -->
+        <div class="form-group">
+          <label for="monto_pago">
+            <i class="fas fa-money-bill-wave"></i>
+            Monto abonado: <span class="text-danger">*</span>
+          </label>
+          <input
+            type="number"
+            id="monto_pago"
+            formControlName="monto"
+            class="form-control"
+            [max]="getSaldoPendienteReporte()"
+            min="0.01"
+            step="0.01"
+            placeholder="Ingrese el monto abonado"
+            required>
+          <small class="form-hint" *ngIf="pagoForm.get('monto')?.value">
+            <span *ngIf="pagoForm.get('monto')?.value === getSaldoPendienteReporte()" class="text-success">
+              <i class="fas fa-check-circle"></i>
+              Este pago liquidará completamente el reporte
+            </span>
+            <span *ngIf="pagoForm.get('monto')?.value < getSaldoPendienteReporte()" class="text-info">
+              <i class="fas fa-info-circle"></i>
+              Saldo restante: {{ formatearMoneda(getSaldoPendienteReporte() - pagoForm.get('monto')?.value) }}
+            </span>
+          </small>
+          <small class="form-error" *ngIf="pagoForm.get('monto')?.invalid && pagoForm.get('monto')?.touched">
+            El monto debe ser mayor a 0 y no puede exceder el saldo pendiente
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="fecha_pago">
+            <i class="fas fa-calendar-day"></i>
+            Fecha del pago: <span class="text-danger">*</span>
+          </label>
+          <input
+            type="date"
+            id="fecha_pago"
+            formControlName="fecha"
+            class="form-control"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label for="observaciones_pago">
+            <i class="fas fa-comment"></i>
+            Observaciones / Referencia del pago (opcional):
+          </label>
+          <textarea
+            id="observaciones_pago"
+            formControlName="observaciones"
+            class="form-control"
+            rows="3"
+            placeholder="Ej: Transferencia #123456, Cheque Nº 789, etc."></textarea>
+        </div>
+
+        <!-- Historial de pagos anteriores -->
+        <div class="historial-pagos-previos" *ngIf="reporteParaPago?.pagos && (reporteParaPago?.pagos?.length ?? 0) > 0">
+          <h4>
+            <i class="fas fa-history"></i>
+            Pagos Anteriores
+            <span class="badge-count-sm">{{ reporteParaPago?.pagos?.length }}</span>
+          </h4>
+
+          <div class="loader-container" *ngIf="cargandoHistorialPagos">
+            <div class="loader"></div>
+          </div>
+
+          <div class="pagos-previos-lista" *ngIf="!cargandoHistorialPagos">
+            <div class="pago-previo-item" *ngFor="let pago of reporteParaPago?.pagos">
+              <div class="pago-previo-fecha">
+                <i class="fas fa-calendar-check"></i>
+                {{ pago.fecha | date:'dd/MM/yyyy' }}
+              </div>
+              <div class="pago-previo-monto">
+                {{ formatearMoneda(pago.monto) }}
+              </div>
+              <div class="pago-previo-obs" *ngIf="pago.observaciones">
+                {{ pago.observaciones }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalRegistrarPago()">
+          <i class="fas fa-times"></i>
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn btn-success"
+          [disabled]="pagoForm.invalid || getSaldoPendienteReporte() <= 0">
+          <i class="fas fa-check"></i>
+          Confirmar Pago
+        </button>
+      </div>
+    </form>
   </div>
 </div>

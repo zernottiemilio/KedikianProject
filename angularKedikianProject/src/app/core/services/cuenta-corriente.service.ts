@@ -9,7 +9,9 @@ import {
   FiltrosCuentaCorriente,
   RequestGenerarReporte,
   RequestActualizarEstado,
-  EstadoPago
+  EstadoPago,
+  PagoReporte,
+  RequestRegistrarPago
 } from '../models/cuenta-corriente.models';
 
 @Injectable({
@@ -220,6 +222,45 @@ export class CuentaCorrienteService {
         console.log('Reporte eliminado:', reporteId);
       }),
       catchError(this.handleError<void>('eliminarReporte'))
+    );
+  }
+
+  // ------------------------
+  // Gestión de Pagos Parciales
+  // ------------------------
+
+  /**
+   * Registra un pago parcial o total contra un reporte
+   */
+  registrarPago(reporteId: number, pago: RequestRegistrarPago): Observable<PagoReporte> {
+    return this.http.post<PagoReporte>(
+      `${this.apiUrl}/reportes/${reporteId}/pagos`,
+      pago,
+      {
+        headers: this.getAuthHeaders()
+      }
+    ).pipe(
+      tap((response) => {
+        console.log('Pago registrado:', response);
+      }),
+      catchError(this.handleError<PagoReporte>('registrarPago'))
+    );
+  }
+
+  /**
+   * Obtiene el historial de pagos de un reporte
+   */
+  getPagosReporte(reporteId: number): Observable<PagoReporte[]> {
+    return this.http.get<PagoReporte[]>(
+      `${this.apiUrl}/reportes/${reporteId}/pagos`,
+      {
+        headers: this.getAuthHeaders()
+      }
+    ).pipe(
+      tap((response) => {
+        console.log('Pagos del reporte obtenidos:', response);
+      }),
+      catchError(this.handleError<PagoReporte[]>('getPagosReporte', []))
     );
   }
 

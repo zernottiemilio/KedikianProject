@@ -1058,6 +1058,46 @@
   color: var(--success-color);
 }
 
+.total-linea.total-linea-pagado {
+  background: rgba(46, 204, 113, 0.08);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.total-linea.total-linea-pagado span {
+  color: var(--success-color);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.total-linea.total-linea-pagado strong {
+  color: var(--success-color);
+  font-size: 1.05rem;
+}
+
+.total-linea.total-linea-pendiente {
+  background: rgba(243, 156, 18, 0.08);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.total-linea.total-linea-pendiente span {
+  color: var(--warning-color);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.total-linea.total-linea-pendiente strong {
+  color: var(--warning-color);
+  font-size: 1.05rem;
+}
+
 /* Acciones del detalle */
 .detalle-acciones {
   padding: 1rem 1.5rem;
@@ -1163,12 +1203,12 @@
 }
 
 .btn-info {
-  background: var(--info-color);
+  background: #6f42c1;
   color: white;
 }
 
 .btn-info:hover:not(:disabled) {
-  background: #2980b9;
+  background: #5a32a3;
 }
 
 .btn-secondary {
@@ -1701,6 +1741,344 @@ input[type="number"].form-control-inline {
   }
 }
 
+/* ========================
+   Botón y Vista de Pendientes
+   ======================== */
+
+.control-grupo-pendientes {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.btn-pendientes {
+  padding: 0.5rem 1.25rem;
+  border: 2px solid var(--warning-color);
+  background: white;
+  color: var(--warning-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: var(--transition);
+}
+
+.btn-pendientes:hover {
+  background: rgba(243, 156, 18, 0.08);
+}
+
+.btn-pendientes.btn-active {
+  background: var(--warning-color);
+  color: white;
+}
+
+.badge-pendientes {
+  background: white;
+  color: var(--warning-color);
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.btn-pendientes.btn-active .badge-pendientes {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+/* Sección pendientes */
+.pendientes-section {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border-left: 4px solid var(--warning-color);
+}
+
+.pendientes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pendientes-header h2 {
+  font-size: 1.4rem;
+  color: var(--primary-color);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pendientes-header h2 i {
+  color: var(--warning-color);
+}
+
+.pendientes-summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.badge-warning-lg {
+  background: rgba(243, 156, 18, 0.15);
+  color: #b7780a;
+  border: 1px solid rgba(243, 156, 18, 0.4);
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.total-pendiente {
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.pendientes-ok {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+/* Cards por proyecto en pendientes */
+.proyectos-pendientes {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.proyecto-pendiente-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.proyecto-pendiente-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, rgba(243, 156, 18, 0.06), rgba(243, 156, 18, 0.02));
+  border-bottom: 1px solid var(--border-color);
+}
+
+.proyecto-pendiente-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.proyecto-pendiente-header h3 i {
+  color: var(--secondary-color);
+}
+
+.proyecto-pendiente-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.total-proyecto {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--primary-color);
+}
+
+/* ========================
+   Modal de Pago Parcial
+   ======================== */
+
+.modal-pago-parcial {
+  max-width: 560px;
+  width: 95%;
+}
+
+.pago-parcial-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.pago-instrucciones {
+  background: rgba(52, 152, 219, 0.08);
+  border-left: 3px solid var(--secondary-color);
+  padding: 0.85rem 1rem;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.9rem;
+  color: var(--text-color);
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.pago-instrucciones i {
+  color: var(--secondary-color);
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+}
+
+/* Grupo (áridos / horas) */
+.pago-grupo {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.pago-grupo h4 {
+  margin: 0;
+  padding: 0.65rem 1rem;
+  background: var(--background-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pago-grupo h4 i {
+  color: var(--secondary-color);
+}
+
+.pago-items {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cada fila de concepto */
+.pago-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border-color);
+  gap: 1rem;
+}
+
+.pago-item:last-child {
+  border-bottom: none;
+}
+
+.pago-item:hover {
+  background: rgba(52, 152, 219, 0.04);
+}
+
+.pago-item-pagado {
+  background: rgba(46, 204, 113, 0.06);
+}
+
+.pago-item-pagado:hover {
+  background: rgba(46, 204, 113, 0.1);
+}
+
+.pago-item-izq {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.pago-checkbox {
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  accent-color: var(--success-color);
+  flex-shrink: 0;
+}
+
+.pago-concepto {
+  font-size: 0.95rem;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.pago-monto {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.monto-pagado {
+  color: var(--success-color);
+}
+
+/* Resumen de totales en el modal */
+.pago-resumen {
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.pago-resumen-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pago-resumen-fila:last-child {
+  border-bottom: none;
+}
+
+.pago-resumen-fila span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-muted);
+}
+
+.pago-resumen-pagado {
+  background: rgba(46, 204, 113, 0.06);
+}
+
+.pago-resumen-pagado span {
+  color: var(--success-color) !important;
+}
+
+.pago-resumen-pagado strong {
+  color: var(--success-color);
+  font-size: 1.05rem;
+}
+
+.pago-resumen-pendiente {
+  background: rgba(243, 156, 18, 0.06);
+}
+
+.pago-resumen-pendiente span {
+  color: var(--warning-color) !important;
+}
+
+.pago-resumen-pendiente strong {
+  color: var(--warning-color);
+  font-size: 1.05rem;
+}
+
 /* Modo oscuro desactivado para evitar conflictos con inputs editables */
 /* @media (prefers-color-scheme: dark) {
   :root {
@@ -1720,3 +2098,218 @@ input[type="number"].form-control-inline {
     background: rgba(52, 152, 219, 0.2);
   }
 } */
+
+/* ========================
+   Modal de Registro de Pago
+   ======================== */
+
+.modal-registrar-pago {
+  max-width: 640px;
+  width: 95%;
+}
+
+.pago-resumen-reporte {
+  background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(46, 204, 113, 0.05));
+  border: 2px solid rgba(52, 152, 219, 0.2);
+  border-radius: var(--border-radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.pago-resumen-reporte h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
+.pago-resumen-reporte h4 i {
+  color: var(--secondary-color);
+}
+
+.resumen-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.resumen-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: white;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.resumen-item-success {
+  background: rgba(46, 204, 113, 0.08);
+  border-left: 4px solid var(--success-color);
+}
+
+.resumen-item-warning {
+  background: rgba(243, 156, 18, 0.08);
+  border-left: 4px solid var(--warning-color);
+}
+
+.resumen-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.resumen-item-success .resumen-label {
+  color: var(--success-color);
+  font-weight: 500;
+}
+
+.resumen-item-warning .resumen-label {
+  color: var(--warning-color);
+  font-weight: 500;
+}
+
+.resumen-valor {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.resumen-item-success .resumen-valor {
+  color: var(--success-color);
+}
+
+.resumen-item-warning .resumen-valor {
+  color: var(--warning-color);
+}
+
+/* Form hints y errors */
+.form-hint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.text-success {
+  color: var(--success-color);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.text-info {
+  color: var(--info-color);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.text-danger {
+  color: var(--danger-color);
+}
+
+.form-error {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--danger-color);
+}
+
+/* Historial de pagos previos en modal */
+.historial-pagos-previos {
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.historial-pagos-previos h4 {
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.badge-count-sm {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: white;
+  background: var(--secondary-color);
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  margin-left: 0.3rem;
+}
+
+.pagos-previos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.pago-previo-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--background-color);
+  border-radius: var(--border-radius-sm);
+  border-left: 3px solid var(--success-color);
+  font-size: 0.85rem;
+}
+
+.pago-previo-fecha {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.pago-previo-fecha i {
+  color: var(--success-color);
+  font-size: 0.8rem;
+}
+
+.pago-previo-monto {
+  font-weight: 700;
+  color: var(--success-color);
+  text-align: right;
+}
+
+.pago-previo-obs {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+/* Estilos responsivos para el nuevo modal */
+@media (max-width: 768px) {
+  .modal-registrar-pago {
+    max-width: 95%;
+  }
+
+  .resumen-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pago-previo-item {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .pago-previo-monto {
+    text-align: left;
+  }
+}

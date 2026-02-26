@@ -83,6 +83,10 @@ export interface ReporteCuentaCorriente {
   // Detalles de items (se obtienen al expandir)
   items_aridos?: ItemReporteArido[];
   items_horas?: ItemReporteHora[];
+  // Información de pagos parciales
+  monto_pagado?: number;       // suma de todos los pagos registrados
+  saldo_pendiente?: number;    // importe_total - monto_pagado
+  pagos?: PagoReporte[];       // historial de pagos
 }
 
 export enum EstadoPago {
@@ -109,5 +113,22 @@ export interface RequestGenerarReporte {
 
 export interface RequestActualizarEstado {
   estado: EstadoPago;
+  observaciones?: string;
+}
+
+// Pago registrado contra un reporte
+export interface PagoReporte {
+  id: number;
+  reporte_id: number;
+  monto: number;
+  fecha: string;
+  observaciones?: string;
+  fecha_registro?: string;
+}
+
+// Request para registrar un nuevo pago
+export interface RequestRegistrarPago {
+  monto: number;
+  fecha: string;
   observaciones?: string;
 }
