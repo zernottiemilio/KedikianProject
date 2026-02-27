@@ -192,15 +192,47 @@ export class CotizacionesComponent implements OnInit {
     this.cargandoClientes = true;
     this.cotizacionService.getClientes().subscribe({
       next: (data) => {
-        this.clientes = data;
+        console.log('🔍 DIAGNÓSTICO - Datos recibidos del backend:');
+        console.log('Total de registros:', data.length);
+        console.log('Datos completos:', JSON.stringify(data, null, 2));
+
+        // Contar Claudio Peisina
+        const claudios = data.filter(c => c.nombre.includes('Claudio Peisina'));
+        console.log('❗ Claudio Peisina aparece:', claudios.length, 'veces');
+        console.log('IDs de Claudio Peisina:', claudios.map(c => c.id));
+
+        // Filtrar duplicados basándose en el ID del cliente
+        const clientesUnicos = this.filtrarClientesDuplicados(data);
+        this.clientes = clientesUnicos;
         this.cargandoClientes = false;
-        console.log('Clientes cargados:', data);
+
+        console.log('✅ Clientes únicos (después de filtrar):', clientesUnicos.length);
+
+        // Log para detectar duplicados
+        if (data.length !== clientesUnicos.length) {
+          console.warn('⚠️ Se encontraron clientes duplicados:', data.length - clientesUnicos.length);
+        }
       },
       error: (error) => {
-        console.error('Error al cargar clientes:', error);
+        console.error('❌ Error al cargar clientes:', error);
         this.cargandoClientes = false;
       }
     });
+  }
+
+  /**
+   * Filtra clientes duplicados basándose en el ID
+   */
+  private filtrarClientesDuplicados(clientes: ClienteOut[]): ClienteOut[] {
+    const clientesMap = new Map<number, ClienteOut>();
+
+    clientes.forEach(cliente => {
+      if (!clientesMap.has(cliente.id)) {
+        clientesMap.set(cliente.id, cliente);
+      }
+    });
+
+    return Array.from(clientesMap.values());
   }
 
   cargarServiciosPredefinidos(): void {
@@ -510,5 +542,9 @@ export class CotizacionesComponent implements OnInit {
   // TrackBy para optimizar ngFor
   trackByIndex(index: number): number {
     return index;
+  }
+
+  trackByClienteId(_index: number, cliente: ClienteOut): number {
+    return cliente.id;
   }
 }

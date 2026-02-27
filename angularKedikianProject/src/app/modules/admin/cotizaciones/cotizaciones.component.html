@@ -27,7 +27,7 @@
             formControlName="cliente_id"
             class="form-control">
             <option value="" disabled selected>Seleccione un cliente</option>
-            <option *ngFor="let cliente of clientes" [value]="cliente.id">
+            <option *ngFor="let cliente of clientes; trackBy: trackByClienteId" [value]="cliente.id">
               {{ cliente.nombre }}
             </option>
           </select>
