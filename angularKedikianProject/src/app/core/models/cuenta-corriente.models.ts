@@ -132,3 +132,10 @@ export interface RequestRegistrarPago {
   fecha: string;
   observaciones?: string;
 }
+
+// Request para actualizar campos editables de un reporte
+export interface RequestActualizarReporte {
+  observaciones?: string;
+  numero_factura?: string;
+  fecha_pago?: string;
+}

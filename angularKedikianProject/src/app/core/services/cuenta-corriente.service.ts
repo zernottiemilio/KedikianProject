@@ -11,7 +11,8 @@ import {
   RequestActualizarEstado,
   EstadoPago,
   PagoReporte,
-  RequestRegistrarPago
+  RequestRegistrarPago,
+  RequestActualizarReporte
 } from '../models/cuenta-corriente.models';
 
 @Injectable({
@@ -222,6 +223,27 @@ export class CuentaCorrienteService {
         console.log('Reporte eliminado:', reporteId);
       }),
       catchError(this.handleError<void>('eliminarReporte'))
+    );
+  }
+
+  /**
+   * Actualiza campos editables de un reporte
+   */
+  actualizarReporte(
+    reporteId: number,
+    datos: RequestActualizarReporte
+  ): Observable<ReporteCuentaCorriente> {
+    return this.http.patch<ReporteCuentaCorriente>(
+      `${this.apiUrl}/reportes/${reporteId}`,
+      datos,
+      {
+        headers: this.getAuthHeaders()
+      }
+    ).pipe(
+      tap((response) => {
+        console.log('Reporte actualizado:', response);
+      }),
+      catchError(this.handleError<ReporteCuentaCorriente>('actualizarReporte'))
     );
   }
 

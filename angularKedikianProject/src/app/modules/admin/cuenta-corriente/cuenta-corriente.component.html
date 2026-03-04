@@ -777,6 +777,13 @@
 
             <div class="estado-buttons" *ngIf="esAdministrador">
               <button
+                class="btn btn-sm btn-primary"
+                (click)="abrirModalEditarReporte(reporte); $event.stopPropagation()"
+                title="Editar reporte">
+                <i class="fas fa-edit"></i>
+                Editar
+              </button>
+              <button
                 class="btn btn-sm btn-success"
                 *ngIf="puedeRegistrarPago(reporte)"
                 (click)="abrirModalRegistrarPago(reporte); $event.stopPropagation()"
@@ -1266,6 +1273,97 @@
           [disabled]="pagoForm.invalid || getSaldoPendienteReporte() <= 0">
           <i class="fas fa-check"></i>
           Confirmar Pago
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Editar Reporte -->
+<div class="modal-overlay" *ngIf="mostrarModalEditarReporte" (click)="cerrarModalEditarReporte()">
+  <div class="modal-content modal-editar-reporte" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <i class="fas fa-edit"></i>
+        Editar Reporte #{{ reporteParaEditar?.id }}
+      </h2>
+      <button class="btn-close" (click)="cerrarModalEditarReporte()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="editarReporteForm" (ngSubmit)="guardarEdicionReporte()">
+      <div class="modal-body">
+
+        <!-- Información del reporte (solo lectura) -->
+        <div class="info-reporte-edicion">
+          <div class="info-item">
+            <i class="fas fa-calendar"></i>
+            <strong>Período:</strong>
+            <span>
+              {{ formatearFechaLegible(reporteParaEditar!.periodo_inicio) }} -
+              {{ formatearFechaLegible(reporteParaEditar!.periodo_fin) }}
+            </span>
+          </div>
+          <div class="info-item">
+            <i class="fas fa-dollar-sign"></i>
+            <strong>Total:</strong>
+            <span>{{ formatearMoneda(reporteParaEditar!.importe_total) }}</span>
+          </div>
+          <div class="info-item" *ngIf="reporteParaEditar?.estado === EstadoPago.PAGADO">
+            <i class="fas fa-exclamation-triangle" style="color: var(--warning-color);"></i>
+            <strong style="color: var(--warning-color);">Estado: PAGADO</strong>
+          </div>
+        </div>
+
+        <!-- Campos editables -->
+        <div class="form-group">
+          <label for="editar_observaciones">
+            <i class="fas fa-comment"></i>
+            Observaciones:
+          </label>
+          <textarea
+            id="editar_observaciones"
+            formControlName="observaciones"
+            class="form-control"
+            rows="4"
+            placeholder="Observaciones del reporte..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="editar_numero_factura">
+            <i class="fas fa-file-invoice"></i>
+            Número de Factura:
+          </label>
+          <input
+            type="text"
+            id="editar_numero_factura"
+            formControlName="numero_factura"
+            class="form-control"
+            placeholder="Ej: FC-0001234">
+        </div>
+
+        <div class="form-group" *ngIf="reporteParaEditar?.estado === EstadoPago.PAGADO">
+          <label for="editar_fecha_pago">
+            <i class="fas fa-calendar-check"></i>
+            Fecha de Pago:
+          </label>
+          <input
+            type="date"
+            id="editar_fecha_pago"
+            formControlName="fecha_pago"
+            class="form-control">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalEditarReporte()">
+          <i class="fas fa-times"></i>
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="editarReporteForm.invalid">
+          <i class="fas fa-save"></i>
+          Guardar Cambios
         </button>
       </div>
     </form>

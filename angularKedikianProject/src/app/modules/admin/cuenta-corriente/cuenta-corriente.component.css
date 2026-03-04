@@ -2313,3 +2313,32 @@ input[type="number"].form-control-inline {
     text-align: left;
   }
 }
+
+/* ================================
+   Modal de Edición de Reporte
+   ================================ */
+.modal-editar-reporte {
+  max-width: 800px;
+}
+
+.info-reporte-edicion {
+  background: var(--background-light, #f8f9fa);
+  border: 1px solid var(--border-color, #dee2e6);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.info-reporte-edicion .info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-reporte-edicion .info-item i {
+  color: var(--primary-color, #007bff);
+}

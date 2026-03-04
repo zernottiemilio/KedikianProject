@@ -10,6 +10,9 @@ import {
   CotizacionOut,
   CotizacionCreate,
   CotizacionItemCreate,
+  CotizacionUpdate,
+  CotizacionItem,
+  CotizacionItemOut,
   EstadoCotizacion
 } from '../../../core/models/cotizacion.models';
 
@@ -38,10 +41,13 @@ export class CotizacionesComponent implements OnInit {
   // Modales
   mostrarModalNuevoCliente = false;
   mostrarModalDetalleCotizacion = false;
+  mostrarModalEditar = false;
 
   // Cotización expandida/seleccionada
   cotizacionExpandida: number | null = null;
   cotizacionDetalle: CotizacionOut | null = null;
+  cotizacionEditandoId: number | null = null;
+  formularioEdicion!: FormGroup;
 
   // Permisos
   esAdministrador = false;
@@ -69,6 +75,14 @@ export class CotizacionesComponent implements OnInit {
       email: [''],
       telefono: [''],
       direccion: ['']
+    });
+
+    // Formulario de edición de cotización
+    this.formularioEdicion = this.fb.group({
+      cliente_id: ['', Validators.required],
+      fecha_validez: ['', Validators.required],
+      observaciones: [''],
+      items: this.fb.array([])
     });
 
     // Configurar fecha por defecto
@@ -111,6 +125,14 @@ export class CotizacionesComponent implements OnInit {
     const itemsControl = this.cotizacionForm?.get('items');
     if (!itemsControl) {
       // Retornar un FormArray vacío temporal si no existe
+      return this.fb.array([]);
+    }
+    return itemsControl as FormArray;
+  }
+
+  get itemsEdicion(): FormArray {
+    const itemsControl = this.formularioEdicion?.get('items');
+    if (!itemsControl) {
       return this.fb.array([]);
     }
     return itemsControl as FormArray;
@@ -546,5 +568,175 @@ export class CotizacionesComponent implements OnInit {
 
   trackByClienteId(_index: number, cliente: ClienteOut): number {
     return cliente.id;
+  }
+
+  // ------------------------
+  // Edición de Cotizaciones
+  // ------------------------
+
+  crearItemFormEdicion(item?: CotizacionItemOut): FormGroup {
+    return this.fb.group({
+      id: [item?.id || null],
+      nombre_servicio: [item?.nombre_servicio || '', Validators.required],
+      unidad: [item?.unidad || '', Validators.required],
+      cantidad: [item?.cantidad || 1, [Validators.required, Validators.min(0.01)]],
+      precio_unitario: [item?.precio_unitario || 0, [Validators.required, Validators.min(0)]]
+    });
+  }
+
+  abrirModalEditar(cotizacion: CotizacionOut): void {
+    // Advertencia fuerte para cotizaciones APROBADAS
+    if (cotizacion.estado === EstadoCotizacion.APROBADA) {
+      const confirmacion = confirm(
+        '🚨 ADVERTENCIA IMPORTANTE 🚨\n\n' +
+        'Esta cotización está APROBADA.\n\n' +
+        'Editarla puede:\n' +
+        '- Afectar acuerdos ya establecidos con el cliente\n' +
+        '- Causar inconsistencias en registros posteriores\n' +
+        '- Requerir reenvío de documentación\n\n' +
+        '¿Está COMPLETAMENTE SEGURO de que desea continuar?'
+      );
+      if (!confirmacion) return;
+    }
+
+    this.cotizacionEditandoId = cotizacion.id;
+
+    // Limpiar items del formulario de edición
+    while (this.itemsEdicion.length > 0) {
+      this.itemsEdicion.removeAt(0);
+    }
+
+    // Cargar datos generales
+    this.formularioEdicion.patchValue({
+      cliente_id: cotizacion.cliente_id,
+      fecha_validez: cotizacion.fecha_validez,
+      observaciones: cotizacion.observaciones || ''
+    });
+
+    // Cargar items existentes
+    cotizacion.items.forEach(item => {
+      this.itemsEdicion.push(this.crearItemFormEdicion(item));
+    });
+
+    this.mostrarModalEditar = true;
+  }
+
+  cerrarModalEditar(): void {
+    this.mostrarModalEditar = false;
+    this.cotizacionEditandoId = null;
+
+    while (this.itemsEdicion.length > 0) {
+      this.itemsEdicion.removeAt(0);
+    }
+    this.formularioEdicion.reset();
+  }
+
+  agregarItemEdicion(): void {
+    this.itemsEdicion.push(this.crearItemFormEdicion());
+  }
+
+  eliminarItemEdicion(index: number): void {
+    if (this.itemsEdicion.length > 1) {
+      this.itemsEdicion.removeAt(index);
+    } else {
+      alert('Debe haber al menos un item en la cotización');
+    }
+  }
+
+  onServicioSeleccionadoEdicion(index: number, nombreServicio: string): void {
+    if (!this.itemsEdicion || !nombreServicio) return;
+
+    const servicio = this.serviciosPredefinidos.find(s => s.nombre === nombreServicio);
+    if (servicio && this.itemsEdicion.at(index)) {
+      const itemForm = this.itemsEdicion.at(index) as FormGroup;
+
+      setTimeout(() => {
+        itemForm.patchValue({
+          unidad: servicio.unidad,
+          precio_unitario: servicio.precio_por_defecto
+        });
+      }, 0);
+    }
+  }
+
+  calcularSubtotalEdicion(index: number): number {
+    if (!this.itemsEdicion || !this.itemsEdicion.at(index)) return 0;
+    const item = this.itemsEdicion.at(index).value;
+    return (item.cantidad || 0) * (item.precio_unitario || 0);
+  }
+
+  calcularTotalEdicion(): number {
+    if (!this.itemsEdicion) return 0;
+    let total = 0;
+    for (let i = 0; i < this.itemsEdicion.length; i++) {
+      total += this.calcularSubtotalEdicion(i);
+    }
+    return total;
+  }
+
+  guardarEdicionCotizacion(): void {
+    if (!this.formularioEdicion || !this.formularioEdicion.valid) {
+      alert('Por favor, complete todos los campos requeridos');
+      return;
+    }
+
+    if (!this.itemsEdicion || this.itemsEdicion.length === 0) {
+      alert('Debe agregar al menos un servicio o producto');
+      return;
+    }
+
+    if (!this.cotizacionEditandoId) return;
+
+    const formValue = this.formularioEdicion.value;
+
+    // Preparar datos generales
+    const datosGenerales: CotizacionUpdate = {
+      fecha_validez: formValue.fecha_validez,
+      observaciones: formValue.observaciones || ''
+    };
+
+    // Preparar items
+    const items: CotizacionItem[] = formValue.items.map((item: any) => {
+      const itemData: any = {
+        nombre_servicio: item.nombre_servicio,
+        unidad: item.unidad,
+        cantidad: parseFloat(item.cantidad),
+        precio_unitario: parseFloat(item.precio_unitario),
+        subtotal: parseFloat(item.cantidad) * parseFloat(item.precio_unitario)
+      };
+
+      if (item.id) {
+        itemData.id = item.id;
+      }
+
+      return itemData;
+    });
+
+    // Actualizar primero datos generales, luego items
+    this.cotizacionService.actualizarCotizacion(this.cotizacionEditandoId, datosGenerales)
+      .subscribe({
+        next: (cotizacionActualizada) => {
+          this.cotizacionService.actualizarItems(this.cotizacionEditandoId!, items)
+            .subscribe({
+              next: (cotizacionFinal) => {
+                const index = this.cotizaciones.findIndex(c => c.id === this.cotizacionEditandoId);
+                if (index !== -1) {
+                  this.cotizaciones[index] = cotizacionFinal;
+                }
+
+                this.cerrarModalEditar();
+                alert('Cotización actualizada exitosamente');
+              },
+              error: (error) => {
+                console.error('Error al actualizar items:', error);
+                alert('Error al actualizar los items de la cotización.');
+              }
+            });
+        },
+        error: (error) => {
+          console.error('Error al actualizar cotización:', error);
+          alert('Error al actualizar la cotización.');
+        }
+      });
   }
 }

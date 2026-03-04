@@ -13,7 +13,8 @@ import {
   EstadoPago,
   RequestGenerarReporte,
   RequestRegistrarPago,
-  PagoReporte
+  PagoReporte,
+  RequestActualizarReporte
 } from '../../../core/models/cuenta-corriente.models';
 
 @Component({
@@ -95,6 +96,11 @@ export class CuentaCorrienteComponent implements OnInit {
   reporteParaPago: ReporteCuentaCorriente | null = null;
   cargandoHistorialPagos = false;
 
+  // Modal de edición de reporte
+  mostrarModalEditarReporte = false;
+  reporteParaEditar: ReporteCuentaCorriente | null = null;
+  editarReporteForm: FormGroup;
+
   constructor(
     private cuentaCorrienteService: CuentaCorrienteService,
     private projectService: ProjectService,
@@ -113,6 +119,13 @@ export class CuentaCorrienteComponent implements OnInit {
       monto: ['', [Validators.required, Validators.min(0.01)]],
       fecha: [hoy, Validators.required],
       observaciones: ['']
+    });
+
+    // Inicializar formulario de edición de reporte
+    this.editarReporteForm = this.fb.group({
+      observaciones: [''],
+      numero_factura: [''],
+      fecha_pago: ['']
     });
   }
 
@@ -1261,5 +1274,64 @@ export class CuentaCorrienteComponent implements OnInit {
 
   puedeRegistrarPago(reporte: ReporteCuentaCorriente): boolean {
     return this.esAdministrador && reporte.estado !== EstadoPago.PAGADO;
+  }
+
+  // ------------------------
+  // Edición de Reporte
+  // ------------------------
+
+  abrirModalEditarReporte(reporte: ReporteCuentaCorriente): void {
+    // Advertencia para reportes PAGADOS
+    if (reporte.estado === EstadoPago.PAGADO) {
+      const confirmacion = confirm(
+        '⚠️ ADVERTENCIA: Este reporte está PAGADO.\n\n' +
+        'Editar un reporte pagado puede afectar la contabilidad.\n' +
+        '¿Está seguro de que desea continuar?'
+      );
+      if (!confirmacion) return;
+    }
+
+    this.reporteParaEditar = reporte;
+    this.editarReporteForm.patchValue({
+      observaciones: reporte.observaciones || '',
+      numero_factura: reporte.numero_factura || '',
+      fecha_pago: reporte.fecha_pago || ''
+    });
+    this.mostrarModalEditarReporte = true;
+  }
+
+  cerrarModalEditarReporte(): void {
+    this.mostrarModalEditarReporte = false;
+    this.reporteParaEditar = null;
+    this.editarReporteForm.reset();
+  }
+
+  guardarEdicionReporte(): void {
+    if (this.editarReporteForm.invalid || !this.reporteParaEditar) return;
+
+    const datosActualizacion: RequestActualizarReporte = {
+      observaciones: this.editarReporteForm.value.observaciones,
+      numero_factura: this.editarReporteForm.value.numero_factura,
+      fecha_pago: this.editarReporteForm.value.fecha_pago || undefined
+    };
+
+    this.cuentaCorrienteService.actualizarReporte(
+      this.reporteParaEditar.id,
+      datosActualizacion
+    ).subscribe({
+      next: (reporteActualizado) => {
+        const index = this.reportes.findIndex(r => r.id === reporteActualizado.id);
+        if (index !== -1) {
+          this.reportes[index] = { ...this.reportes[index], ...reporteActualizado };
+        }
+        this.reportesConDetalle.set(reporteActualizado.id, reporteActualizado);
+        this.cerrarModalEditarReporte();
+        alert('Reporte actualizado exitosamente');
+      },
+      error: (error) => {
+        console.error('Error al actualizar reporte:', error);
+        alert('Error al actualizar el reporte. Por favor, intente nuevamente.');
+      }
+    });
   }
 }
