@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { TokenResponse, ApiResponse, ApiLogEntry } from '../models/external-api.models';
+import { TokenResponse, ApiResponse, ApiLogEntry, ClientProjectView } from '../models/external-api.models';
 
 @Injectable({
   providedIn: 'root'
@@ -125,5 +125,43 @@ export class ExternalApiService {
    */
   getLogs(): ApiLogEntry[] {
     return this.logsSubject.value;
+  }
+
+  // ==========================================
+  // ENDPOINTS PARA CLIENTES (Vista pública)
+  // ==========================================
+
+  /**
+   * Obtiene todos los proyectos activos para clientes
+   * GET /api/v1/client/proyectos
+   */
+  getClientProyectos(): Observable<ApiResponse> {
+    const token = this.currentTokenSubject.value;
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.get<ApiResponse>(`${this.apiUrl}/client/proyectos`, { headers }).pipe(
+      tap((response: ApiResponse) => {
+        this.addLog('GET', 'client/proyectos', response.success);
+      })
+    );
+  }
+
+  /**
+   * Obtiene un proyecto específico para clientes
+   * GET /api/v1/client/proyectos/:id
+   */
+  getClientProyecto(proyectoId: number): Observable<ApiResponse> {
+    const token = this.currentTokenSubject.value;
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.get<ApiResponse>(`${this.apiUrl}/client/proyectos/${proyectoId}`, { headers }).pipe(
+      tap((response: ApiResponse) => {
+        this.addLog('GET', `client/proyectos/${proyectoId}`, response.success);
+      })
+    );
   }
 }
