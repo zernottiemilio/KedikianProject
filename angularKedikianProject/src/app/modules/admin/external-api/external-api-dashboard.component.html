@@ -1,0 +1,35 @@
+<div class="external-api-container">
+  <div class="header">
+    <h2>Administración de API Externa</h2>
+    <p class="subtitle">Gestión de tokens JWT y pruebas de integración con sistemas externos</p>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Panel 1: Generación de Token -->
+    <div class="panel">
+      <div class="panel-header">
+        <i class="fas fa-key"></i>
+        <h3>Generación de Token JWT</h3>
+      </div>
+      <app-token-generator></app-token-generator>
+    </div>
+
+    <!-- Panel 2: Probador de API -->
+    <div class="panel">
+      <div class="panel-header">
+        <i class="fas fa-vial"></i>
+        <h3>Probador de API</h3>
+      </div>
+      <app-api-tester></app-api-tester>
+    </div>
+
+    <!-- Panel 3: Logs de Llamadas -->
+    <div class="panel panel-full-width">
+      <div class="panel-header">
+        <i class="fas fa-list-alt"></i>
+        <h3>Registro de Llamadas</h3>
+      </div>
+      <app-api-logs></app-api-logs>
+    </div>
+  </div>
+</div>

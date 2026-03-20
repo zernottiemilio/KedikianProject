@@ -16,6 +16,7 @@ import { InformesComponent } from './modules/admin/informes/informes.component';
 import { ExcelImportComponent } from './modules/admin/excel-import/excel-import.component';
 import { CuentaCorrienteComponent } from './modules/admin/cuenta-corriente/cuenta-corriente.component';
 import { CotizacionesComponent } from './modules/admin/cotizaciones/cotizaciones.component';
+import { ExternalApiDashboardComponent } from './modules/admin/external-api/external-api-dashboard.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -77,6 +78,11 @@ export const routes: Routes = [
       {
         path: 'cotizaciones',
         component: CotizacionesComponent,
+        data: { role: 'administrador' }
+      },
+      {
+        path: 'configuracion/api-externa',
+        component: ExternalApiDashboardComponent,
         data: { role: 'administrador' }
       },
 

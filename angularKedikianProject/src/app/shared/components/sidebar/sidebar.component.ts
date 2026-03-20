@@ -91,6 +91,13 @@ export class SidebarComponent implements OnInit {
       active: false,
       roles: ['administrador'], // Solo administradores
     },
+    {
+      title: 'API Externa',
+      icon: 'fas fa-plug',
+      route: '/configuracion/api-externa',
+      active: false,
+      roles: ['administrador'], // Solo administradores
+    },
   ];
 
   configItems = [

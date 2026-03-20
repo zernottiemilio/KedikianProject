@@ -1,0 +1,54 @@
+<div class="api-logs">
+  <div class="logs-header">
+    <span class="logs-count">
+      Total de registros: <strong>{{ (logs$ | async)?.length || 0 }}</strong> / 50
+    </span>
+    <button
+      class="btn btn-danger btn-sm"
+      (click)="limpiarLogs()"
+      [disabled]="(logs$ | async)?.length === 0"
+    >
+      <i class="fas fa-trash-alt"></i> Limpiar Todo
+    </button>
+  </div>
+
+  <!-- Tabla de Logs -->
+  <div class="table-container" *ngIf="(logs$ | async)?.length; else noLogs">
+    <table class="logs-table">
+      <thead>
+        <tr>
+          <th>Método</th>
+          <th>Recurso</th>
+          <th>Estado</th>
+          <th>Fecha y Hora</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of logs$ | async">
+          <td>
+            <span class="method-badge" [class.method-get]="log.metodo === 'GET'" [class.method-post]="log.metodo === 'POST'">
+              {{ log.metodo }}
+            </span>
+          </td>
+          <td class="recurso-cell">{{ log.recurso }}</td>
+          <td>
+            <span class="badge" [ngClass]="getEstadoBadgeClass(log.estado)">
+              <i [class]="getEstadoIcon(log.estado)"></i>
+              {{ getEstadoText(log.estado) }}
+            </span>
+          </td>
+          <td class="timestamp-cell">{{ formatTimestamp(log.timestamp) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mensaje cuando no hay logs -->
+  <ng-template #noLogs>
+    <div class="no-logs">
+      <i class="fas fa-inbox"></i>
+      <p>No hay llamadas registradas</p>
+      <small>Las llamadas que realice desde el panel de pruebas aparecerán aquí</small>
+    </div>
+  </ng-template>
+</div>

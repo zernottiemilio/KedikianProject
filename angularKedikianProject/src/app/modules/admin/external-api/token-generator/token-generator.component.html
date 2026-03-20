@@ -1,0 +1,81 @@
+<div class="token-generator">
+  <form (ngSubmit)="generateToken()">
+    <!-- Campo: Nombre del Sistema -->
+    <div class="form-group">
+      <label for="systemName">Nombre del Sistema</label>
+      <input
+        type="text"
+        id="systemName"
+        class="form-control"
+        [(ngModel)]="systemName"
+        name="systemName"
+        placeholder="Ej: terrasoftarg"
+        [disabled]="isLoading"
+      />
+    </div>
+
+    <!-- Campo: Clave Compartida -->
+    <div class="form-group">
+      <label for="sharedSecret">Clave Compartida</label>
+      <div class="password-input-group">
+        <input
+          [type]="showPassword ? 'text' : 'password'"
+          id="sharedSecret"
+          class="form-control"
+          [(ngModel)]="sharedSecret"
+          name="sharedSecret"
+          placeholder="Ingrese la clave compartida"
+          [disabled]="isLoading"
+        />
+        <button
+          type="button"
+          class="btn-toggle-password"
+          (click)="togglePasswordVisibility()"
+          [disabled]="isLoading"
+        >
+          <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mensaje de Error -->
+    <div class="alert alert-danger" *ngIf="errorMessage">
+      <i class="fas fa-exclamation-circle"></i> {{ errorMessage }}
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+        <span *ngIf="!isLoading">
+          <i class="fas fa-key"></i> Generar Token
+        </span>
+        <span *ngIf="isLoading">
+          <i class="fas fa-spinner fa-spin"></i> Generando...
+        </span>
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="clearForm()" [disabled]="isLoading">
+        <i class="fas fa-eraser"></i> Limpiar
+      </button>
+    </div>
+  </form>
+
+  <!-- Resultado: Token Generado -->
+  <div class="token-result" *ngIf="generatedToken">
+    <div class="token-header">
+      <span class="badge badge-success">
+        <i class="fas fa-check-circle"></i> Expira en {{ getExpirationMinutes() }} min
+      </span>
+    </div>
+    <div class="token-display">
+      <textarea
+        readonly
+        class="token-textarea"
+        [value]="generatedToken"
+        rows="4"
+      ></textarea>
+      <button class="btn-copy" (click)="copyToClipboard()" title="Copiar token">
+        <i class="fas fa-copy"></i> Copiar
+      </button>
+    </div>
+  </div>
+</div>

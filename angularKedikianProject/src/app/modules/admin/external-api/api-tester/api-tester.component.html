@@ -1,0 +1,108 @@
+<div class="api-tester">
+  <!-- Formulario de Configuración -->
+  <div class="tester-form">
+    <!-- Selector de Recurso -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="recurso">Tipo de Recurso</label>
+        <select
+          id="recurso"
+          class="form-control"
+          [(ngModel)]="selectedRecurso"
+          [disabled]="isLoading"
+        >
+          <option *ngFor="let recurso of recursos" [value]="recurso">
+            {{ recurso | titlecase }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Selector de Método -->
+      <div class="form-group">
+        <label for="metodo">Método HTTP</label>
+        <select
+          id="metodo"
+          class="form-control"
+          [(ngModel)]="selectedMetodo"
+          (change)="onMetodoChange()"
+          [disabled]="isLoading"
+        >
+          <option *ngFor="let metodo of metodos" [value]="metodo">
+            {{ metodo }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ID (solo para GET) -->
+    <div class="form-group" *ngIf="selectedMetodo === 'GET'">
+      <label for="resourceId">ID (opcional)</label>
+      <input
+        type="number"
+        id="resourceId"
+        class="form-control"
+        [(ngModel)]="resourceId"
+        placeholder="Dejar vacío para obtener todos"
+        [disabled]="isLoading"
+      />
+    </div>
+
+    <!-- Payload JSON (solo para POST) -->
+    <div class="form-group" *ngIf="selectedMetodo === 'POST'">
+      <label for="payload">Payload JSON</label>
+      <textarea
+        id="payload"
+        class="form-control payload-textarea"
+        [(ngModel)]="payloadJson"
+        rows="6"
+        placeholder='{"campo": "valor"}'
+        [disabled]="isLoading"
+      ></textarea>
+    </div>
+
+    <!-- Advertencia si no hay token -->
+    <div class="alert alert-warning" *ngIf="!hasToken">
+      <i class="fas fa-exclamation-triangle"></i>
+      Debe generar un token JWT antes de realizar pruebas
+    </div>
+
+    <!-- Botón Ejecutar -->
+    <div class="form-actions">
+      <button
+        class="btn btn-primary"
+        (click)="ejecutarLlamada()"
+        [disabled]="!hasToken || isLoading"
+      >
+        <span *ngIf="!isLoading">
+          <i class="fas fa-play"></i> Ejecutar
+        </span>
+        <span *ngIf="isLoading">
+          <i class="fas fa-spinner fa-spin"></i> Ejecutando...
+        </span>
+      </button>
+      <button
+        class="btn btn-secondary"
+        (click)="limpiarRespuesta()"
+        [disabled]="!responseData || isLoading"
+      >
+        <i class="fas fa-trash"></i> Limpiar
+      </button>
+    </div>
+  </div>
+
+  <!-- Área de Respuesta -->
+  <div class="response-area" *ngIf="responseData !== null">
+    <div class="response-header">
+      <span class="response-label">Respuesta:</span>
+      <span
+        class="badge"
+        [class.badge-success]="responseSuccess === true"
+        [class.badge-danger]="responseSuccess === false"
+      >
+        <i [class]="responseSuccess ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+        {{ responseSuccess ? 'Éxito' : 'Error' }}
+      </span>
+    </div>
+    <pre class="response-json">{{ getFormattedResponse() }}</pre>
+  </div>
+</div>
