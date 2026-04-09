@@ -8,6 +8,11 @@
 
   <div class="search-bar">
     <input type="text" placeholder="Buscar máquina..." [(ngModel)]="terminoBusqueda" (input)="filtrarMaquinas()">
+    <select [(ngModel)]="filterStatus" (change)="onFilterStatusChange()" class="filter-select">
+      <option value="all">Todos los estados</option>
+      <option value="true">Activas</option>
+      <option value="false">Inactivas</option>
+    </select>
   </div>
 
   <div class="table-container" *ngIf="maquinasFiltradas.length > 0; else noData">
@@ -15,6 +20,7 @@
       <thead>
         <tr>
           <th>Nombre</th>
+          <th>Estado</th>
           <th>Horas de Uso</th>
           <th>Próximo Mant.</th>
           <th>Horas Restantes</th>
@@ -22,10 +28,19 @@
         </tr>
       </thead>
       <tbody>
-  <tr *ngFor="let maquina of maquinasFiltradas">
+  <tr *ngFor="let maquina of maquinasFiltradas" [class.inactive]="!maquina.estado">
     <td>{{maquina.nombre}}</td>
 
-    <!-- 🆕 Horómetro inicial desde el último reporte -->
+    <!-- Estado con toggle -->
+    <td>
+      <div class="toggle-switch-small" (click)="toggleMaquinaStatus(maquina)">
+        <span class="status-badge" [ngClass]="maquina.estado ? 'status-active' : 'status-inactive'" style="cursor: pointer;">
+          {{ maquina.estado ? 'Activa' : 'Inactiva' }}
+        </span>
+      </div>
+    </td>
+
+    <!-- Horómetro inicial desde el último reporte -->
     <td>
       <span [ngClass]="getColorHorasTrabajadas(maquina)" 
             [title]="'Horómetro inicial del último reporte registrado'">
@@ -94,6 +109,14 @@
           <div class="error-message" *ngIf="maquinaForm.get('nombre')?.invalid && maquinaForm.get('nombre')?.touched">
             El nombre es obligatorio
           </div>
+        </div>
+
+        <div class="form-group" *ngIf="modoEdicion">
+          <label for="estado">Estado:</label>
+          <select id="estado" formControlName="estado" class="form-control">
+            <option [ngValue]="true">Activa</option>
+            <option [ngValue]="false">Inactiva</option>
+          </select>
         </div>
 
         <div class="form-actions">

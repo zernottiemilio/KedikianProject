@@ -70,15 +70,17 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let user of filteredUsers">
+        <tr *ngFor="let user of filteredUsers" [class.inactive]="!user.estado">
           <td>{{ user.id }}</td>
           <td>{{ user.nombre }}</td>
           <td>{{ user.email }}</td>
           <td>{{ getDisplayRole(user.roles[0]) }}</td>
           <td>
-            <span class="badge" [ngClass]="user.estado ? 'badge-success' : 'badge-danger'">
-              {{ user.estado ? 'Activo' : 'Inactivo' }}
-            </span>
+            <div class="toggle-switch-small" (click)="toggleUserStatus(user)">
+              <span class="badge" [ngClass]="user.estado ? 'badge-success' : 'badge-danger'" style="cursor: pointer;">
+                {{ user.estado ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
           </td>
           <td>{{ user.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</td>
           <td class="actions">

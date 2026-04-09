@@ -4,11 +4,11 @@ import { Observable, of, throwError } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
-// ✅ CAMBIO: Eliminado campo "estado"
 export interface Maquina {
   id: number;
   codigo: string;
   nombre: string;
+  estado: boolean;
   horas_uso: number;
   proximo_mantenimiento?: number | null;
 }
@@ -56,11 +56,32 @@ export class MachinesService {
 
   // ========== CRUD BÁSICO DE MÁQUINAS ==========
   obtenerMaquinas(): Observable<Maquina[]> {
-    return this.http.get<Maquina[]>(this.apiUrl);
+    return this.http.get<Maquina[]>(this.apiUrl).pipe(
+      tap(maquinas => console.log('📥 Máquinas RAW del backend:', maquinas)),
+      map(maquinas => maquinas.map(m => {
+        // Convertir estado a booleano real (el backend puede enviar 0/1, "true"/"false", etc.)
+        const estadoOriginal = (m as any).estado;
+        const estadoConvertido = estadoOriginal === true || estadoOriginal === 1 || estadoOriginal === 'true' || estadoOriginal === 'activa';
+        console.log(`🔄 ${m.nombre}: estado=${estadoOriginal} (${typeof estadoOriginal}) -> ${estadoConvertido}`);
+        return {
+          ...m,
+          estado: estadoConvertido
+        };
+      })),
+      tap(maquinas => console.log('✅ Máquinas CONVERTIDAS:', maquinas))
+    );
   }
 
   obtenerMaquinaPorId(id: number): Observable<Maquina> {
-    return this.http.get<Maquina>(`${this.apiUrl}/${id}`);
+    return this.http.get<Maquina>(`${this.apiUrl}/${id}`).pipe(
+      map(m => {
+        const estado = (m as any).estado;
+        return {
+          ...m,
+          estado: estado === true || estado === 1 || estado === 'true' || estado === 'activa'
+        };
+      })
+    );
   }
 
   crearMaquina(maquina: Omit<Maquina, 'id'>): Observable<Maquina> {
@@ -96,7 +117,21 @@ export class MachinesService {
   }
 
   actualizarMaquina(maquina: Maquina): Observable<Maquina> {
-    return this.http.put<Maquina>(`${this.apiUrl}/${maquina.id}`, maquina);
+    // Convertir estado booleano a número para el backend
+    const payload = {
+      ...maquina,
+      estado: maquina.estado ? 1 : 0
+    };
+    console.log('📤 Actualizando máquina - payload:', payload);
+    console.log('📤 Estado enviado:', payload.estado, typeof payload.estado);
+
+    return this.http.put<Maquina>(`${this.apiUrl}/${maquina.id}`, payload).pipe(
+      tap(response => console.log('✅ Respuesta del servidor:', response)),
+      catchError(error => {
+        console.error('❌ Error al actualizar máquina:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   eliminarMaquina(id: number): Observable<void> {
