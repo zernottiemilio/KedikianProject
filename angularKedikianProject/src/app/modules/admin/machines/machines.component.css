@@ -284,6 +284,73 @@ body {
   font-size: 14px;
 }
 
+.filter-select {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  min-width: 150px;
+  background-color: white;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+/* Estilo para filas inactivas */
+tr.inactive {
+  opacity: 0.6;
+  background-color: #f8f8f8;
+}
+
+tr.inactive:hover {
+  background-color: #f0f0f0;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-active {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-inactive {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+/* Toggle switch pequeño para la tabla */
+.toggle-switch-small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-switch-small input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-label-small {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-label-small:hover .status-badge {
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .filtros {
   display: flex;
   align-items: center;

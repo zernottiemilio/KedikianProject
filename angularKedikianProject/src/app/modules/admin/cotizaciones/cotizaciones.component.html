@@ -41,6 +41,14 @@
           Nuevo Cliente
         </button>
 
+        <button
+          type="button"
+          class="btn btn-gestionar-clientes"
+          (click)="abrirModalGestionClientes()">
+          <i class="fas fa-users-cog"></i>
+          Gestionar Clientes
+        </button>
+
         <div class="control-grupo">
           <label for="fechaValidez">
             <i class="fas fa-calendar-check"></i>
@@ -378,6 +386,20 @@
             rows="2"
             placeholder="Dirección del cliente"></textarea>
         </div>
+        <div class="form-group form-check">
+          <input
+            type="checkbox"
+            id="ocultarAlAprobar"
+            formControlName="ocultar_al_aprobar"
+            class="form-check-input">
+          <label for="ocultarAlAprobar" class="form-check-label">
+            <i class="fas fa-eye-slash"></i>
+            Ocultar cliente después de aprobar cotización
+          </label>
+          <small class="form-text text-muted">
+            El cliente no aparecerá en el selector una vez que la cotización sea aprobada
+          </small>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="cerrarModalNuevoCliente()">
@@ -561,5 +583,90 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal: Gestionar Clientes -->
+<div class="modal-overlay" *ngIf="mostrarModalGestionClientes" (click)="cerrarModalGestionClientes()">
+  <div class="modal-content modal-gestion-clientes" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <i class="fas fa-users-cog"></i>
+        Gestionar Clientes
+      </h2>
+      <button class="close-button" (click)="cerrarModalGestionClientes()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div *ngIf="cargandoTodosClientes" class="loader-container">
+        <div class="loader"></div>
+        <p>Cargando clientes...</p>
+      </div>
+
+      <div *ngIf="!cargandoTodosClientes">
+        <!-- Clientes Visibles -->
+        <div class="clientes-section">
+          <h3>
+            <i class="fas fa-eye"></i>
+            Clientes Visibles ({{ getClientesVisibles().length }})
+          </h3>
+          <div class="clientes-lista" *ngIf="getClientesVisibles().length > 0; else sinClientesVisibles">
+            <div class="cliente-item" *ngFor="let cliente of getClientesVisibles()">
+              <div class="cliente-info">
+                <span class="cliente-nombre">{{ cliente.nombre }}</span>
+                <span class="cliente-email" *ngIf="cliente.email">{{ cliente.email }}</span>
+              </div>
+              <button
+                type="button"
+                class="btn btn-sm btn-ocultar"
+                (click)="ocultarCliente(cliente)"
+                title="Ocultar cliente">
+                <i class="fas fa-eye-slash"></i>
+                Ocultar
+              </button>
+            </div>
+          </div>
+          <ng-template #sinClientesVisibles>
+            <p class="sin-clientes">No hay clientes visibles</p>
+          </ng-template>
+        </div>
+
+        <!-- Clientes Ocultos -->
+        <div class="clientes-section clientes-ocultos">
+          <h3>
+            <i class="fas fa-eye-slash"></i>
+            Clientes Ocultos ({{ getClientesOcultos().length }})
+          </h3>
+          <div class="clientes-lista" *ngIf="getClientesOcultos().length > 0; else sinClientesOcultos">
+            <div class="cliente-item oculto" *ngFor="let cliente of getClientesOcultos()">
+              <div class="cliente-info">
+                <span class="cliente-nombre">{{ cliente.nombre }}</span>
+                <span class="cliente-email" *ngIf="cliente.email">{{ cliente.email }}</span>
+              </div>
+              <button
+                type="button"
+                class="btn btn-sm btn-mostrar"
+                (click)="mostrarClienteOculto(cliente)"
+                title="Mostrar cliente">
+                <i class="fas fa-eye"></i>
+                Mostrar
+              </button>
+            </div>
+          </div>
+          <ng-template #sinClientesOcultos>
+            <p class="sin-clientes">No hay clientes ocultos</p>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="cerrarModalGestionClientes()">
+        <i class="fas fa-times"></i>
+        Cerrar
+      </button>
+    </div>
   </div>
 </div>

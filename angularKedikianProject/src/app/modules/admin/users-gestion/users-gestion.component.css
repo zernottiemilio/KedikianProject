@@ -212,6 +212,28 @@ table tbody tr:hover {
   background: #e8f0fe;
 }
 
+/* Estilo para filas inactivas */
+table tbody tr.inactive {
+  opacity: 0.6;
+  background-color: #f8f8f8;
+}
+
+table tbody tr.inactive:hover {
+  background-color: #f0f0f0;
+}
+
+/* Toggle switch para la tabla */
+.toggle-switch-small {
+  display: inline-block;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-switch-small:hover .badge {
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 table tbody tr:last-child td {
   border-bottom: none;
 }

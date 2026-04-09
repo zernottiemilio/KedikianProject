@@ -47,7 +47,7 @@ export class UsersGestionComponent implements OnInit {
     nombre: '',
     email: '',
     roles: '',
-    estado: '',
+    estado: true, // Por defecto muestra solo activos
   };
 
   itemsPerPage = 10;
@@ -820,6 +820,25 @@ export class UsersGestionComponent implements OnInit {
 
   getDisplayRole(role: string): string {
     return this.mapRolesFromBackend(role);
+  }
+
+  toggleUserStatus(user: User): void {
+    const updatedUser = {
+      ...user,
+      estado: !user.estado,
+      roles: this.mapRolesToBackend(user.roles as unknown as string[])
+    };
+
+    this.userService.updateUser(updatedUser).subscribe({
+      next: () => {
+        alert(`Usuario ${updatedUser.estado ? 'activado' : 'inactivado'} correctamente`);
+        this.loadUsers();
+      },
+      error: (err) => {
+        console.error('Error al actualizar estado:', err);
+        alert(`Error al actualizar el estado: ${err.message}`);
+      }
+    });
   }
 
   // 🆕 Calcular totales SOLO del mes seleccionado

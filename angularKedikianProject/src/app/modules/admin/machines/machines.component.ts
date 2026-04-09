@@ -31,6 +31,7 @@ export class MaquinariaComponent implements OnInit {
   maquinas: MaquinaExtendida[] = [];
   maquinasFiltradas: MaquinaExtendida[] = [];
   terminoBusqueda: string = '';
+  filterStatus: string = 'true'; // Por defecto muestra solo activas
 
   modalVisible: boolean = false;
   modoEdicion: boolean = false;
@@ -61,9 +62,10 @@ export class MaquinariaComponent implements OnInit {
     private machinesService: MachinesService,
     private mantenimientosService: MantenimientosService
   ) {
-    // ✅ CAMBIO: Solo pedir nombre al crear máquina
+    // ✅ CAMBIO: Solo pedir nombre al crear máquina, estado al editar
     this.maquinaForm = this.fb.group({
       nombre: ['', [Validators.required]],
+      estado: [true]
     });
 
     this.mantenimientoForm = this.fb.group({
@@ -117,6 +119,14 @@ export class MaquinariaComponent implements OnInit {
 
   filtrarMaquinas(): void {
     let resultado = [...this.maquinas];
+
+    // Filtro por estado
+    if (this.filterStatus !== 'all') {
+      const estadoFilter = this.filterStatus === 'true';
+      resultado = resultado.filter(maquina => maquina.estado === estadoFilter);
+    }
+
+    // Filtro por búsqueda
     if (this.terminoBusqueda && this.terminoBusqueda.trim() !== '') {
       const busqueda = this.terminoBusqueda.toLowerCase();
       resultado = resultado.filter(
@@ -128,22 +138,57 @@ export class MaquinariaComponent implements OnInit {
     this.maquinasFiltradas = resultado;
   }
 
-  // ✅ CAMBIO: Reset solo con nombre
+  onFilterStatusChange(): void {
+    this.filtrarMaquinas();
+  }
+
+  toggleMaquinaStatus(maquina: MaquinaExtendida): void {
+    const nuevoEstado = !maquina.estado;
+    console.log('🔄 Cambiando estado de máquina:', maquina.nombre);
+    console.log('🔄 Estado actual:', maquina.estado, '-> Nuevo estado:', nuevoEstado);
+
+    const maquinaActualizada: Maquina = {
+      id: maquina.id,
+      codigo: maquina.codigo,
+      nombre: maquina.nombre,
+      estado: nuevoEstado,
+      horas_uso: maquina.horas_uso,
+      proximo_mantenimiento: maquina.proximo_mantenimiento
+    };
+
+    console.log('🔄 Enviando actualización:', maquinaActualizada);
+
+    this.machinesService.actualizarMaquina(maquinaActualizada).subscribe({
+      next: (response) => {
+        console.log('✅ Respuesta de actualización:', response);
+        this.loadData();
+        this.mostrarMensaje(`Máquina ${nuevoEstado ? 'activada' : 'inactivada'} correctamente`);
+      },
+      error: (error) => {
+        console.error('❌ Error al actualizar estado:', error);
+        this.mostrarMensaje('Error al actualizar el estado de la máquina');
+      }
+    });
+  }
+
+  // ✅ CAMBIO: Reset con nombre y estado
   abrirModalAgregar(): void {
     this.modoEdicion = false;
     this.maquinaEditando = null;
     this.maquinaForm.reset({
       nombre: '',
+      estado: true
     });
     this.modalVisible = true;
   }
 
-  // ✅ CAMBIO: Set solo nombre al editar
+  // ✅ CAMBIO: Set nombre y estado al editar
   abrirModalEditar(maquina: MaquinaExtendida): void {
     this.modoEdicion = true;
     this.maquinaEditando = maquina;
     this.maquinaForm.setValue({
       nombre: maquina.nombre,
+      estado: maquina.estado ?? true
     });
     this.modalVisible = true;
   }
@@ -164,11 +209,12 @@ export class MaquinariaComponent implements OnInit {
   console.log('📝 Claves del formulario:', Object.keys(formData));
 
   if (this.modoEdicion && this.maquinaEditando) {
-    // Al editar, enviamos solo los campos necesarios
+    // Al editar, enviamos los campos necesarios incluyendo el estado del formulario
     const maquinaActualizada: Maquina = {
       id: this.maquinaEditando.id,
       codigo: this.maquinaEditando.codigo,
       nombre: formData.nombre.trim(),
+      estado: formData.estado,
       horas_uso: this.maquinaEditando.horas_uso,
     };
     

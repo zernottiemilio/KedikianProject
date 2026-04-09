@@ -12,6 +12,8 @@ export interface Cliente {
   email?: string;
   telefono?: string;
   direccion?: string;
+  oculto?: boolean;
+  ocultar_al_aprobar?: boolean;
   created?: string;
   updated?: string;
 }
