@@ -42,6 +42,11 @@ export class CotizacionesComponent implements OnInit {
   mostrarModalNuevoCliente = false;
   mostrarModalDetalleCotizacion = false;
   mostrarModalEditar = false;
+  mostrarModalGestionClientes = false;
+
+  // Gestión de clientes
+  todosLosClientes: ClienteOut[] = []; // Incluye ocultos
+  cargandoTodosClientes = false;
 
   // Cotización expandida/seleccionada
   cotizacionExpandida: number | null = null;
@@ -74,7 +79,8 @@ export class CotizacionesComponent implements OnInit {
       nombre: ['', Validators.required],
       email: [''],
       telefono: [''],
-      direccion: ['']
+      direccion: [''],
+      ocultar_al_aprobar: [false]
     });
 
     // Formulario de edición de cotización
@@ -559,6 +565,82 @@ export class CotizacionesComponent implements OnInit {
       default:
         return 'fas fa-file';
     }
+  }
+
+  // ------------------------
+  // Gestión de visibilidad de clientes
+  // ------------------------
+
+  abrirModalGestionClientes(): void {
+    this.mostrarModalGestionClientes = true;
+    this.cargarTodosLosClientes();
+  }
+
+  cerrarModalGestionClientes(): void {
+    this.mostrarModalGestionClientes = false;
+  }
+
+  cargarTodosLosClientes(): void {
+    this.cargandoTodosClientes = true;
+    this.cotizacionService.getClientes(true).subscribe({
+      next: (data) => {
+        this.todosLosClientes = data;
+        this.cargandoTodosClientes = false;
+        console.log('Todos los clientes cargados (incluye ocultos):', data);
+      },
+      error: (error) => {
+        console.error('Error al cargar todos los clientes:', error);
+        this.cargandoTodosClientes = false;
+      }
+    });
+  }
+
+  ocultarCliente(cliente: ClienteOut): void {
+    if (confirm(`¿Está seguro de ocultar a "${cliente.nombre}"? No aparecerá en el selector de clientes.`)) {
+      this.cotizacionService.ocultarCliente(cliente.id).subscribe({
+        next: (clienteActualizado) => {
+          // Actualizar en la lista de todos
+          const indexTodos = this.todosLosClientes.findIndex(c => c.id === cliente.id);
+          if (indexTodos !== -1) {
+            this.todosLosClientes[indexTodos] = clienteActualizado;
+          }
+          // Remover de la lista visible
+          this.clientes = this.clientes.filter(c => c.id !== cliente.id);
+          alert('Cliente ocultado exitosamente');
+        },
+        error: (error) => {
+          console.error('Error al ocultar cliente:', error);
+          alert('Error al ocultar el cliente');
+        }
+      });
+    }
+  }
+
+  mostrarClienteOculto(cliente: ClienteOut): void {
+    this.cotizacionService.mostrarCliente(cliente.id).subscribe({
+      next: (clienteActualizado) => {
+        // Actualizar en la lista de todos
+        const indexTodos = this.todosLosClientes.findIndex(c => c.id === cliente.id);
+        if (indexTodos !== -1) {
+          this.todosLosClientes[indexTodos] = clienteActualizado;
+        }
+        // Agregar a la lista visible
+        this.clientes.push(clienteActualizado);
+        alert('Cliente visible nuevamente');
+      },
+      error: (error) => {
+        console.error('Error al mostrar cliente:', error);
+        alert('Error al mostrar el cliente');
+      }
+    });
+  }
+
+  getClientesVisibles(): ClienteOut[] {
+    return this.todosLosClientes.filter(c => !c.oculto);
+  }
+
+  getClientesOcultos(): ClienteOut[] {
+    return this.todosLosClientes.filter(c => c.oculto);
   }
 
   // TrackBy para optimizar ngFor

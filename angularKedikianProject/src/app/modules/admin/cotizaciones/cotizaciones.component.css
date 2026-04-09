@@ -847,3 +847,189 @@
   overflow-y: auto;
   padding: 1.5rem;
 }
+
+/* =============================================
+   GESTIÓN DE CLIENTES
+   ============================================= */
+
+/* Botón gestionar clientes */
+.btn-gestionar-clientes {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-gestionar-clientes:hover {
+  background: linear-gradient(135deg, #5a6268 0%, #343a40 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Modal gestión clientes */
+.modal-gestion-clientes {
+  max-width: 700px;
+  width: 95%;
+}
+
+.modal-gestion-clientes .modal-body {
+  max-height: calc(80vh - 150px);
+  overflow-y: auto;
+}
+
+/* Secciones de clientes */
+.clientes-section {
+  margin-bottom: 2rem;
+}
+
+.clientes-section h3 {
+  font-size: 1.1rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.clientes-section h3 i {
+  color: var(--secondary-color);
+}
+
+.clientes-ocultos h3 {
+  color: #6c757d;
+}
+
+.clientes-ocultos h3 i {
+  color: #adb5bd;
+}
+
+/* Lista de clientes */
+.clientes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cliente-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.cliente-item:hover {
+  background-color: #e9ecef;
+}
+
+.cliente-item.oculto {
+  background-color: #f1f3f5;
+  opacity: 0.8;
+}
+
+.cliente-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cliente-nombre {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.cliente-email {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Botones ocultar/mostrar */
+.btn-ocultar {
+  background-color: #ffc107;
+  color: #212529;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-ocultar:hover {
+  background-color: #e0a800;
+}
+
+.btn-mostrar {
+  background-color: var(--success-color);
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-mostrar:hover {
+  background-color: #27ae60;
+}
+
+.sin-clientes {
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 1rem;
+}
+
+/* Checkbox ocultar al aprobar */
+.form-check {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #fff3cd;
+  border-radius: 8px;
+  border: 1px solid #ffc107;
+}
+
+.form-check-input {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-right: 0.5rem;
+  cursor: pointer;
+}
+
+.form-check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: #856404;
+}
+
+.form-check-label i {
+  color: #856404;
+}
+
+.form-text {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}

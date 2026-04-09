@@ -44,11 +44,12 @@ export class CotizacionService {
   // ------------------------
 
   /**
-   * Obtiene lista de clientes
+   * Obtiene lista de clientes (por defecto solo los visibles)
    */
-  getClientes(): Observable<ClienteOut[]> {
+  getClientes(incluirOcultos: boolean = false): Observable<ClienteOut[]> {
+    const params = incluirOcultos ? '?incluir_ocultos=true' : '';
     return this.http.get<ClienteOut[]>(
-      `${this.apiUrl}/clientes`,
+      `${this.apiUrl}/clientes${params}`,
       {
         headers: this.getAuthHeaders()
       }
@@ -75,6 +76,42 @@ export class CotizacionService {
         console.log('Cliente creado:', response);
       }),
       catchError(this.handleError<ClienteOut>('crearCliente'))
+    );
+  }
+
+  /**
+   * Oculta un cliente (no aparecerá en el selector)
+   */
+  ocultarCliente(clienteId: number): Observable<ClienteOut> {
+    return this.http.put<ClienteOut>(
+      `${this.apiUrl}/clientes/${clienteId}/ocultar`,
+      {},
+      {
+        headers: this.getAuthHeaders()
+      }
+    ).pipe(
+      tap((response) => {
+        console.log('Cliente ocultado:', response);
+      }),
+      catchError(this.handleError<ClienteOut>('ocultarCliente'))
+    );
+  }
+
+  /**
+   * Muestra un cliente oculto (volverá a aparecer en el selector)
+   */
+  mostrarCliente(clienteId: number): Observable<ClienteOut> {
+    return this.http.put<ClienteOut>(
+      `${this.apiUrl}/clientes/${clienteId}/mostrar`,
+      {},
+      {
+        headers: this.getAuthHeaders()
+      }
+    ).pipe(
+      tap((response) => {
+        console.log('Cliente mostrado:', response);
+      }),
+      catchError(this.handleError<ClienteOut>('mostrarCliente'))
     );
   }
 
