@@ -267,7 +267,22 @@ export class CuentaCorrienteComponent implements OnInit {
 
     this.cuentaCorrienteService.getReportes(this.proyectoSeleccionado).subscribe({
       next: (reportes) => {
-        this.reportes = reportes;
+        // Preservar pagos/monto_pagado/saldo_pendiente que el backend no devuelve en el listado
+        this.reportes = reportes.map(r => {
+          const existente = this.reportes.find(e => e.id === r.id);
+          if (existente) {
+            if (r.monto_pagado === undefined && existente.monto_pagado !== undefined) {
+              r.monto_pagado = existente.monto_pagado;
+            }
+            if (r.saldo_pendiente === undefined && existente.saldo_pendiente !== undefined) {
+              r.saldo_pendiente = existente.saldo_pendiente;
+            }
+            if (!r.pagos && existente.pagos) {
+              r.pagos = existente.pagos;
+            }
+          }
+          return r;
+        });
         this.cargandoReportes = false;
       },
       error: (error) => {
@@ -769,13 +784,16 @@ export class CuentaCorrienteComponent implements OnInit {
 
   toggleReporte(reporteId: number): void {
     if (this.reporteExpandido === reporteId) {
-      // Contraer
       this.reporteExpandido = null;
     } else {
-      // Expandir y cargar detalle si no está cacheado
       this.reporteExpandido = reporteId;
       if (!this.reportesConDetalle.has(reporteId)) {
         this.cargarDetalleReporte(reporteId);
+      }
+      // Cargar pagos si no están en el objeto de la lista
+      const reporte = this.reportes.find(r => r.id === reporteId);
+      if (reporte && !reporte.pagos) {
+        this.cargarHistorialPagos(reporteId);
       }
     }
     this.guardarEstado();

@@ -35,7 +35,7 @@ export class InventarioComponent implements OnInit {
 
   // Paginación
   paginaActual = 1;
-  itemsPorPagina = 10;
+  itemsPorPagina = 100;
   totalItems = 0;
   Math = Math;
 

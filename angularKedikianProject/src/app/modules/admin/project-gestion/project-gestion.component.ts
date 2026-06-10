@@ -31,7 +31,7 @@ export class ProjectGestionComponent implements OnInit {
   selectedFiles: File[] = [];
 
   // Paginación
-  itemsPerPage: number = 10;
+  itemsPerPage: number = 100;
   currentPage: number = 1;
   totalPages: number = 1;
 

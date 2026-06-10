@@ -31,7 +31,7 @@ export class InformesComponent implements OnInit {
   filtroFechaHasta: string = '';
 
   paginaActual: number = 1;
-  itemsPorPagina: number = 10;
+  itemsPorPagina: number = 100;
 
   modalAbierto: boolean = false;
   reporteEditando: boolean = false;
