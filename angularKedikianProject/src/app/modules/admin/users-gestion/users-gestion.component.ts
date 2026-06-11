@@ -50,7 +50,7 @@ export class UsersGestionComponent implements OnInit {
     estado: true, // Por defecto muestra solo activos
   };
 
-  itemsPerPage = 10;
+  itemsPerPage = 100;
   currentPage = 1;
   totalPages = 1;
   roleOptions = ['ADMINISTRADOR', 'OPERARIO'] as const;

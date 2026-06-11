@@ -153,12 +153,16 @@ export class CuentaCorrienteService {
    * Actualiza el estado de pago de items individuales de un reporte
    */
   actualizarItemsPago(reporteId: number, items: {
-    aridos?: { tipo_arido: string, pagado: boolean }[],
-    horas?: { maquina_id: number, pagado: boolean }[]
-  }): Observable<ReporteCuentaCorriente> {
-    return this.http.put<ReporteCuentaCorriente>(
+    aridos?: { item_id: number, pagado: boolean }[],
+    horas?: { item_id: number, pagado: boolean }[]
+  }): Observable<any> {
+    const body = {
+      items_aridos: items.aridos || [],
+      items_horas: items.horas || []
+    };
+    return this.http.put<any>(
       `${this.apiUrl}/reportes/${reporteId}/items-pago`,
-      items,
+      body,
       {
         headers: this.getAuthHeaders()
       }
@@ -166,7 +170,7 @@ export class CuentaCorrienteService {
       tap((response) => {
         console.log('Items de pago actualizados:', response);
       }),
-      catchError(this.handleError<ReporteCuentaCorriente>('actualizarItemsPago'))
+      catchError(this.handleError<any>('actualizarItemsPago'))
     );
   }
 
@@ -184,7 +188,10 @@ export class CuentaCorrienteService {
       tap((response) => {
         console.log('Reporte generado:', response);
       }),
-      catchError(this.handleError<ReporteCuentaCorriente>('generarReporte'))
+      catchError((error) => {
+        console.error('generarReporte failed:', error);
+        throw error;
+      })
     );
   }
 
@@ -265,7 +272,10 @@ export class CuentaCorrienteService {
       tap((response) => {
         console.log('Pago registrado:', response);
       }),
-      catchError(this.handleError<PagoReporte>('registrarPago'))
+      catchError((error) => {
+        console.error('registrarPago failed:', error);
+        throw error;
+      })
     );
   }
 

@@ -684,38 +684,22 @@
               <span>Total General:</span>
               <strong>{{ formatearMoneda(reporte.importe_total) }}</strong>
             </div>
-            <!-- Desglose de pago con sistema de pagos parciales -->
-            <ng-container *ngIf="reporte.monto_pagado !== undefined && reporte.monto_pagado > 0">
+            <!-- Desglose de pago -->
+            <ng-container *ngIf="reporte.estado === EstadoPago.PARCIAL || reporte.estado === EstadoPago.PAGADO || (reporte.monto_pagado !== undefined && reporte.monto_pagado > 0)">
               <div class="total-linea total-linea-pagado">
                 <span>
                   <i class="fas fa-check-circle"></i>
                   Total Pagado:
                 </span>
-                <strong>{{ formatearMoneda(reporte.monto_pagado) }}</strong>
+                <strong>{{ formatearMoneda(reporte.monto_pagado !== undefined ? reporte.monto_pagado : getImportePagadoReporte(reporte.id)) }}</strong>
               </div>
-              <div class="total-linea total-linea-pendiente" *ngIf="reporte.saldo_pendiente && reporte.saldo_pendiente > 0">
+              <div class="total-linea total-linea-pendiente"
+                *ngIf="reporte.estado !== EstadoPago.PAGADO">
                 <span>
                   <i class="fas fa-clock"></i>
                   Saldo Pendiente:
                 </span>
-                <strong>{{ formatearMoneda(reporte.saldo_pendiente) }}</strong>
-              </div>
-            </ng-container>
-            <!-- Fallback para sistema anterior (items pagados) -->
-            <ng-container *ngIf="reporte.monto_pagado === undefined && (reporte.estado === EstadoPago.PARCIAL || reporte.estado === EstadoPago.PAGADO)">
-              <div class="total-linea total-linea-pagado">
-                <span>
-                  <i class="fas fa-check-circle"></i>
-                  Importe Pagado:
-                </span>
-                <strong>{{ formatearMoneda(getImportePagadoReporte(reporte.id)) }}</strong>
-              </div>
-              <div class="total-linea total-linea-pendiente" *ngIf="reporte.estado === EstadoPago.PARCIAL">
-                <span>
-                  <i class="fas fa-clock"></i>
-                  Saldo Pendiente:
-                </span>
-                <strong>{{ formatearMoneda(getImportePendienteReporte(reporte.id)) }}</strong>
+                <strong>{{ formatearMoneda(reporte.saldo_pendiente !== undefined ? reporte.saldo_pendiente : getImportePendienteReporte(reporte.id)) }}</strong>
               </div>
             </ng-container>
           </div>

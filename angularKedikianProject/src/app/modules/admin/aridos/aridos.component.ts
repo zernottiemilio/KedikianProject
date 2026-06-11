@@ -295,7 +295,8 @@ export class AridosComponent implements OnInit {
       }
 
       // Filtro por mes específico (usando mesSeleccionado)
-      if (this.mesSeleccionado) {
+      // Solo aplicar si NO hay filtros de rango de fecha activos
+      if (this.mesSeleccionado && !this.filtroFechaDesde && !this.filtroFechaHasta) {
         const fechaRegistro = new Date(registro.fechaEntrega);
         const anioRegistro = fechaRegistro.getFullYear();
         const mesRegistro = fechaRegistro.getMonth();

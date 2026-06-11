@@ -53,8 +53,8 @@ export class CuentaCorrienteComponent implements OnInit {
   mostrarModalPagoParcial = false;
   reportePagoParcial: ReporteCuentaCorriente | null = null;
   cargandoPagoDetalle = false;
-  pagosAridos: { tipo_arido: string; importe: number; pagado: boolean }[] = [];
-  pagosHoras: { maquina_id: number; maquina_nombre: string; importe: number; pagado: boolean }[] = [];
+  pagosAridos: { id: number; tipo_arido: string; importe: number; pagado: boolean }[] = [];
+  pagosHoras: { id: number; maquina_id: number; maquina_nombre: string; importe: number; pagado: boolean }[] = [];
 
   // Reporte expandido
   reporteExpandido: number | null = null;
@@ -195,34 +195,34 @@ export class CuentaCorrienteComponent implements OnInit {
     const usuario = this.authService.obtenerUsuarioActual();
 
     if (usuario?.roles?.includes('cliente')) {
-      // Si es cliente, filtrar solo sus proyectos
       this.projectService.getProjects().subscribe({
         next: (proyectos) => {
-          // Aquí deberías filtrar por usuario_id si el backend lo soporta
           this.proyectos = proyectos.filter(p => p.estado);
           if (this.proyectos.length > 0) {
-            this.proyectoSeleccionado = this.proyectos[0].id;
+            // Respetar proyecto guardado en estado; si no existe en la lista, usar el primero
+            const proyectoGuardado = this.proyectos.find(p => p.id === this.proyectoSeleccionado);
+            if (!proyectoGuardado) {
+              this.proyectoSeleccionado = this.proyectos[0].id;
+            }
             this.cargarDatos();
           }
         },
-        error: (error) => {
-          // Manejo de errores silencioso
-        }
+        error: () => {}
       });
     } else {
-      // Si es administrador, mostrar todos los proyectos activos (filtrados del lado cliente)
       this.projectService.getProjects().subscribe({
         next: (proyectos) => {
-          // Filtrar solo proyectos activos
           this.proyectos = proyectos.filter(p => p.estado);
           if (this.proyectos.length > 0) {
-            this.proyectoSeleccionado = this.proyectos[0].id;
+            // Respetar proyecto guardado en estado; si no existe en la lista, usar el primero
+            const proyectoGuardado = this.proyectos.find(p => p.id === this.proyectoSeleccionado);
+            if (!proyectoGuardado) {
+              this.proyectoSeleccionado = this.proyectos[0].id;
+            }
             this.cargarDatos();
           }
         },
-        error: () => {
-          // Manejo de errores silencioso
-        }
+        error: () => {}
       });
     }
   }
@@ -267,7 +267,22 @@ export class CuentaCorrienteComponent implements OnInit {
 
     this.cuentaCorrienteService.getReportes(this.proyectoSeleccionado).subscribe({
       next: (reportes) => {
-        this.reportes = reportes;
+        // Preservar pagos/monto_pagado/saldo_pendiente que el backend no devuelve en el listado
+        this.reportes = reportes.map(r => {
+          const existente = this.reportes.find(e => e.id === r.id);
+          if (existente) {
+            if (r.monto_pagado === undefined && existente.monto_pagado !== undefined) {
+              r.monto_pagado = existente.monto_pagado;
+            }
+            if (r.saldo_pendiente === undefined && existente.saldo_pendiente !== undefined) {
+              r.saldo_pendiente = existente.saldo_pendiente;
+            }
+            if (!r.pagos && existente.pagos) {
+              r.pagos = existente.pagos;
+            }
+          }
+          return r;
+        });
         this.cargandoReportes = false;
       },
       error: (error) => {
@@ -657,9 +672,11 @@ export class CuentaCorrienteComponent implements OnInit {
     if (!this.esAdministrador) return;
 
     this.cuentaCorrienteService.actualizarEstadoPago(reporte.id, { estado: nuevoEstado }).subscribe({
-      next: (reporteActualizado) => {
-        console.log('Estado actualizado:', reporteActualizado);
-        this.cargarReportes();
+      next: () => {
+        const idx = this.reportes.findIndex(r => r.id === reporte.id);
+        if (idx !== -1) {
+          this.reportes[idx] = { ...this.reportes[idx], estado: nuevoEstado };
+        }
       },
       error: (error) => {
         console.error('Error al actualizar estado:', error);
@@ -676,8 +693,11 @@ export class CuentaCorrienteComponent implements OnInit {
 
     this.cuentaCorrienteService.eliminarReporte(reporteId).subscribe({
       next: () => {
-        console.log('Reporte eliminado exitosamente:', reporteId);
-        this.cargarReportes();
+        this.reportes = this.reportes.filter(r => r.id !== reporteId);
+        this.reportesConDetalle.delete(reporteId);
+        if (this.reporteExpandido === reporteId) {
+          this.reporteExpandido = null;
+        }
       },
       error: (error) => {
         console.error('Error al eliminar reporte:', error);
@@ -769,13 +789,16 @@ export class CuentaCorrienteComponent implements OnInit {
 
   toggleReporte(reporteId: number): void {
     if (this.reporteExpandido === reporteId) {
-      // Contraer
       this.reporteExpandido = null;
     } else {
-      // Expandir y cargar detalle si no está cacheado
       this.reporteExpandido = reporteId;
       if (!this.reportesConDetalle.has(reporteId)) {
         this.cargarDetalleReporte(reporteId);
+      }
+      // Cargar pagos si no están en el objeto de la lista
+      const reporte = this.reportes.find(r => r.id === reporteId);
+      if (reporte && !reporte.pagos) {
+        this.cargarHistorialPagos(reporteId);
       }
     }
     this.guardarEstado();
@@ -964,37 +987,20 @@ export class CuentaCorrienteComponent implements OnInit {
   }
 
   inicializarPagosModal(reporte: ReporteCuentaCorriente): void {
-    // Agrupar áridos por tipo_arido
-    const aridosMap = new Map<string, { importe: number; pagado: boolean }>();
-    (reporte.items_aridos || []).forEach(item => {
-      if (!aridosMap.has(item.tipo_arido)) {
-        aridosMap.set(item.tipo_arido, { importe: 0, pagado: true });
-      }
-      const entry = aridosMap.get(item.tipo_arido)!;
-      entry.importe += item.importe;
-      if (!item.pagado) entry.pagado = false;
-    });
-    this.pagosAridos = Array.from(aridosMap.entries()).map(([tipo_arido, data]) => ({
-      tipo_arido,
-      importe: data.importe,
-      pagado: data.pagado
+    // Cada item individual del backend tiene su propio id — no agrupar, mostrar por separado
+    this.pagosAridos = (reporte.items_aridos || []).map(item => ({
+      id: item.id!,
+      tipo_arido: item.tipo_arido,
+      importe: item.importe,
+      pagado: item.pagado
     }));
 
-    // Agrupar horas por maquina_id
-    const horasMap = new Map<number, { maquina_nombre: string; importe: number; pagado: boolean }>();
-    (reporte.items_horas || []).forEach(item => {
-      if (!horasMap.has(item.maquina_id)) {
-        horasMap.set(item.maquina_id, { maquina_nombre: item.maquina_nombre, importe: 0, pagado: true });
-      }
-      const entry = horasMap.get(item.maquina_id)!;
-      entry.importe += item.importe;
-      if (!item.pagado) entry.pagado = false;
-    });
-    this.pagosHoras = Array.from(horasMap.entries()).map(([maquina_id, data]) => ({
-      maquina_id,
-      maquina_nombre: data.maquina_nombre,
-      importe: data.importe,
-      pagado: data.pagado
+    this.pagosHoras = (reporte.items_horas || []).map(item => ({
+      id: item.id!,
+      maquina_id: item.maquina_id,
+      maquina_nombre: item.maquina_nombre,
+      importe: item.importe,
+      pagado: item.pagado
     }));
   }
 
@@ -1034,18 +1040,36 @@ export class CuentaCorrienteComponent implements OnInit {
 
     const reporteId = this.reportePagoParcial.id;
 
-    // Intentar actualizar el estado a nivel de ítems (fire-and-forget)
+    // Actualizar estado de pago de items individuales usando el id real del item
     this.cuentaCorrienteService.actualizarItemsPago(reporteId, {
-      aridos: this.pagosAridos.map(i => ({ tipo_arido: i.tipo_arido, pagado: i.pagado })),
-      horas: this.pagosHoras.map(i => ({ maquina_id: i.maquina_id, pagado: i.pagado }))
-    }).subscribe({ next: () => {}, error: () => {} });
+      aridos: this.pagosAridos.map(i => ({ item_id: i.id, pagado: i.pagado })),
+      horas: this.pagosHoras.map(i => ({ item_id: i.id, pagado: i.pagado }))
+    }).subscribe({
+      next: () => {},
+      error: (err) => console.error('Error al actualizar items de pago:', err)
+    });
+
+    // Calcular monto pagado desde los items del modal
+    const montoPagadoItems = [...this.pagosAridos, ...this.pagosHoras]
+      .filter(i => i.pagado)
+      .reduce((sum, i) => sum + i.importe, 0);
 
     // Actualizar el estado general del reporte (siempre)
     this.cuentaCorrienteService.actualizarEstadoPago(reporteId, { estado: nuevoEstado }).subscribe({
-      next: () => {
-        this.cerrarModalPagoParcial();
+      next: (reporteActualizado) => {
+        // Actualizar en lista directamente sin recargar todo
+        const idx = this.reportes.findIndex(r => r.id === reporteId);
+        if (idx !== -1) {
+          const r = this.reportes[idx];
+          this.reportes[idx] = {
+            ...r,
+            estado: nuevoEstado,
+            monto_pagado: montoPagadoItems,
+            saldo_pendiente: r.importe_total - montoPagadoItems
+          };
+        }
         this.reportesConDetalle.delete(reporteId);
-        this.cargarReportes();
+        this.cerrarModalPagoParcial();
         if (this.mostrandoPendientes) {
           this.cargarReportesPendientes();
         }
@@ -1147,7 +1171,6 @@ export class CuentaCorrienteComponent implements OnInit {
 
   abrirModalRegistrarPago(reporte: ReporteCuentaCorriente): void {
     this.reporteParaPago = reporte;
-    this.mostrarModalRegistrarPago = true;
 
     // Resetear formulario con fecha actual
     const hoy = new Date().toISOString().split('T')[0];
@@ -1157,10 +1180,10 @@ export class CuentaCorrienteComponent implements OnInit {
       observaciones: ''
     });
 
-    // Cargar historial de pagos si no está cargado
-    if (!reporte.pagos) {
-      this.cargarHistorialPagos(reporte.id);
-    }
+    // Cargar historial de pagos primero para tener saldo correcto, luego abrir modal
+    this.cargandoHistorialPagos = true;
+    this.cargarHistorialPagos(reporte.id);
+    this.mostrarModalRegistrarPago = true;
   }
 
   cerrarModalRegistrarPago(): void {
@@ -1208,30 +1231,55 @@ export class CuentaCorrienteComponent implements OnInit {
   registrarPago(): void {
     if (this.pagoForm.invalid || !this.reporteParaPago) return;
 
+    const monto = Number(this.pagoForm.value.monto);
     const request: RequestRegistrarPago = {
-      monto: this.pagoForm.value.monto,
+      monto,
       fecha: this.pagoForm.value.fecha,
       observaciones: this.pagoForm.value.observaciones || undefined
     };
 
     // Validar que el monto no exceda el saldo pendiente
     const saldoPendiente = this.getSaldoPendienteReporte();
-    if (request.monto > saldoPendiente) {
+    if (monto > saldoPendiente) {
       alert(`El monto no puede exceder el saldo pendiente (${this.formatearMoneda(saldoPendiente)})`);
       return;
     }
 
-    this.cuentaCorrienteService.registrarPago(this.reporteParaPago.id, request).subscribe({
+    const reporteId = this.reporteParaPago.id;
+
+    this.cuentaCorrienteService.registrarPago(reporteId, request).subscribe({
       next: (pago) => {
-        console.log('Pago registrado exitosamente:', pago);
+        // Actualizar reporte en lista directamente (sin recargar todo)
+        const idx = this.reportes.findIndex(r => r.id === reporteId);
+        if (idx !== -1) {
+          const r = this.reportes[idx];
+          const nuevosPagos = [...(r.pagos || []), pago];
+          const nuevoMontoPagado = nuevosPagos.reduce((s, p) => s + p.monto, 0);
+          const nuevoSaldo = r.importe_total - nuevoMontoPagado;
+          this.reportes[idx] = {
+            ...r,
+            pagos: nuevosPagos,
+            monto_pagado: nuevoMontoPagado,
+            saldo_pendiente: nuevoSaldo,
+            estado: nuevoSaldo <= 0 ? EstadoPago.PAGADO : EstadoPago.PARCIAL
+          };
+          // Actualizar reporteParaPago también
+          this.reporteParaPago = this.reportes[idx];
+        }
 
-        // Recargar historial de pagos
-        this.cargarHistorialPagos(this.reporteParaPago!.id);
+        // Actualizar cache de detalle si existe
+        const cached = this.reportesConDetalle.get(reporteId);
+        if (cached) {
+          const nuevosPagos = [...(cached.pagos || []), pago];
+          const nuevoMontoPagado = nuevosPagos.reduce((s, p) => s + p.monto, 0);
+          this.reportesConDetalle.set(reporteId, {
+            ...cached,
+            pagos: nuevosPagos,
+            monto_pagado: nuevoMontoPagado,
+            saldo_pendiente: cached.importe_total - nuevoMontoPagado
+          });
+        }
 
-        // Recargar lista de reportes para actualizar estados
-        this.cargarReportes();
-
-        // Recargar pendientes si está activa esa vista
         if (this.mostrandoPendientes) {
           this.cargarReportesPendientes();
         }
