@@ -690,6 +690,16 @@
   font-size: 1rem;
 }
 
+.dato-breve.saldo-pendiente-header {
+  font-weight: 600;
+  color: var(--warning-color);
+  font-size: 0.9rem;
+}
+
+.dato-breve.saldo-pendiente-header i {
+  color: var(--warning-color);
+}
+
 .toggle-icon {
   margin-left: 1rem;
   color: var(--secondary-color);

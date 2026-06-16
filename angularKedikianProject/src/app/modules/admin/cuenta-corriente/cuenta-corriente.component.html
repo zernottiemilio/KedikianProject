@@ -538,6 +538,11 @@
                 <i class="fas fa-dollar-sign"></i>
                 {{ formatearMoneda(reporte.importe_total) }}
               </span>
+              <span class="dato-breve saldo-pendiente-header"
+                *ngIf="reporte.estado !== EstadoPago.PAGADO && (reporte.saldo_pendiente !== undefined ? reporte.saldo_pendiente : reporte.importe_total) > 0">
+                <i class="fas fa-clock"></i>
+                Pendiente: {{ formatearMoneda(reporte.saldo_pendiente !== undefined ? reporte.saldo_pendiente : reporte.importe_total) }}
+              </span>
             </div>
           </div>
           <div class="toggle-icon">

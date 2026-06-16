@@ -267,22 +267,46 @@ export class CuentaCorrienteComponent implements OnInit {
 
     this.cuentaCorrienteService.getReportes(this.proyectoSeleccionado).subscribe({
       next: (reportes) => {
-        // Preservar pagos/monto_pagado/saldo_pendiente que el backend no devuelve en el listado
+        // Calcular monto_pagado para reportes PAGADO directamente
         this.reportes = reportes.map(r => {
-          const existente = this.reportes.find(e => e.id === r.id);
-          if (existente) {
-            if (r.monto_pagado === undefined && existente.monto_pagado !== undefined) {
-              r.monto_pagado = existente.monto_pagado;
-            }
-            if (r.saldo_pendiente === undefined && existente.saldo_pendiente !== undefined) {
-              r.saldo_pendiente = existente.saldo_pendiente;
-            }
-            if (!r.pagos && existente.pagos) {
-              r.pagos = existente.pagos;
-            }
+          if (r.estado === EstadoPago.PAGADO) {
+            return { ...r, monto_pagado: r.importe_total, saldo_pendiente: 0 };
           }
-          return r;
+          return { ...r, monto_pagado: 0, saldo_pendiente: r.importe_total };
         });
+
+        // Para reportes PARCIAL, cargar detalle y calcular monto_pagado desde items pagados
+        const reportesParciales = this.reportes.filter(r => r.estado === EstadoPago.PARCIAL);
+
+        if (reportesParciales.length > 0) {
+          const detalleObservables = reportesParciales.reduce((acc, r) => {
+            acc[r.id] = this.cuentaCorrienteService.getReporteDetalle(r.id);
+            return acc;
+          }, {} as Record<number, any>);
+
+          forkJoin(detalleObservables).subscribe({
+            next: (resultados: Record<number, any>) => {
+              Object.entries(resultados).forEach(([idStr, detalle]: [string, any]) => {
+                const id = Number(idStr);
+                const idx = this.reportes.findIndex(r => r.id === id);
+                if (idx !== -1) {
+                  const montoPagado =
+                    (detalle.items_aridos || []).filter((i: any) => i.pagado).reduce((s: number, i: any) => s + i.importe, 0) +
+                    (detalle.items_horas || []).filter((i: any) => i.pagado).reduce((s: number, i: any) => s + i.importe, 0);
+                  this.reportes[idx] = {
+                    ...this.reportes[idx],
+                    ...detalle,
+                    monto_pagado: montoPagado,
+                    saldo_pendiente: this.reportes[idx].importe_total - montoPagado
+                  };
+                  this.reportesConDetalle.set(id, this.reportes[idx]);
+                }
+              });
+            },
+            error: () => {}
+          });
+        }
+
         this.cargandoReportes = false;
       },
       error: (error) => {
@@ -811,11 +835,24 @@ export class CuentaCorrienteComponent implements OnInit {
   cargarDetalleReporte(reporteId: number): void {
     this.cuentaCorrienteService.getReporteDetalle(reporteId).subscribe({
       next: (reporte) => {
+        // Calcular monto_pagado desde items si el backend no lo devuelve
+        if (reporte.monto_pagado === undefined && (reporte.items_aridos || reporte.items_horas)) {
+          const pagadoAridos = (reporte.items_aridos || []).filter(i => i.pagado).reduce((s, i) => s + i.importe, 0);
+          const pagadoHoras = (reporte.items_horas || []).filter(i => i.pagado).reduce((s, i) => s + i.importe, 0);
+          reporte.monto_pagado = pagadoAridos + pagadoHoras;
+          reporte.saldo_pendiente = reporte.importe_total - reporte.monto_pagado;
+        }
         this.reportesConDetalle.set(reporteId, reporte);
-        // Actualizar también en la lista principal
         const index = this.reportes.findIndex(r => r.id === reporteId);
         if (index !== -1) {
-          this.reportes[index] = { ...this.reportes[index], ...reporte };
+          const existing = this.reportes[index];
+          this.reportes[index] = {
+            ...existing,
+            ...reporte,
+            // Preservar monto_pagado/saldo_pendiente si ya los teníamos más actualizados
+            monto_pagado: existing.monto_pagado !== undefined ? existing.monto_pagado : reporte.monto_pagado,
+            saldo_pendiente: existing.saldo_pendiente !== undefined ? existing.saldo_pendiente : reporte.saldo_pendiente
+          };
         }
       },
       error: (error) => {
@@ -1028,7 +1065,6 @@ export class CuentaCorrienteComponent implements OnInit {
   guardarPagoParcial(): void {
     if (!this.reportePagoParcial) return;
 
-    // Calcular nuevo estado según los conceptos seleccionados
     const totalItems = this.pagosAridos.length + this.pagosHoras.length;
     const pagados = this.pagosAridos.filter(i => i.pagado).length
                   + this.pagosHoras.filter(i => i.pagado).length;
@@ -1039,36 +1075,68 @@ export class CuentaCorrienteComponent implements OnInit {
     else nuevoEstado = EstadoPago.PARCIAL;
 
     const reporteId = this.reportePagoParcial.id;
+    const snapAridos = this.pagosAridos.map(i => ({ ...i }));
+    const snapHoras = this.pagosHoras.map(i => ({ ...i }));
 
-    // Actualizar estado de pago de items individuales usando el id real del item
+    const montoPagadoItems = [...snapAridos, ...snapHoras]
+      .filter(i => i.pagado)
+      .reduce((sum, i) => sum + i.importe, 0);
+
+    // Actualizar items individuales en DB
     this.cuentaCorrienteService.actualizarItemsPago(reporteId, {
-      aridos: this.pagosAridos.map(i => ({ item_id: i.id, pagado: i.pagado })),
-      horas: this.pagosHoras.map(i => ({ item_id: i.id, pagado: i.pagado }))
+      aridos: snapAridos.map(i => ({ item_id: i.id, pagado: i.pagado })),
+      horas: snapHoras.map(i => ({ item_id: i.id, pagado: i.pagado }))
     }).subscribe({
       next: () => {},
       error: (err) => console.error('Error al actualizar items de pago:', err)
     });
 
-    // Calcular monto pagado desde los items del modal
-    const montoPagadoItems = [...this.pagosAridos, ...this.pagosHoras]
-      .filter(i => i.pagado)
-      .reduce((sum, i) => sum + i.importe, 0);
-
-    // Actualizar el estado general del reporte (siempre)
+    // Actualizar estado general del reporte
     this.cuentaCorrienteService.actualizarEstadoPago(reporteId, { estado: nuevoEstado }).subscribe({
-      next: (reporteActualizado) => {
-        // Actualizar en lista directamente sin recargar todo
+      next: () => {
         const idx = this.reportes.findIndex(r => r.id === reporteId);
         if (idx !== -1) {
           const r = this.reportes[idx];
+          // Actualizar items_aridos e items_horas en el reporte de la lista
+          const itemsAridosActualizados = (r.items_aridos || []).map(item => {
+            const snap = snapAridos.find(s => s.id === item.id);
+            return snap ? { ...item, pagado: snap.pagado } : item;
+          });
+          const itemsHorasActualizadas = (r.items_horas || []).map(item => {
+            const snap = snapHoras.find(s => s.id === item.id);
+            return snap ? { ...item, pagado: snap.pagado } : item;
+          });
           this.reportes[idx] = {
             ...r,
             estado: nuevoEstado,
             monto_pagado: montoPagadoItems,
-            saldo_pendiente: r.importe_total - montoPagadoItems
+            saldo_pendiente: r.importe_total - montoPagadoItems,
+            items_aridos: itemsAridosActualizados,
+            items_horas: itemsHorasActualizadas
           };
         }
-        this.reportesConDetalle.delete(reporteId);
+
+        // Actualizar cache con los items nuevos (no borrar)
+        const cached = this.reportesConDetalle.get(reporteId);
+        if (cached) {
+          const itemsAridosCache = (cached.items_aridos || []).map(item => {
+            const snap = snapAridos.find(s => s.id === item.id);
+            return snap ? { ...item, pagado: snap.pagado } : item;
+          });
+          const itemsHorasCache = (cached.items_horas || []).map(item => {
+            const snap = snapHoras.find(s => s.id === item.id);
+            return snap ? { ...item, pagado: snap.pagado } : item;
+          });
+          this.reportesConDetalle.set(reporteId, {
+            ...cached,
+            estado: nuevoEstado,
+            monto_pagado: montoPagadoItems,
+            saldo_pendiente: cached.importe_total - montoPagadoItems,
+            items_aridos: itemsAridosCache,
+            items_horas: itemsHorasCache
+          });
+        }
+
         this.cerrarModalPagoParcial();
         if (this.mostrandoPendientes) {
           this.cargarReportesPendientes();
@@ -1081,6 +1149,8 @@ export class CuentaCorrienteComponent implements OnInit {
   }
 
   getImportePagadoReporte(reporteId: number): number {
+    const reporte = this.reportes.find(r => r.id === reporteId);
+    if (reporte?.monto_pagado !== undefined) return reporte.monto_pagado;
     const det = this.getReporteConDetalle(reporteId);
     if (!det) return 0;
     const aridos = (det.items_aridos || []).filter(i => i.pagado).reduce((s, i) => s + i.importe, 0);
