@@ -230,8 +230,68 @@ export class CuentaCorrienteComponent implements OnInit {
   cargarDatos(): void {
     if (!this.proyectoSeleccionado) return;
 
-    this.cargarResumen();
-    this.cargarReportes();
+    this.cargandoResumen = true;
+    this.cargandoReportes = true;
+
+    forkJoin({
+      resumen: this.cuentaCorrienteService.getResumenProyecto(
+        this.proyectoSeleccionado,
+        { fecha_inicio: this.fechaInicio, fecha_fin: this.fechaFin }
+      ),
+      reportes: this.cuentaCorrienteService.getReportes(this.proyectoSeleccionado)
+    }).subscribe({
+      next: ({ resumen, reportes }) => {
+        this.reportes = reportes.map(r => {
+          if (r.estado === EstadoPago.PAGADO) {
+            return { ...r, monto_pagado: r.importe_total, saldo_pendiente: 0 };
+          }
+          return { ...r, monto_pagado: 0, saldo_pendiente: r.importe_total };
+        });
+        this.cargandoReportes = false;
+
+        this.resumen = resumen;
+        this.aridosSeleccionados.clear();
+        this.horasSeleccionadas.clear();
+        this.cargandoResumen = false;
+
+        // Cargar detalles de reportes PARCIALES para calcular montos pagados
+        const reportesParciales = this.reportes.filter(r => r.estado === EstadoPago.PARCIAL);
+
+        if (reportesParciales.length > 0) {
+          const detalleObservables = reportesParciales.reduce((acc, r) => {
+            acc[r.id] = this.cuentaCorrienteService.getReporteDetalle(r.id);
+            return acc;
+          }, {} as Record<number, any>);
+
+          forkJoin(detalleObservables).subscribe({
+            next: (resultados: Record<number, any>) => {
+              Object.entries(resultados).forEach(([idStr, detalle]: [string, any]) => {
+                const id = Number(idStr);
+                const idx = this.reportes.findIndex(r => r.id === id);
+                if (idx === -1) return;
+                const reporte = this.reportes[idx];
+                const montoPagado =
+                  (detalle.items_aridos || []).filter((i: any) => i.pagado).reduce((s: number, i: any) => s + i.importe, 0) +
+                  (detalle.items_horas || []).filter((i: any) => i.pagado).reduce((s: number, i: any) => s + i.importe, 0);
+                this.reportes[idx] = {
+                  ...reporte,
+                  ...detalle,
+                  monto_pagado: montoPagado,
+                  saldo_pendiente: reporte.importe_total - montoPagado
+                };
+                this.reportesConDetalle.set(id, this.reportes[idx]);
+              });
+            },
+            error: () => {}
+          });
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar datos:', error);
+        this.cargandoResumen = false;
+        this.cargandoReportes = false;
+      }
+    });
   }
 
   cargarResumen(): void {
@@ -671,8 +731,8 @@ export class CuentaCorrienteComponent implements OnInit {
     this.cuentaCorrienteService.generarReporte(request).subscribe({
       next: (reporte) => {
         console.log('Reporte generado exitosamente:', reporte);
-        this.cargarReportes();
         this.cerrarModalGenerarReporte();
+        this.cargarDatos();
         // Limpiar selecciones después de generar el reporte
         this.limpiarSelecciones();
         alert('Reporte generado exitosamente con los items seleccionados.');
@@ -697,10 +757,7 @@ export class CuentaCorrienteComponent implements OnInit {
 
     this.cuentaCorrienteService.actualizarEstadoPago(reporte.id, { estado: nuevoEstado }).subscribe({
       next: () => {
-        const idx = this.reportes.findIndex(r => r.id === reporte.id);
-        if (idx !== -1) {
-          this.reportes[idx] = { ...this.reportes[idx], estado: nuevoEstado };
-        }
+        this.cargarDatos();
       },
       error: (error) => {
         console.error('Error al actualizar estado:', error);
