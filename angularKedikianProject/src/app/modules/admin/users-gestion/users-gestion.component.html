@@ -134,17 +134,27 @@
 
       <div class="form-group" *ngIf="!isEditMode">
         <label for="hash_contrasena">Contraseña</label>
-        <input type="password" id="hash_contrasena" formControlName="hash_contrasena" class="form-control" placeholder="Ingrese la contraseña">
+        <div class="input-group">
+          <input [type]="showPassword ? 'text' : 'password'" id="hash_contrasena" formControlName="hash_contrasena" class="form-control" placeholder="Ingrese la contraseña">
+          <button type="button" class="btn btn-outline-secondary password-toggle" (click)="showPassword = !showPassword" tabindex="-1">
+            <i class="fas" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+          </button>
+        </div>
       </div>
 
       <div class="form-group" *ngIf="isEditMode">
-        <div class="checkbox-container">
-          <input type="checkbox" id="changePassword" [(ngModel)]="changePassword" [ngModelOptions]="{standalone: true}" (change)="toggleChangePassword()">
-          <label for="changePassword">Cambiar contraseña</label>
+        <label>Contraseña</label>
+        <div>
+          <button type="button" class="btn btn-outline-warning btn-sm" (click)="toggleChangePassword()">
+            <i class="fas" [ngClass]="changePassword ? 'fa-lock-open' : 'fa-key'"></i>
+            {{ changePassword ? 'Cancelar cambio de contraseña' : 'Cambiar contraseña' }}
+          </button>
         </div>
-        <div *ngIf="changePassword" class="password-field-container">
-          <input type="password" id="hash_contrasena_edit" formControlName="hash_contrasena" class="form-control" placeholder="Ingrese la nueva contraseña">
-          <small class="form-text text-muted">Mínimo 8 caracteres</small>
+        <div class="input-group mt-2" *ngIf="changePassword">
+          <input [type]="showPassword ? 'text' : 'password'" id="hash_contrasena_edit" formControlName="hash_contrasena" class="form-control" placeholder="Ingrese la nueva contraseña">
+          <button type="button" class="btn btn-outline-secondary password-toggle" (click)="showPassword = !showPassword" tabindex="-1">
+            <i class="fas" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+          </button>
         </div>
       </div>
 

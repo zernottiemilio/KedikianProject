@@ -90,6 +90,7 @@ export class UsersGestionComponent implements OnInit {
   deletingJornada = false;
 
   changePassword = false;
+  showPassword = false;
 
   private mapRolesToBackend(roles: string[]): string[] {
     return roles.map(role => {
@@ -679,6 +680,7 @@ export class UsersGestionComponent implements OnInit {
     this.isCreateJornadaModalOpen = false;
     this.modalOverlayActive = false;
     this.changePassword = false;
+    this.showPassword = false;
     this.userForm.reset();
     this.userToDelete = null;
     this.originalUser = null;
