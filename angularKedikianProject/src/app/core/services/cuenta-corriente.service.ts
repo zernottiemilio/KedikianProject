@@ -381,21 +381,29 @@ export class CuentaCorrienteService {
   }
 
   /**
-   * Actualiza el precio unitario de áridos para un proyecto y período específico
+   * Actualiza el precio unitario de áridos para un proyecto.
+   * alcance='solo_este' requiere entregaAridoId.
+   * alcance='todo_periodo' actualiza todos los del período + upsert catálogo.
    */
   actualizarPrecioArido(
     proyectoId: number,
     tipoArido: string,
     nuevoPrecio: number,
     periodoInicio: string,
-    periodoFin: string
+    periodoFin: string,
+    alcance: 'solo_este' | 'todo_periodo' | 'todo_proyecto' = 'todo_periodo',
+    entregaAridoId?: number
   ): Observable<any> {
-    const body = {
+    const body: any = {
       tipo_arido: tipoArido,
       nuevo_precio: nuevoPrecio,
       periodo_inicio: periodoInicio,
-      periodo_fin: periodoFin
+      periodo_fin: periodoFin,
+      alcance,
     };
+    if (alcance === 'solo_este' && entregaAridoId !== undefined) {
+      body.entrega_arido_id = entregaAridoId;
+    }
 
     return this.http.put<any>(
       `${this.apiUrl}/proyectos/${proyectoId}/aridos/actualizar-precio`,
@@ -415,21 +423,29 @@ export class CuentaCorrienteService {
   }
 
   /**
-   * Actualiza la tarifa por hora de máquinas para un proyecto y período específico
+   * Actualiza tarifa por hora de máquinas para un proyecto.
+   * alcance='solo_este' requiere reporteLaboralId.
+   * alcance='todo_periodo' actualiza todos + upsert catálogo.
    */
   actualizarTarifaMaquina(
     proyectoId: number,
     maquinaId: number,
     nuevaTarifa: number,
     periodoInicio: string,
-    periodoFin: string
+    periodoFin: string,
+    alcance: 'solo_este' | 'todo_periodo' | 'todo_proyecto' = 'todo_periodo',
+    reporteLaboralId?: number
   ): Observable<any> {
-    const body = {
+    const body: any = {
       maquina_id: maquinaId,
       nueva_tarifa: nuevaTarifa,
       periodo_inicio: periodoInicio,
-      periodo_fin: periodoFin
+      periodo_fin: periodoFin,
+      alcance,
     };
+    if (alcance === 'solo_este' && reporteLaboralId !== undefined) {
+      body.reporte_laboral_id = reporteLaboralId;
+    }
 
     return this.http.put<any>(
       `${this.apiUrl}/proyectos/${proyectoId}/maquinas/actualizar-tarifa`,

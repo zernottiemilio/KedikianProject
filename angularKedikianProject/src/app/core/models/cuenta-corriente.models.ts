@@ -1,21 +1,31 @@
 // Interfaces para el módulo de Cuenta Corriente / Final de Obra
 
-// Detalle de áridos con precio
+// Un registro = una fila. Cada fila corresponde a una EntregaArido
+// o un ReporteLaboral individual del período. No hay agrupación.
 export interface DetalleAridoConPrecio {
+  id: number;
+  entrega_arido_id: number;
   tipo_arido: string;
   cantidad: number; // m³
-  precio_unitario: number; // precio por m³
+  precio_unitario: number; // precio por m³ (0 si no configurado)
   importe: number; // cantidad * precio_unitario
+  fecha: string; // YYYY-MM-DD
+  precio_configurado: boolean;
 }
 
-// Detalle de horas de máquinas con tarifa
 export interface DetalleHorasConTarifa {
+  id: number;
+  reporte_laboral_id: number;
   maquina_id: number;
   maquina_nombre: string;
   total_horas: number;
-  tarifa_hora: number; // tarifa por hora
+  tarifa_hora: number; // 0 si no configurada
   importe: number; // total_horas * tarifa_hora
+  fecha: string; // YYYY-MM-DD
+  precio_configurado: boolean;
 }
+
+export type AlcancePrecio = 'solo_este' | 'todo_periodo' | 'todo_proyecto';
 
 // Resumen completo del proyecto
 export interface ResumenCuentaCorriente {

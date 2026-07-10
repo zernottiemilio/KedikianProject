@@ -66,8 +66,8 @@ export class CuentaCorrienteComponent implements OnInit {
   reporteForm: FormGroup;
   pagoForm: FormGroup;
 
-  // Edición inline (guardamos el tipo_arido o maquina_id como identificador)
-  editandoArido: string | null = null;
+  // Edición inline: id del registro (EntregaArido.id / ReporteLaboral.id)
+  editandoArido: number | null = null;
   editandoHora: number | null = null;
 
   // Backup de valores originales para poder revertir
@@ -78,6 +78,7 @@ export class CuentaCorrienteComponent implements OnInit {
   mostrarModalConfirmacion = false;
   confirmacionData: any = null;
   tipoConfirmacion: 'arido' | 'maquina' | null = null;
+  alcanceSeleccionado: 'solo_este' | 'todo_periodo' | 'todo_proyecto' = 'todo_proyecto';
 
   // Estados de pago enum
   EstadoPago = EstadoPago;
@@ -455,116 +456,84 @@ export class CuentaCorrienteComponent implements OnInit {
 
   iniciarEdicionArido(arido: DetalleAridoConPrecio): void {
     if (!this.esAdministrador) return;
-
-    // Guardar copia solo del precio original (la cantidad no se edita)
-    this.backupAridoOriginal = {
-      tipo_arido: arido.tipo_arido,
-      cantidad: arido.cantidad,
-      precio_unitario: arido.precio_unitario,
-      importe: arido.importe
-    };
-
-    this.editandoArido = arido.tipo_arido;
+    this.backupAridoOriginal = { ...arido };
+    this.editandoArido = arido.id;
   }
 
   guardarEdicionArido(arido: DetalleAridoConPrecio): void {
     if (!this.proyectoSeleccionado || !this.backupAridoOriginal) return;
 
-    console.log('Guardando árido:', {
-      tipo: arido.tipo_arido,
-      precio_unitario: arido.precio_unitario
-    });
-
-    // Guardar los datos para el modal de confirmación
     this.confirmacionData = {
       tipo: 'árido',
       descripcion: arido.tipo_arido,
+      entregaAridoId: arido.id,
       valorAnterior: this.backupAridoOriginal.precio_unitario,
       valorNuevo: arido.precio_unitario,
       proyectoId: this.proyectoSeleccionado,
       fechaInicio: this.fechaInicio,
-      fechaFin: this.fechaFin
+      fechaFin: this.fechaFin,
     };
 
     this.tipoConfirmacion = 'arido';
+    this.alcanceSeleccionado = 'todo_proyecto';
     this.mostrarModalConfirmacion = true;
   }
 
   cancelarEdicionArido(): void {
-    // Revertir cambios del precio si hay un backup
     if (this.backupAridoOriginal && this.resumen) {
-      const arido = this.resumen.aridos.find(a => a.tipo_arido === this.editandoArido);
+      const arido = this.resumen.aridos.find(a => a.id === this.editandoArido);
       if (arido) {
         arido.precio_unitario = this.backupAridoOriginal.precio_unitario;
         arido.importe = this.backupAridoOriginal.importe;
       }
     }
-
     this.editandoArido = null;
     this.backupAridoOriginal = null;
   }
 
   recalcularImporteArido(arido: DetalleAridoConPrecio): void {
-    // Recalcular el importe cuando cambia el precio unitario
     arido.importe = arido.cantidad * arido.precio_unitario;
   }
 
   iniciarEdicionHora(hora: DetalleHorasConTarifa): void {
     if (!this.esAdministrador) return;
-
-    // Guardar copia solo de la tarifa original (las horas no se editan)
-    this.backupHoraOriginal = {
-      maquina_id: hora.maquina_id,
-      maquina_nombre: hora.maquina_nombre,
-      total_horas: hora.total_horas,
-      tarifa_hora: hora.tarifa_hora,
-      importe: hora.importe
-    };
-
-    this.editandoHora = hora.maquina_id;
+    this.backupHoraOriginal = { ...hora };
+    this.editandoHora = hora.id;
   }
 
   guardarEdicionHora(hora: DetalleHorasConTarifa): void {
     if (!this.proyectoSeleccionado || !this.backupHoraOriginal) return;
 
-    console.log('Guardando hora máquina:', {
-      maquina_id: hora.maquina_id,
-      maquina_nombre: hora.maquina_nombre,
-      tarifa_hora: hora.tarifa_hora
-    });
-
-    // Guardar los datos para el modal de confirmación
     this.confirmacionData = {
       tipo: 'máquina',
       descripcion: hora.maquina_nombre,
       maquinaId: hora.maquina_id,
+      reporteLaboralId: hora.id,
       valorAnterior: this.backupHoraOriginal.tarifa_hora,
       valorNuevo: hora.tarifa_hora,
       proyectoId: this.proyectoSeleccionado,
       fechaInicio: this.fechaInicio,
-      fechaFin: this.fechaFin
+      fechaFin: this.fechaFin,
     };
 
     this.tipoConfirmacion = 'maquina';
+    this.alcanceSeleccionado = 'todo_proyecto';
     this.mostrarModalConfirmacion = true;
   }
 
   cancelarEdicionHora(): void {
-    // Revertir cambios de la tarifa si hay un backup
     if (this.backupHoraOriginal && this.resumen) {
-      const hora = this.resumen.horas_maquinas.find(h => h.maquina_id === this.editandoHora);
+      const hora = this.resumen.horas_maquinas.find(h => h.id === this.editandoHora);
       if (hora) {
         hora.tarifa_hora = this.backupHoraOriginal.tarifa_hora;
         hora.importe = this.backupHoraOriginal.importe;
       }
     }
-
     this.editandoHora = null;
     this.backupHoraOriginal = null;
   }
 
   recalcularImporteMaquina(hora: DetalleHorasConTarifa): void {
-    // Recalcular el importe cuando cambia la tarifa por hora
     hora.importe = hora.total_horas * hora.tarifa_hora;
   }
 
@@ -592,18 +561,19 @@ export class CuentaCorrienteComponent implements OnInit {
         this.confirmacionData.descripcion,
         this.confirmacionData.valorNuevo,
         this.confirmacionData.fechaInicio,
-        this.confirmacionData.fechaFin
+        this.confirmacionData.fechaFin,
+        this.alcanceSeleccionado,
+        this.confirmacionData.entregaAridoId
       ).subscribe({
         next: (response) => {
           console.log('Precio actualizado exitosamente:', response);
-          // Cerrar modal y edición
           this.mostrarModalConfirmacion = false;
           this.editandoArido = null;
           this.backupAridoOriginal = null;
           this.confirmacionData = null;
           this.tipoConfirmacion = null;
-          // Recargar datos
-          this.cargarResumen();
+          this.reportesConDetalle.clear();
+          this.cargarDatos();
         },
         error: (error) => {
           console.error('Error al actualizar precio:', error);
@@ -644,18 +614,19 @@ export class CuentaCorrienteComponent implements OnInit {
         this.confirmacionData.maquinaId,
         this.confirmacionData.valorNuevo,
         this.confirmacionData.fechaInicio,
-        this.confirmacionData.fechaFin
+        this.confirmacionData.fechaFin,
+        this.alcanceSeleccionado,
+        this.confirmacionData.reporteLaboralId
       ).subscribe({
         next: (response) => {
           console.log('Tarifa actualizada exitosamente:', response);
-          // Cerrar modal y edición
           this.mostrarModalConfirmacion = false;
           this.editandoHora = null;
           this.backupHoraOriginal = null;
           this.confirmacionData = null;
           this.tipoConfirmacion = null;
-          // Recargar datos
-          this.cargarResumen();
+          this.reportesConDetalle.clear();
+          this.cargarDatos();
         },
         error: (error) => {
           console.error('Error al actualizar tarifa:', error);

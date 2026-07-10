@@ -2352,3 +2352,90 @@ input[type="number"].form-control-inline {
 .info-reporte-edicion .info-item i {
   color: var(--primary-color, #007bff);
 }
+
+/* ============= BADGE SIN PRECIO ============= */
+.badge-sin-precio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #fff4d6;
+  color: #8a5a00;
+  border: 1px solid #f0c674;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-sin-precio i {
+  color: #c48b00;
+}
+
+/* ============= SELECTOR ALCANCE EN MODAL CONFIRMACIÓN ============= */
+.confirmacion-alcance {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.confirmacion-alcance h4 {
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+.alcance-opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.alcance-opcion:hover {
+  border-color: #93c5fd;
+  background: #f0f7ff;
+}
+
+.alcance-opcion input[type="radio"] {
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+.alcance-opcion strong {
+  display: block;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.alcance-opcion p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #4b5563;
+  line-height: 1.4;
+}
+
+.badge-recomendado {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+}
+

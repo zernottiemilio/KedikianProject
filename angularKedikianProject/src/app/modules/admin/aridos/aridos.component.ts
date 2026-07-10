@@ -147,6 +147,7 @@ export class AridosComponent implements OnInit {
           { id: 7, nombre: '0.20', tipo: 'árido', unidadMedida: 'm3' },
           { id: 8, nombre: 'Blinder', tipo: 'árido', unidadMedida: 'm3' },
           { id: 9, nombre: 'Arena Lavada', tipo: 'árido', unidadMedida: 'm3' },
+          { id: 10, nombre: 'Poda/Ramas', tipo: 'árido', unidadMedida: 'm3' },
         ];
   
         aridosPorDefecto.forEach(defecto => {

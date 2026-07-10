@@ -313,6 +313,7 @@
                 <span class="checkmark"></span>
               </label>
             </th>
+            <th>Fecha</th>
             <th>Tipo de Árido</th>
             <th>Cantidad (m³)</th>
             <th>Precio Unitario</th>
@@ -322,7 +323,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let arido of resumen.aridos"
-              [class.editando]="editandoArido === arido.tipo_arido"
+              [class.editando]="editandoArido === arido.id"
               [class.fila-seleccionada]="isAridoSeleccionado(arido.tipo_arido)">
             <td class="td-checkbox">
               <label class="checkbox-container">
@@ -333,6 +334,7 @@
                 <span class="checkmark"></span>
               </label>
             </td>
+            <td>{{ formatearFechaLegible(arido.fecha) }}</td>
             <td>
               <span>{{ arido.tipo_arido }}</span>
             </td>
@@ -340,9 +342,14 @@
               <span>{{ arido.cantidad | number:'1.2-2' }}</span>
             </td>
             <td>
-              <span *ngIf="editandoArido !== arido.tipo_arido">{{ formatearMoneda(arido.precio_unitario) }}</span>
+              <ng-container *ngIf="editandoArido !== arido.id">
+                <span *ngIf="arido.precio_configurado">{{ formatearMoneda(arido.precio_unitario) }}</span>
+                <span *ngIf="!arido.precio_configurado" class="badge-sin-precio">
+                  <i class="fas fa-exclamation-triangle"></i> Sin precio
+                </span>
+              </ng-container>
               <input
-                *ngIf="editandoArido === arido.tipo_arido"
+                *ngIf="editandoArido === arido.id"
                 type="number"
                 [(ngModel)]="arido.precio_unitario"
                 (ngModelChange)="recalcularImporteArido(arido)"
@@ -354,21 +361,21 @@
             <td *ngIf="esAdministrador">
               <div class="acciones-cell">
                 <button
-                  *ngIf="editandoArido !== arido.tipo_arido"
+                  *ngIf="editandoArido !== arido.id"
                   class="btn-icon btn-edit"
                   (click)="iniciarEdicionArido(arido)"
                   title="Editar">
                   <i class="fas fa-edit"></i>
                 </button>
                 <button
-                  *ngIf="editandoArido === arido.tipo_arido"
+                  *ngIf="editandoArido === arido.id"
                   class="btn-icon btn-save"
                   (click)="guardarEdicionArido(arido)"
                   title="Guardar">
                   <i class="fas fa-check"></i>
                 </button>
                 <button
-                  *ngIf="editandoArido === arido.tipo_arido"
+                  *ngIf="editandoArido === arido.id"
                   class="btn-icon btn-cancel"
                   (click)="cancelarEdicionArido()"
                   title="Cancelar">
@@ -381,6 +388,7 @@
         <tfoot>
           <tr class="total-row">
             <td></td>
+            <td></td>
             <td><strong>TOTAL ÁRIDOS</strong></td>
             <td><strong>{{ resumen.total_aridos_m3 | number:'1.2-2' }} m³</strong></td>
             <td></td>
@@ -388,6 +396,7 @@
             <td *ngIf="esAdministrador"></td>
           </tr>
           <tr class="seleccion-row" *ngIf="aridosSeleccionados.size > 0">
+            <td></td>
             <td></td>
             <td><strong>SELECCIONADO ({{ aridosSeleccionados.size }})</strong></td>
             <td><strong>{{ getTotalAridosSeleccionados() | number:'1.2-2' }} m³</strong></td>
@@ -423,8 +432,9 @@
                 <span class="checkmark"></span>
               </label>
             </th>
+            <th>Fecha</th>
             <th>Máquina</th>
-            <th>Total Horas</th>
+            <th>Horas</th>
             <th>Tarifa/Hora</th>
             <th>Importe</th>
             <th *ngIf="esAdministrador">Acciones</th>
@@ -432,7 +442,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let hora of resumen.horas_maquinas"
-              [class.editando]="editandoHora === hora.maquina_id"
+              [class.editando]="editandoHora === hora.id"
               [class.fila-seleccionada]="isHoraSeleccionada(hora.maquina_id)">
             <td class="td-checkbox">
               <label class="checkbox-container">
@@ -443,14 +453,20 @@
                 <span class="checkmark"></span>
               </label>
             </td>
+            <td>{{ formatearFechaLegible(hora.fecha) }}</td>
             <td>{{ hora.maquina_nombre }}</td>
             <td>
               <span>{{ hora.total_horas | number:'1.2-2' }}</span>
             </td>
             <td>
-              <span *ngIf="editandoHora !== hora.maquina_id">{{ formatearMoneda(hora.tarifa_hora) }}</span>
+              <ng-container *ngIf="editandoHora !== hora.id">
+                <span *ngIf="hora.precio_configurado">{{ formatearMoneda(hora.tarifa_hora) }}</span>
+                <span *ngIf="!hora.precio_configurado" class="badge-sin-precio">
+                  <i class="fas fa-exclamation-triangle"></i> Sin tarifa
+                </span>
+              </ng-container>
               <input
-                *ngIf="editandoHora === hora.maquina_id"
+                *ngIf="editandoHora === hora.id"
                 type="number"
                 [(ngModel)]="hora.tarifa_hora"
                 (ngModelChange)="recalcularImporteMaquina(hora)"
@@ -462,21 +478,21 @@
             <td *ngIf="esAdministrador">
               <div class="acciones-cell">
                 <button
-                  *ngIf="editandoHora !== hora.maquina_id"
+                  *ngIf="editandoHora !== hora.id"
                   class="btn-icon btn-edit"
                   (click)="iniciarEdicionHora(hora)"
                   title="Editar">
                   <i class="fas fa-edit"></i>
                 </button>
                 <button
-                  *ngIf="editandoHora === hora.maquina_id"
+                  *ngIf="editandoHora === hora.id"
                   class="btn-icon btn-save"
                   (click)="guardarEdicionHora(hora)"
                   title="Guardar">
                   <i class="fas fa-check"></i>
                 </button>
                 <button
-                  *ngIf="editandoHora === hora.maquina_id"
+                  *ngIf="editandoHora === hora.id"
                   class="btn-icon btn-cancel"
                   (click)="cancelarEdicionHora()"
                   title="Cancelar">
@@ -489,6 +505,7 @@
         <tfoot>
           <tr class="total-row">
             <td></td>
+            <td></td>
             <td><strong>TOTAL HORAS</strong></td>
             <td><strong>{{ resumen.total_horas | number:'1.2-2' }} hs</strong></td>
             <td></td>
@@ -496,6 +513,7 @@
             <td *ngIf="esAdministrador"></td>
           </tr>
           <tr class="seleccion-row" *ngIf="horasSeleccionadas.size > 0">
+            <td></td>
             <td></td>
             <td><strong>SELECCIONADO ({{ horasSeleccionadas.size }})</strong></td>
             <td><strong>{{ getTotalHorasSeleccionadas() | number:'1.2-2' }} hs</strong></td>
@@ -647,9 +665,6 @@
                 <tr *ngFor="let item of getReporteConDetalle(reporte.id)!.items_horas" [class.fila-pagada]="item.pagado">
                   <td>
                     <strong>{{ item.maquina_nombre }}</strong>
-                    <span class="operador-info" *ngIf="item.usuario_nombre">
-                      <i class="fas fa-user"></i> {{ item.usuario_nombre }}
-                    </span>
                   </td>
                   <td>
                     <span class="fecha-item">{{ item.fecha ? (item.fecha | date:'dd/MM/yyyy') : '-' }}</span>
@@ -977,21 +992,41 @@
         </div>
       </div>
 
-      <div class="confirmacion-impacto">
+      <div class="confirmacion-alcance">
         <h4>
-          <i class="fas fa-calculator"></i>
-          Impacto en el resumen
+          <i class="fas fa-crosshairs"></i>
+          Aplicar a
         </h4>
-        <div class="impacto-info">
-          <div class="impacto-item">
-            <i class="fas fa-arrow-right"></i>
-            <span>Se actualizarán todos los registros de este {{ confirmacionData.tipo }} en el período seleccionado.</span>
+        <label class="alcance-opcion">
+          <input type="radio" name="alcance" value="todo_proyecto" [(ngModel)]="alcanceSeleccionado">
+          <div>
+            <strong>Todo el proyecto <span class="badge-recomendado">Recomendado</span></strong>
+            <p>
+              Actualiza TODOS los registros de <strong>{{ confirmacionData.descripcion }}</strong>
+              en este proyecto (sin filtro de fecha) y guarda el precio como predeterminado para
+              futuros registros. Ideal para cargar el precio de una vez.
+            </p>
           </div>
-          <div class="impacto-item">
-            <i class="fas fa-redo"></i>
-            <span>Los totales se recalcularán automáticamente.</span>
+        </label>
+        <label class="alcance-opcion">
+          <input type="radio" name="alcance" value="todo_periodo" [(ngModel)]="alcanceSeleccionado">
+          <div>
+            <strong>Solo el período filtrado</strong>
+            <p>
+              Actualiza los registros de <strong>{{ confirmacionData.descripcion }}</strong>
+              entre {{ formatearFechaLegible(confirmacionData.fechaInicio) }} y
+              {{ formatearFechaLegible(confirmacionData.fechaFin) }}, y guarda el precio como
+              predeterminado del proyecto.
+            </p>
           </div>
-        </div>
+        </label>
+        <label class="alcance-opcion">
+          <input type="radio" name="alcance" value="solo_este" [(ngModel)]="alcanceSeleccionado">
+          <div>
+            <strong>Solo este registro</strong>
+            <p>Cambia el valor únicamente en la fila editada.</p>
+          </div>
+        </label>
       </div>
 
       <div class="confirmacion-pregunta">

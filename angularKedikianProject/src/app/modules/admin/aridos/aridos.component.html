@@ -207,7 +207,7 @@
           <select id="aridoId" formControlName="aridoId" class="form-control" required>
             <option value="">Seleccione un árido</option>
             <option *ngFor="let arido of aridos" [value]="arido.id">
-              {{ arido.nombre }} ({{ arido.unidadMedida }})
+              {{ arido.nombre }}
             </option>
           </select>
           <div *ngIf="registroForm.get('aridoId')?.invalid && registroForm.get('aridoId')?.touched" class="error-message">
