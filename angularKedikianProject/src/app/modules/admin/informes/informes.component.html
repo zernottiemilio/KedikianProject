@@ -26,7 +26,7 @@
       <label for="filtro-maquina">Máquina</label>
       <select id="filtro-maquina" [(ngModel)]="filtroMaquina" (change)="cargarReportes()">
         <option value="">Todas las máquinas</option>
-        <option *ngFor="let maquina of maquinas" [value]="maquina.id">
+        <option *ngFor="let maquina of maquinasActivas" [value]="maquina.id">
           {{ maquina.nombre }}
         </option>
       </select>
@@ -215,7 +215,7 @@
           <label for="modal-maquina">Máquina *</label>
           <select id="modal-maquina" [(ngModel)]="formulario.maquina_id" required>
             <option value="">Seleccione una máquina</option>
-            <option *ngFor="let maquina of maquinas" [value]="maquina.id">
+            <option *ngFor="let maquina of maquinasActivas" [value]="maquina.id">
               {{ maquina.nombre }}
             </option>
           </select>

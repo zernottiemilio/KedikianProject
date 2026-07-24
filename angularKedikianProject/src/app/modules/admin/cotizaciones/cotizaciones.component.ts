@@ -231,7 +231,8 @@ export class CotizacionesComponent implements OnInit {
 
         // Filtrar duplicados basándose en el ID del cliente
         const clientesUnicos = this.filtrarClientesDuplicados(data);
-        this.clientes = clientesUnicos;
+        // Solo clientes activos (no ocultos) en dropdowns
+        this.clientes = clientesUnicos.filter(c => !c.oculto);
         this.cargandoClientes = false;
 
         console.log('✅ Clientes únicos (después de filtrar):', clientesUnicos.length);

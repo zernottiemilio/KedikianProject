@@ -613,7 +613,7 @@
                     <strong>{{ item.tipo_arido }}</strong>
                   </td>
                   <td>
-                    <span class="fecha-item">{{ item.fecha ? (item.fecha | date:'dd/MM/yyyy') : '-' }}</span>
+                    <span class="fecha-item">{{ item.fecha ? (item.fecha | date:'dd/MM/yyyy':'UTC') : '-' }}</span>
                   </td>
                   <td>
                     {{ item.cantidad | number:'1.2-2' }} m³
@@ -667,7 +667,7 @@
                     <strong>{{ item.maquina_nombre }}</strong>
                   </td>
                   <td>
-                    <span class="fecha-item">{{ item.fecha ? (item.fecha | date:'dd/MM/yyyy') : '-' }}</span>
+                    <span class="fecha-item">{{ item.fecha ? (item.fecha | date:'dd/MM/yyyy':'UTC') : '-' }}</span>
                   </td>
                   <td>
                     {{ item.total_horas | number:'1.2-2' }} hs
@@ -746,7 +746,7 @@
               <tbody>
                 <tr *ngFor="let pago of reporte.pagos">
                   <td>
-                    <span class="fecha-item">{{ pago.fecha | date:'dd/MM/yyyy' }}</span>
+                    <span class="fecha-item">{{ pago.fecha | date:'dd/MM/yyyy':'UTC' }}</span>
                   </td>
                   <td class="td-importe">
                     <strong>{{ formatearMoneda(pago.monto) }}</strong>
@@ -1273,7 +1273,7 @@
             <div class="pago-previo-item" *ngFor="let pago of reporteParaPago?.pagos">
               <div class="pago-previo-fecha">
                 <i class="fas fa-calendar-check"></i>
-                {{ pago.fecha | date:'dd/MM/yyyy' }}
+                {{ pago.fecha | date:'dd/MM/yyyy':'UTC' }}
               </div>
               <div class="pago-previo-monto">
                 {{ formatearMoneda(pago.monto) }}

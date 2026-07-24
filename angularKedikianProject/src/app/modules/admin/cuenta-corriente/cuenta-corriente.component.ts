@@ -836,7 +836,11 @@ export class CuentaCorrienteComponent implements OnInit {
   }
 
   formatearFechaLegible(fecha: string): string {
-    return new Date(fecha).toLocaleDateString('es-AR');
+    if (!fecha) return '';
+    const soloFecha = fecha.split('T')[0];
+    const [y, m, d] = soloFecha.split('-').map(Number);
+    if (!y || !m || !d) return '';
+    return new Date(y, m - 1, d).toLocaleDateString('es-AR');
   }
 
   toggleReporte(reporteId: number): void {

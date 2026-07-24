@@ -86,14 +86,14 @@ export class EgresoComponent implements OnInit {
 
   cargarUsuarios(): void {
     this.balanceService.getUsuarios().subscribe(
-      (data: Usuario[]) => (this.usuarios = data),
+      (data: Usuario[]) => (this.usuarios = data.filter((u: any) => u.estado === true)),
       (error) => console.error('Error al cargar usuarios:', error)
     );
   }
 
   cargarMaquinas(): void {
     this.balanceService.getMaquinas().subscribe(
-      (data: Maquina[]) => (this.maquinas = data),
+      (data: Maquina[]) => (this.maquinas = data.filter((m: any) => m.estado === true)),
       (error) => console.error('Error al cargar máquinas:', error)
     );
   }
